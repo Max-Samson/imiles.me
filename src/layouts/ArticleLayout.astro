@@ -1,0 +1,98 @@
+---
+import ShareButton from '@/components/ShareButton';
+import CopyMarkdownButton from '@/components/CopyMarkdownButton';
+
+interface Props {
+  title: string;
+  pubDate: Date;
+  updatedDate?: Date;
+  readTime: string;
+  tags?: string[];
+  shareUrl: string;
+  shareText?: string;
+  body?: string;
+  frontmatter: Record<string, any>;
+  slug: string;
+  proseClass?: string;
+}
+
+const {
+  title,
+  pubDate,
+  updatedDate,
+  readTime,
+  tags = [],
+  shareUrl,
+  shareText,
+  body,
+  frontmatter,
+  slug,
+  proseClass,
+} = Astro.props;
+---
+
+<article class="mx-auto max-w-3xl px-6 pt-24 pb-16">
+  <header class="mb-8">
+    <h1 class="text-4xl font-bold">{title}</h1>
+    <div class="mt-4 flex items-center gap-2">
+      <CopyMarkdownButton
+        client:load
+        postBody={body}
+        postFrontmatter={frontmatter}
+        slug={slug}
+      />
+      <ShareButton
+        client:load
+        url={shareUrl}
+        title={title}
+        description={frontmatter.description}
+        shareText={shareText}
+      />
+    </div>
+    <div class="mt-4 flex flex-col gap-1 text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
+      <time>
+        {
+          pubDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            timeZone: 'UTC',
+          })
+        }
+      </time>
+      <span class="hidden sm:inline">|</span>
+      <span>{readTime}</span>
+    </div>
+    {
+      updatedDate && (
+        <div class="mt-1 text-sm text-muted-foreground/70">
+          Updated: <time>{updatedDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            timeZone: 'UTC',
+          })}</time>
+        </div>
+      )
+    }
+    {tags.length > 0 && (
+      <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+        {tags.map((tag) => (
+          <span class="text-sm text-muted-foreground">
+            #{tag}
+          </span>
+        ))}
+      </div>
+    )}
+  </header>
+
+  <slot name="before-content" />
+
+  <div class:list={['prose prose-neutral dark:prose-invert max-w-none', proseClass]}>
+    <slot />
+  </div>
+
+  <slot name="after-content" />
+</article>
+
+<slot name="enhancers" />

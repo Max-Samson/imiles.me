@@ -1,0 +1,34 @@
+'use client';
+
+import { SiArxiv, SiBehance, SiGithub, SiX } from '@icons-pack/react-simple-icons';
+import { IconBrandLinkedin, IconMail, IconRss } from '@tabler/icons-react';
+import { type SocialLink, socialLinks } from '@/data/socialLinks';
+
+const iconMap: Record<SocialLink['icon'], React.ReactNode> = {
+  github: <SiGithub className="h-5 w-5" />,
+  linkedin: <IconBrandLinkedin className="h-5 w-5" />,
+  x: <SiX className="h-5 w-5" />,
+  email: <IconMail className="h-5 w-5" />,
+  behance: <SiBehance className="h-5 w-5" />,
+  arxiv: <SiArxiv className="h-5 w-5" />,
+  rss: <IconRss className="h-5 w-5" />,
+};
+
+export default function SocialLinksGrid() {
+  return (
+    <div className="not-prose flex flex-wrap gap-4">
+      {socialLinks.map((link) => (
+        <a
+          key={link.icon}
+          href={link.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+        >
+          {iconMap[link.icon]}
+          <span>{link.title}</span>
+        </a>
+      ))}
+    </div>
+  );
+}

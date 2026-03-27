@@ -1,0 +1,105 @@
+---
+import '@/styles/global.css';
+import AutoHideHeader from '@/components/AutoHideHeader';
+import SocialDock from '@/components/SocialDock';
+import NewsletterSignup from '@/components/NewsletterSignup';
+import Footer from '@/components/Footer.astro';
+import SEOMeta from '@/components/SEOMeta.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  showSocialDock?: boolean;
+  fullScreen?: boolean;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  publishedTime?: Date;
+  tags?: string[];
+}
+
+const {
+  title,
+  description = 'Personal website of urmzd',
+  showSocialDock = false,
+  fullScreen = false,
+  ogImage,
+  ogType = 'website',
+  publishedTime,
+  tags = [],
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang={Astro.currentLocale ?? 'en'}>
+  <head>
+    <meta charset="utf-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <SEOMeta
+      title={title}
+      description={description}
+      image={ogImage}
+      type={ogType}
+      publishedTime={publishedTime}
+      tags={tags}
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+      integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV"
+      crossorigin="anonymous"
+    />
+    <link rel="alternate" type="application/rss+xml" title="urmzd.com RSS Feed" href="/rss.xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://use.typekit.net/qyu8tlw.css" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />
+    <title>{title}</title>
+    <script is:inline>
+      const getThemePreference = () => {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+          return localStorage.getItem('theme');
+        }
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      };
+      const isDark = getThemePreference() === 'dark';
+      document.documentElement.classList[isDark ? 'add' : 'remove']('dark');
+
+      if (typeof localStorage !== 'undefined') {
+        const observer = new MutationObserver(() => {
+          const isDark = document.documentElement.classList.contains('dark');
+          localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+        observer.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['class'],
+        });
+      }
+    </script>
+  </head>
+  <body class:list={["min-h-screen bg-background text-foreground antialiased", fullScreen && "h-dvh overflow-hidden"]}>
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-lg focus:ring-2 focus:ring-ring">Skip to main content</a>
+    <AutoHideHeader client:load />
+    <main id="main-content">
+      <slot />
+    </main>
+    <Footer class={fullScreen ? "fixed bottom-0 inset-x-0 z-30" : undefined} />
+    {showSocialDock && <SocialDock client:visible />}
+    {/* <NewsletterSignup client:idle /> */}
+    <script is:inline>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js');
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,3 @@
+export default {
+  '*.{ts,tsx,css,json}': ['biome check --write --no-errors-on-unmatched'],
+};
