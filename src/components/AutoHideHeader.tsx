@@ -2,9 +2,9 @@
 
 import { MotionConfig, motion } from 'motion/react';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
-import { MobileMenu } from './MobileMenu';
-import { ModeToggle } from './ModeToggle';
-import NavigationMenuDemo from './NavigationMenuDemo';
+import { MobileMenu } from './header/MobileMenu';
+import { ModeToggle } from './header/ModeToggle';
+import NavigationMenuDemo from './header/NavigationMenu';
 
 export default function AutoHideHeader() {
   const { isVisible } = useScrollDirection();
@@ -18,7 +18,10 @@ export default function AutoHideHeader() {
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
         <div className="container mx-auto flex h-14 items-center justify-between px-4">
-          <a href="/" className="text-sm font-semibold tracking-tight text-foreground">
+          <a
+            href="/"
+            className="text-sm font-semibold tracking-tight text-foreground"
+          >
             urmzd
           </a>
 

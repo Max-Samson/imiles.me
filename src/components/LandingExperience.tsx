@@ -5,17 +5,23 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import SocialDock from '@/components/SocialDock';
 import { PlexusBackground } from '@/components/ui/plexus-background';
-import { CODEX } from '@/components/ui/plexus-shapes';
+import { CODEX, CODEX_CN } from '@/components/ui/plexus-shapes';
 import { useTextScramble } from '@/hooks/useTextScramble';
-
-const NAME_CHARS = 'URMZD MUKHAMMADNAIM'.split('');
+const NAME_CHARS = 'Shenshuai Ming'.split('');
 
 export default function LandingExperience() {
   const nameRef = useRef<HTMLHeadingElement>(null);
   const [nameWidth, setNameWidth] = useState<number | undefined>(undefined);
   const [codexIndex, setCodexIndex] = useState(0);
+  const [isZh, setIsZh] = useState(false);
 
-  const entry = CODEX[codexIndex];
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setIsZh(window.location.pathname.startsWith('/zh'));
+  }, []);
+
+  const codex = isZh ? CODEX_CN : CODEX;
+  const entry = codex[codexIndex % codex.length];
   const quoteText = useTextScramble(entry.quote);
   const authorText = useTextScramble(entry.author ?? '');
 
@@ -54,7 +60,8 @@ export default function LandingExperience() {
                 <h1
                   ref={nameRef}
                   className="landing-hero-name"
-                  aria-label="Urmzd Mukhammadnaim"
+                  aria-label="Shenshuai Ming"
+                  style={{ fontFamily: 'Rock Salt, cursive' }}
                 >
                   {NAME_CHARS.map((char, i) => {
                     const baseDelay = 0.6 + i * 0.04;
@@ -69,7 +76,7 @@ export default function LandingExperience() {
                     ) : (
                       <motion.span
                         key={`char-${i}`}
-                        className="landing-hero-char"
+                        className="landing-hero-char md:mt-10 mt-5"
                         initial={{
                           opacity: 0,
                           y: 20,

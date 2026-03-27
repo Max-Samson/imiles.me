@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { navItems } from './NavigationMenuDemo';
+import { navItems } from './NavigationMenu';
 
 function MenuPortal({
   open,
@@ -63,7 +63,9 @@ function MenuPortal({
             <nav className="flex flex-col items-center gap-2">
               {navItems.map((item, i) => {
                 const isActive =
-                  item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+                  item.href === '/'
+                    ? pathname === '/'
+                    : pathname.startsWith(item.href);
 
                 return (
                   <motion.a
@@ -79,7 +81,11 @@ function MenuPortal({
                     transition={
                       reduced
                         ? { duration: 0 }
-                        : { delay: 0.08 + i * 0.05, duration: 0.3, ease: 'easeOut' }
+                        : {
+                            delay: 0.08 + i * 0.05,
+                            duration: 0.3,
+                            ease: 'easeOut',
+                          }
                     }
                   >
                     {item.label}
@@ -195,7 +201,9 @@ export function MobileMenu() {
           <motion.line
             x1="3"
             x2="15"
-            animate={open ? { y1: 9, y2: 9, rotate: 45 } : { y1: 4, y2: 4, rotate: 0 }}
+            animate={
+              open ? { y1: 9, y2: 9, rotate: 45 } : { y1: 4, y2: 4, rotate: 0 }
+            }
             transition={{ duration: 0.25 }}
             style={{ transformOrigin: 'center' }}
           />
@@ -210,7 +218,11 @@ export function MobileMenu() {
           <motion.line
             x1="3"
             x2="15"
-            animate={open ? { y1: 9, y2: 9, rotate: -45 } : { y1: 14, y2: 14, rotate: 0 }}
+            animate={
+              open
+                ? { y1: 9, y2: 9, rotate: -45 }
+                : { y1: 14, y2: 14, rotate: 0 }
+            }
             transition={{ duration: 0.25 }}
             style={{ transformOrigin: 'center' }}
           />

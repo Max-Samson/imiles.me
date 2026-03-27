@@ -154,7 +154,9 @@ function sampleMultiPath3D(paths: Point3D[][], n: number): Point3D[] {
   let remaining = n;
   for (let i = 0; i < paths.length; i++) {
     const count =
-      i === paths.length - 1 ? remaining : Math.max(2, Math.round((n * lens[i]) / total));
+      i === paths.length - 1
+        ? remaining
+        : Math.max(2, Math.round((n * lens[i]) / total));
     const actual = Math.min(count, remaining);
     if (actual > 0) {
       pts.push(...sampleAlongPath3D(paths[i], actual));
@@ -190,9 +192,17 @@ function generateFaravahar(n: number): Point3D[] {
     for (let i = 0; i <= 25; i++) {
       const t = i / 25;
       const a = Math.PI - sweep + t * sweep;
-      left.push({ x: -0.15 + r * Math.cos(a), y: yOff + r * Math.sin(a) * 0.35, z: 0 });
+      left.push({
+        x: -0.15 + r * Math.cos(a),
+        y: yOff + r * Math.sin(a) * 0.35,
+        z: 0,
+      });
       const a2 = sweep - t * sweep;
-      right.push({ x: 0.15 + r * Math.cos(a2), y: yOff + r * Math.sin(a2) * 0.35, z: 0 });
+      right.push({
+        x: 0.15 + r * Math.cos(a2),
+        y: yOff + r * Math.sin(a2) * 0.35,
+        z: 0,
+      });
     }
     paths.push(left, right);
   }
@@ -537,7 +547,106 @@ export const CODEX: CodexEntry[] = [
   },
   {
     shape: galaxyShape,
-    quote: '/\u028A\u0259r\u02C8mu\u02D0zd m\u028A\u02CChɑ\u02D0m\u0251d\u02C8na\u026Am/',
+    quote:
+      '/\u028A\u0259r\u02C8mu\u02D0zd m\u028A\u02CChɑ\u02D0m\u0251d\u02C8na\u026Am/',
     holdMs: 15_000,
+  },
+];
+export const CODEX_CN: CodexEntry[] = [
+  {
+    shape: faravaharShape,
+    quote: '“关键核心技术是要不来、买不来、讨不来的”',
+    author: '倪光南',
+    holdMs: 10000,
+  },
+  {
+    shape: heptagramShape,
+    quote: '“科技顶天，市场立地”',
+    author: '王选',
+    holdMs: 10000,
+  },
+  {
+    shape: girihDecagonShape,
+    quote: '“人类正迈入比电力革命更重要的算力革命时代”',
+    author: '王坚',
+    holdMs: 10000,
+  },
+  {
+    shape: flowerOfLifeShape,
+    quote: '“国产之器，不怕不好用，就怕不用”',
+    author: '陈国良',
+    holdMs: 10000,
+  },
+  {
+    shape: sierpinskiShape,
+    quote: '“未来几十年，是并行计算的黄金时代”',
+    author: '李国杰',
+    holdMs: 10000,
+  },
+  {
+    shape: lorenzShape,
+    quote: '“互联网是国家第五疆域，基础平台永不过时”',
+    author: '吴建平',
+    holdMs: 10000,
+  },
+  {
+    shape: goldenSpiralShape,
+    quote: '“软件产业未来在于开放协作与群体工程”',
+    author: '李未',
+    holdMs: 10000,
+  },
+  {
+    shape: galaxyShape,
+    quote: '“国运昌则科技兴，科技兴则国力强”',
+    author: '金怡濂',
+    holdMs: 15000,
+  },
+  {
+    shape: faravaharShape,
+    quote: '“科研自立自强，首在敢于攻关、自主可控”',
+    author: '郑纬民',
+    holdMs: 10000,
+  },
+  {
+    shape: heptagramShape,
+    quote: '“计算技术须与国家命运相连，方有大作为”',
+    author: '胡启恒',
+    holdMs: 10000,
+  },
+  {
+    shape: girihDecagonShape,
+    quote: '“信息技术不进则退，慢进亦退”',
+    author: '郭雷',
+    holdMs: 10000,
+  },
+  {
+    shape: flowerOfLifeShape,
+    quote: '“机器延伸人力，人类智慧引领机器智能”',
+    author: '杨芙清',
+    holdMs: 10000,
+  },
+  {
+    shape: sierpinskiShape,
+    quote: '“AI可穷尽迷宫，唯有人类能飞越迷宫”',
+    author: '刘若川',
+    holdMs: 10000,
+  },
+  {
+    shape: lorenzShape,
+    quote: '“创新软件，将在认识与改造世界中担当核心”',
+    author: '朱中梁',
+    holdMs: 10000,
+  },
+  {
+    shape: goldenSpiralShape,
+    quote: '“献身科学，自有常人所不及的乐趣与荣光”',
+    author: '王选',
+    holdMs: 10000,
+  },
+  {
+    shape: galaxyShape,
+    quote: '“从开源大国到开源强国，是软件产业必由之路”',
+    author: '倪光南',
+    holdMs: 15000,
   },
 ];
