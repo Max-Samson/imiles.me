@@ -9,16 +9,16 @@
  * 3. Create locale-specific pages (e.g., src/pages/ar/about.astro)
  */
 import { getRelativeLocaleUrl } from 'astro:i18n';
-import { locales, type Locale } from '@/lib/i18n';
-
+import { locales, stripLocaleFromPathname, type Locale } from '@/lib/i18n';
 const currentLocale = (Astro.currentLocale ?? 'en') as Locale;
-const currentPath = Astro.url.pathname;
+const currentPath = stripLocaleFromPathname(Astro.url.pathname);
 
 // Hide when only one locale is available
 const showSwitcher = locales.length > 1;
 
 const localeLabels: Record<Locale, string> = {
   en: 'English',
+  zh: '中文',
 };
 ---
 

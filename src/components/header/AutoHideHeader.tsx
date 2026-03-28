@@ -1,12 +1,20 @@
 'use client';
 
 import { MotionConfig, motion } from 'motion/react';
+import type { ReactNode } from 'react';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
-import { MobileMenu } from './header/MobileMenu';
-import { ModeToggle } from './header/ModeToggle';
-import NavigationMenuDemo from './header/NavigationMenu';
+import { MobileMenu } from './MobileMenu';
+import { ModeToggle } from './ModeToggle';
+import NavigationMenuDemo from './NavigationMenu';
+import type { Locale } from '@/lib/i18n';
 
-export default function AutoHideHeader() {
+type Props = {
+  lang?: Locale;
+  pathname?: string;
+  children?: ReactNode;
+};
+
+export default function AutoHideHeader({ lang, pathname, children }: Props) {
   const { isVisible } = useScrollDirection();
 
   return (
@@ -27,18 +35,19 @@ export default function AutoHideHeader() {
 
           {/* Desktop nav */}
           <div className="hidden md:flex md:items-center md:gap-2">
-            <NavigationMenuDemo />
+            <NavigationMenuDemo lang={lang} pathname={pathname} />
           </div>
 
-          {/* Desktop theme toggle */}
-          <div className="hidden md:block">
+          {/* Desktop language switcher + theme toggle */}
+          <div className="hidden md:flex md:items-center md:gap-2">
+            {children}
             <ModeToggle />
           </div>
 
           {/* Mobile hamburger + theme toggle */}
           <div className="flex items-center gap-2 md:hidden">
             <ModeToggle />
-            <MobileMenu />
+            <MobileMenu lang={lang} pathname={pathname} />
           </div>
         </div>
       </motion.header>

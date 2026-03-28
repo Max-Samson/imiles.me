@@ -1,10 +1,12 @@
 ---
 import '@/styles/global.css';
-import AutoHideHeader from '@/components/AutoHideHeader';
+import AutoHideHeader from '@/components/header/AutoHideHeader';
 import SocialDock from '@/components/SocialDock';
 import NewsletterSignup from '@/components/NewsletterSignup';
-import Footer from '@/components/Footer.astro';
+import Footer from '@/components/footer/Footer.astro';
+import LanguageSwitcher from '@/components/LanguageSwitcher.astro';
 import SEOMeta from '@/components/SEOMeta.astro';
+import { resolveLocale, type Locale } from '@/lib/i18n';
 
 interface Props {
   title: string;
@@ -27,10 +29,13 @@ const {
   publishedTime,
   tags = [],
 } = Astro.props;
+
+const lang = resolveLocale(Astro.currentLocale as Locale | undefined);
+const pathname = Astro.url.pathname;
 ---
 
 <!doctype html>
-<html lang={Astro.currentLocale ?? 'en'}>
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
 
@@ -89,7 +94,9 @@ const {
   </head>
   <body class:list={["min-h-screen bg-background text-foreground antialiased", fullScreen && "h-dvh overflow-hidden"]}>
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-lg focus:ring-2 focus:ring-ring">Skip to main content</a>
-    <AutoHideHeader client:load />
+    <AutoHideHeader client:load lang={lang} pathname={pathname}>
+      <LanguageSwitcher />
+    </AutoHideHeader>
     <main id="main-content">
       <slot />
     </main>

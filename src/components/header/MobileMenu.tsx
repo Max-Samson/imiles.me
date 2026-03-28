@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { navItems } from './NavigationMenu';
+import { getLocaleFromPathname } from '@/lib/i18n';
+import { getNavItems, isNavItemActive } from './NavigationMenu';
 
 function MenuPortal({
   open,
@@ -13,13 +14,18 @@ function MenuPortal({
   menuRef,
   pathname,
   reduced,
+  lang,
 }: {
   open: boolean;
   close: () => void;
   menuRef: React.RefObject<HTMLDivElement | null>;
   pathname: string;
   reduced: boolean;
+  lang?: ReturnType<typeof getLocaleFromPathname>;
 }) {
+  const resolvedLang = lang ?? getLocaleFromPathname(pathname);
+  const navItems = getNavItems(resolvedLang);
+
   return createPortal(
     <AnimatePresence>
       {open && (
@@ -62,10 +68,7 @@ function MenuPortal({
 
             <nav className="flex flex-col items-center gap-2">
               {navItems.map((item, i) => {
-                const isActive =
-                  item.href === '/'
-                    ? pathname === '/'
-                    : pathname.startsWith(item.href);
+                const isActive = isNavItemActive(pathname, item.matchPath);
 
                 return (
                   <motion.a
@@ -101,10 +104,16 @@ function MenuPortal({
   );
 }
 
-export function MobileMenu() {
+export function MobileMenu({
+  lang,
+  pathname: initialPathname,
+}: {
+  lang?: ReturnType<typeof getLocaleFromPathname>;
+  pathname?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [pathname, setPathname] = useState('/');
+  const [pathname, setPathname] = useState(initialPathname ?? '/');
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
@@ -236,6 +245,7 @@ export function MobileMenu() {
           menuRef={menuRef}
           pathname={pathname}
           reduced={reduced}
+          lang={lang}
         />
       )}
     </>

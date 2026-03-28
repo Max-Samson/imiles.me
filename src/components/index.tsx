@@ -1,6 +1,6 @@
 export { default as ArchitectureFlow } from './ArchitectureFlow';
 export { default as Aside } from './Aside';
-export { default as AutoHideHeader } from './AutoHideHeader';
+export { default as AutoHideHeader } from './header/AutoHideHeader';
 export { default as BlockQuote } from './BlockQuote';
 export { default as BlogSearch } from './BlogSearch';
 export { default as ChatDemo } from './ChatDemo';

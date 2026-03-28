@@ -11,7 +11,7 @@ import rehypeSlug from 'rehype-slug';
 export default defineConfig({
   site: 'https://urmzd.com',
   i18n: {
-    locales: ['en'],
+    locales: ['en', 'zh'],
     defaultLocale: 'en',
     routing: {
       prefixDefaultLocale: false,
