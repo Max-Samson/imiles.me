@@ -7,7 +7,6 @@ import { MobileMenu } from './MobileMenu';
 import { ModeToggle } from './ModeToggle';
 import NavigationMenuDemo from './NavigationMenu';
 import type { Locale } from '@/lib/i18n';
-
 type Props = {
   lang?: Locale;
   pathname?: string;
@@ -28,9 +27,12 @@ export default function AutoHideHeader({ lang, pathname, children }: Props) {
         <div className="container mx-auto flex h-14 items-center justify-between px-4">
           <a
             href="/"
-            className="text-sm font-semibold tracking-tight text-foreground"
+            className="text-xl font-semibold tracking-tight text-foreground"
+            style={{
+              fontFamily: 'Permanent Marker',
+            }}
           >
-            urmzd
+            Miles
           </a>
 
           {/* Desktop nav */}

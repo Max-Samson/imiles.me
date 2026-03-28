@@ -9,7 +9,12 @@ export const FloatingDock = ({
   desktopClassName,
   mobileClassName,
 }: {
-  items: { title: string; icon: React.ReactNode; href: string }[];
+  items: {
+    title: string;
+    icon: React.ReactNode;
+    href: string;
+    target?: '_blank' | '_self' | '_parent' | '_top';
+  }[];
   desktopClassName?: string;
   mobileClassName?: string;
 }) => {
@@ -25,7 +30,12 @@ const FloatingDockMobile = ({
   items,
   className,
 }: {
-  items: { title: string; icon: React.ReactNode; href: string }[];
+  items: {
+    title: string;
+    icon: React.ReactNode;
+    href: string;
+    target?: '_blank' | '_self' | '_parent' | '_top';
+  }[];
   className?: string;
 }) => {
   return (
@@ -41,6 +51,8 @@ const FloatingDockMobile = ({
         <a
           key={item.title}
           href={item.href}
+          target={item.target}
+          rel={item.target === '_blank' ? 'noreferrer noopener' : undefined}
           aria-label={item.title}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background/60 backdrop-blur-sm transition-colors hover:bg-accent/50"
         >
@@ -55,7 +67,12 @@ const FloatingDockDesktop = ({
   items,
   className,
 }: {
-  items: { title: string; icon: React.ReactNode; href: string }[];
+  items: {
+    title: string;
+    icon: React.ReactNode;
+    href: string;
+    target?: '_blank' | '_self' | '_parent' | '_top';
+  }[];
   className?: string;
 }) => {
   const mouseX = useMotionValue(Infinity);
@@ -79,11 +96,13 @@ function IconContainer({
   title,
   icon,
   href,
+  target,
 }: {
   mouseX: MotionValue;
   title: string;
   icon: React.ReactNode;
   href: string;
+  target?: '_blank' | '_self' | '_parent' | '_top';
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -124,7 +143,12 @@ function IconContainer({
   const [hovered, setHovered] = useState(false);
 
   return (
-    <a href={href} aria-label={title}>
+    <a
+      href={href}
+      target={target}
+      rel={target === '_blank' ? 'noreferrer noopener' : undefined}
+      aria-label={title}
+    >
       <motion.div
         ref={ref}
         style={{ width, height }}

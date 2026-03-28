@@ -19,43 +19,33 @@ export type NavItem = {
   href: string;
   matchPath: string;
   label: string;
+  only?: Locale;
 };
 
+const NAV_CONFIG = [
+  { key: 'Headerhome', path: '/' },
+  { key: 'Headerblog', path: '/blog' },
+  { key: 'Headerstories', path: '/stories' },
+  { key: 'Headerresearch', path: '/research', only: ['en'] },
+  { key: 'Headerprojects', path: '/projects' },
+  { key: 'Headernotes', path: '/notes', only: ['zh'] },
+  { key: 'Headerabout', path: '/about' },
+] as const;
 export function getNavItems(lang: Locale): NavItem[] {
   const { t } = useTranslations(lang);
 
-  return [
-    {
-      href: localizePathname('/', lang),
-      matchPath: '/',
-      label: t('Headerhome'),
-    },
-    {
-      href: localizePathname('/blog', lang),
-      matchPath: '/blog',
-      label: t('Headerblog'),
-    },
-    {
-      href: localizePathname('/stories', lang),
-      matchPath: '/stories',
-      label: t('Headerstories'),
-    },
-    {
-      href: localizePathname('/research', lang),
-      matchPath: '/research',
-      label: t('Headerresearch'),
-    },
-    {
-      href: localizePathname('/projects', lang),
-      matchPath: '/projects',
-      label: t('Headerprojects'),
-    },
-    {
-      href: localizePathname('/about', lang),
-      matchPath: '/about',
-      label: t('Headerabout'),
-    },
-  ];
+  // 从配置自动 map 生成
+  let items = NAV_CONFIG.map((item) => ({
+    href: localizePathname(item.path, lang),
+    matchPath: item.path,
+    label: t(item.key),
+    only: 'only' in item ? (item.only as unknown as Locale) : undefined,
+  })).filter((item) => {
+    if (item.only && !item.only.includes(lang as Locale)) return false;
+    return true;
+  });
+
+  return items;
 }
 
 export function isNavItemActive(pathname: string, matchPath: string) {
@@ -73,7 +63,8 @@ type Props = {
 
 export default function NavigationMenuDemo({ lang, pathname }: Props) {
   const resolvedPathname =
-    pathname ?? (typeof window === 'undefined' ? '/' : window.location.pathname);
+    pathname ??
+    (typeof window === 'undefined' ? '/' : window.location.pathname);
   const resolvedLang = lang ?? getLocaleFromPathname(resolvedPathname);
   const navItems = getNavItems(resolvedLang);
 

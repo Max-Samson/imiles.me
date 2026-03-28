@@ -2,7 +2,7 @@
 import { IconCheck, IconCopy } from '@tabler/icons-react';
 import { MotionConfig, motion } from 'motion/react';
 import { useState } from 'react';
-import { mdxToMarkdown, type PostFrontmatter } from '../lib/mdxToMarkdown';
+import { mdxToMarkdown, type PostFrontmatter } from '@/lib/mdxToMarkdown';
 
 interface CopyMarkdownButtonProps {
   postBody: string;

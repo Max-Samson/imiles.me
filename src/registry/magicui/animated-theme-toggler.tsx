@@ -15,7 +15,11 @@ export const AnimatedThemeToggler = ({
   duration = 800,
   ...props
 }: AnimatedThemeTogglerProps) => {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(
+    () =>
+      typeof document !== 'undefined' &&
+      document.documentElement.classList.contains('dark'),
+  );
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -96,7 +100,8 @@ export const AnimatedThemeToggler = ({
       className={cn(className)}
       {...props}
     >
-      {isDark ? <Sun /> : <Moon />}
+      <Sun className="hidden dark:block" aria-hidden="true" />
+      <Moon className="block dark:hidden" aria-hidden="true" />
       <span className="sr-only">Toggle theme</span>
     </button>
   );

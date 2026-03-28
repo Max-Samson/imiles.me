@@ -34,7 +34,7 @@ export { default as PullQuote } from './PullQuote';
 export { default as References } from './References';
 export { default as ScriptInline } from './ScriptInline';
 export { default as ScriptTranslator } from './ScriptTranslator';
-export { default as ShareButton } from './ShareButton';
+export { default as ShareButton } from './articlebtn/ShareButton';
 export { default as SocialDock } from './SocialDock';
 export { default as SocialLinksGrid } from './SocialLinksGrid';
 export { default as StatusBadge } from './StatusBadge';

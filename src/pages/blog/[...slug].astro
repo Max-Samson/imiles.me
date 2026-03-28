@@ -41,7 +41,7 @@ const showTOC = tocHeadings.length >= 3;
     tags={post.data.tags}
     shareUrl={postUrl}
     shareText={post.data.shareText}
-    body={post.body}
+    body={post.body ?? ''}
     frontmatter={{
       title: post.data.title,
       description: post.data.description,

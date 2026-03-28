@@ -6,7 +6,7 @@ export const locales = ['en', 'zh'] as const;
 export type Locale = (typeof locales)[number];
 
 export const ui = { zh, en } as const;
-export type TranslationKey = keyof (typeof ui)[typeof defaultLocale];
+export type TranslationKey = keyof typeof en;
 export type TranslationParams = Record<string, string | number>;
 
 // 判断一个值是否为项目支持的语言代码。
@@ -108,4 +108,21 @@ export function createTranslations(lang: Locale = getCurrentLocale()) {
 // 注意：它不是 React Hook，只是一个轻量翻译器工厂。
 export function useTranslations(lang: Locale = getCurrentLocale()) {
   return createTranslations(lang);
+}
+
+export function getDateLocale(lang: Locale): string {
+  return lang === 'zh' ? 'zh-CN' : 'en-US';
+}
+
+export function formatDate(
+  date: Date,
+  lang: Locale,
+  options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  },
+) {
+  return date.toLocaleDateString(getDateLocale(lang), options);
 }

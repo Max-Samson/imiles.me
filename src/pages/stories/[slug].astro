@@ -21,7 +21,7 @@ const storyUrl = `${siteUrl}/stories/${story.id}`;
 ---
 
 <BaseLayout
-  title={`${story.data.title} - urmzd`}
+  title={`${story.data.title} - Miles`}
   description={story.data.description}
   ogType="article"
   publishedTime={story.data.pubDate}
@@ -34,7 +34,7 @@ const storyUrl = `${siteUrl}/stories/${story.id}`;
     readTime={readTime.text}
     tags={story.data.tags}
     shareUrl={storyUrl}
-    body={story.body}
+    body={story.body ?? ''}
     frontmatter={{
       title: story.data.title,
       description: story.data.description,

@@ -1,6 +1,8 @@
 ---
-import ShareButton from '@/components/ShareButton';
-import CopyMarkdownButton from '@/components/CopyMarkdownButton';
+import ShareButton from '@/components/articlebtn/ShareButton';
+import CopyMarkdownButton from '@/components/articlebtn/CopyMarkdownButton';
+import { formatDate, getLocaleFromPathname, useTranslations } from '@/lib/i18n';
+import type { PostFrontmatter } from '@/lib/mdxToMarkdown';
 
 interface Props {
   title: string;
@@ -10,8 +12,8 @@ interface Props {
   tags?: string[];
   shareUrl: string;
   shareText?: string;
-  body?: string;
-  frontmatter: Record<string, any>;
+  body: string;
+  frontmatter: PostFrontmatter;
   slug: string;
   proseClass?: string;
 }
@@ -28,7 +30,10 @@ const {
   frontmatter,
   slug,
   proseClass,
-} = Astro.props;
+} = Astro.props as Props;
+
+const lang = getLocaleFromPathname(Astro.url.pathname);
+const { t } = useTranslations(lang);
 ---
 
 <article class="mx-auto max-w-3xl px-6 pt-24 pb-16">
@@ -50,28 +55,14 @@ const {
       />
     </div>
     <div class="mt-4 flex flex-col gap-1 text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
-      <time>
-        {
-          pubDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            timeZone: 'UTC',
-          })
-        }
-      </time>
+      <time>{formatDate(pubDate, lang)}</time>
       <span class="hidden sm:inline">|</span>
       <span>{readTime}</span>
     </div>
     {
       updatedDate && (
         <div class="mt-1 text-sm text-muted-foreground/70">
-          Updated: <time>{updatedDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            timeZone: 'UTC',
-          })}</time>
+          {t('Labelupdated')}: <time>{formatDate(updatedDate, lang)}</time>
         </div>
       )
     }
