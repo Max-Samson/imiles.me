@@ -1,8 +1,9 @@
 'use client';
 
+import { useTranslations, type Locale } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { Marquee } from '@/registry/magicui/marquee';
-
+import { MapPin } from 'lucide-react';
 interface MarqueeImageItem {
   src: string;
   alt: string;
@@ -11,12 +12,14 @@ interface MarqueeImageItem {
 
 interface MarqueeImageProps {
   images: MarqueeImageItem[];
+  lang?: Locale;
 }
 
-export default function MarqueeImage({ images }: MarqueeImageProps) {
+export default function MarqueeImage({ images, lang }: MarqueeImageProps) {
+  const { t } = useTranslations(lang);
   return (
     <section className="container mx-auto px-4 py-12">
-      <h2 className="mb-8 text-2xl font-bold">Demo</h2>
+      <h2 className="mb-8 text-2xl font-bold">{t('NoteSectionTwoTitle')}</h2>
 
       <div className="relative flex w-full flex-col items-center justify-center overflow-hidden">
         <Marquee pauseOnHover className="[--duration:8s]">
@@ -40,7 +43,8 @@ export default function MarqueeImage({ images }: MarqueeImageProps) {
               <div className="text-sm font-medium dark:text-white">
                 {img.alt}
               </div>
-              <div className="text-xs font-medium dark:text-white/40">
+              <div className="text-xs font-medium mt-2 md:mt-1 dark:text-white/40 flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
                 {img.caption}
               </div>
             </figure>

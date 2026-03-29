@@ -30,6 +30,7 @@ export interface NotePicItems {
 const NotePicItems: NotePicItems[] = [
   { src: '/images/note/mc.jpg', alt: 'mc', caption: 'mc' },
   { src: '/images/note/test1.png', alt: 'test1', caption: 'test1' },
+  { src: '/images/note/test2.jpg', alt: 'test2', caption: 'test2' },
 ];
 export const research: ResearchItem[] = [
   {
@@ -207,6 +208,7 @@ export const research: ResearchItem[] = [
       { name: 'Keras', icon: 'keras' },
       { name: 'NLTK', icon: 'nltk' },
     ],
+    notePicItems: NotePicItems,
     features: [
       {
         title: 'Symptom-to-Diagnosis CNN',

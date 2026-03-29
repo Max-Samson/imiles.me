@@ -9,8 +9,13 @@ interface PhoneticProps {
 
 export default function Phonetic({ ipa, className }: PhoneticProps) {
   return (
-    <span className={cn('font-mono text-muted-foreground/70 tracking-wide', className)}>
-      /{ipa}/
+    <span
+      className={cn(
+        'font-mono text-muted-foreground/70 tracking-wide',
+        className,
+      )}
+    >
+      {ipa}
     </span>
   );
 }

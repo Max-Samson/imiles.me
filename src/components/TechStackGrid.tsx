@@ -20,7 +20,7 @@ import {
 import { motion, useInView } from 'motion/react';
 import { useRef } from 'react';
 import type { ProjectTech } from '@/data/projects';
-
+import { useTranslations, type Locale } from '@/lib/i18n';
 const iconMap: Record<string, React.ReactNode> = {
   go: <SiGo className="h-8 w-8" />,
   react: <SiReact className="h-8 w-8" />,
@@ -43,15 +43,17 @@ const iconMap: Record<string, React.ReactNode> = {
 
 interface TechStackGridProps {
   tech: ProjectTech[];
+  lang?: Locale;
 }
 
-export default function TechStackGrid({ tech }: TechStackGridProps) {
+export default function TechStackGrid({ tech, lang }: TechStackGridProps) {
+  const { t } = useTranslations(lang);
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-60px' });
 
   return (
     <section ref={ref} className="container mx-auto px-4 py-12">
-      <h2 className="mb-8 text-2xl font-bold">Tech Stack</h2>
+      <h2 className="mb-8 text-2xl font-bold">{t('NoteSectionFourTitle')}</h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {tech.map((t, i) => (
           <motion.div
@@ -63,7 +65,9 @@ export default function TechStackGrid({ tech }: TechStackGridProps) {
             whileHover={{ y: -4, scale: 1.02 }}
           >
             <div className="mb-2 text-muted-foreground transition-colors group-hover:text-foreground">
-              {iconMap[t.icon] ?? <span className="text-2xl font-bold">{t.name[0]}</span>}
+              {iconMap[t.icon] ?? (
+                <span className="text-2xl font-bold">{t.name[0]}</span>
+              )}
             </div>
             <span className="text-sm font-medium">{t.name}</span>
           </motion.div>

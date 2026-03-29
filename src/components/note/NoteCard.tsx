@@ -107,6 +107,7 @@ export default function ResearchCard({ item, index, lang }: ResearchCardProps) {
         </div>
         <PixelImage
           src={item.notePicItems?.[index]?.src || ''}
+          grayscaleAnimation={false}
           grid="8x8"
           pixelFadeInDuration={1500}
           className="h-52 w-52 md:h-58 md:w-58 note-pic w-full md:w-1/3"

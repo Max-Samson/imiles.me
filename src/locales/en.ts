@@ -11,4 +11,8 @@ export const en = {
   'PageblogTitle': 'Blog - {site}',
   'PagestoriesTitle': 'Stories - {site}',
   'Labelupdated': 'Updated',
+  'NoteSectionOneTitle': 'Overview',
+  'NoteSectionTwoTitle': 'Photo Sharing',
+  'NoteSectionThreeTitle': 'Features',
+  'NoteSectionFourTitle': 'Tech Stack',
 } as const;
