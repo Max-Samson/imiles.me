@@ -6,10 +6,11 @@ import mdx from '@astrojs/mdx';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeSlug from 'rehype-slug';
-
+import cloudflare from '@astrojs/cloudflare';
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://urmzd.com',
+  output: 'server',
+  adapter: cloudflare(),
   i18n: {
     locales: ['en', 'zh'],
     defaultLocale: 'en',
