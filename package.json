@@ -9,7 +9,7 @@
     "astro": "astro",
     "check": "astro check",
     "lint": "biome check .",
-    "deploy": "astro build && wrangler deploy ./dist --project=miles-bolg",
+    "deploy": "astro build && wrangler deploy",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "format:check": "biome format .",
