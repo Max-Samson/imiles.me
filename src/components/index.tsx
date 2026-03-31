@@ -7,7 +7,7 @@ export { default as ChatDemo } from './ChatDemo';
 export { default as Cite } from './Cite';
 export { default as CodeBlockEnhancer } from './CodeBlockEnhancer';
 export { default as Collapsible } from './Collapsible';
-export { default as CopyMarkdownButton } from './CopyMarkdownButton';
+export { default as CopyMarkdownButton } from './articlebtn/CopyMarkdownButton';
 export {
   ConfirmationBiasVisual,
   ConsilienceVisual,
