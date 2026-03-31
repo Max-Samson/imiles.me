@@ -12,8 +12,13 @@ export default function AboutHero() {
     <main className="relative mx-auto max-w-3xl px-6 pt-24 pb-16">
       <LightRays />
       <div className="mb-10">
-        <h1 className="text-4xl font-bold">Miles</h1>
-        <Phonetic ipa="一名前端工程师" className="mt-1 block" />
+        <h1 className="text-4xl font-bold font-family:'Rock Salt', cursive">
+          Miles
+        </h1>
+        <Phonetic
+          ipa="Front-end development engineer who is improving his skills"
+          className="mt-1 block"
+        />
       </div>
 
       <div className="prose prose-neutral dark:prose-invert max-w-none">
@@ -39,7 +44,8 @@ export default function AboutHero() {
               ✔ Initializing bio metadata...
             </AnimatedSpan>
             <AnimatedSpan className="text-green-500 text-sm md:text-base">
-              ✔ Syncing skill sets: [React, Astro, Go, Java]
+              ✔ Syncing skill sets: [Html, Css, JavaScript,TypeScript,Vue3,
+              React, Astro, Tailwind CSS, Go, Java]
             </AnimatedSpan>
             <TypingAnimation>Success! Profile metadata synced.</TypingAnimation>
           </Terminal>
