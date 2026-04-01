@@ -1,7 +1,11 @@
-name="miles-blog"
-main="./dist/_worker.js"
-compatibility_date="2026-03-31"
-compatibility_flags=["nodejs_compat"]
+name = "miles-blog"
+main = "./dist/_worker.js"
+compatibility_date = "2026-03-31"
+compatibility_flags = ["nodejs_compat"]
+
+[[routes]]
+pattern = "heymiles.us.ci"
+custom_domain = true
 
 [assets]
-directory="./dist"
+directory = "./dist"
