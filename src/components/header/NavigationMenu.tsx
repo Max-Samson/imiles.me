@@ -26,9 +26,9 @@ const NAV_CONFIG = [
   { key: 'Headerhome', path: '/' },
   { key: 'Headerblog', path: '/blog' },
   { key: 'Headerstories', path: '/stories' },
-  { key: 'Headerresearch', path: '/research', only: ['en'] },
+  // { key: 'Headerresearch', path: '/research' },
   { key: 'Headerprojects', path: '/projects' },
-  { key: 'Headernotes', path: '/notes', only: ['zh'] },
+  { key: 'Headernotes', path: '/notes' },
   { key: 'Headerabout', path: '/about' },
 ] as const;
 export function getNavItems(lang: Locale): NavItem[] {

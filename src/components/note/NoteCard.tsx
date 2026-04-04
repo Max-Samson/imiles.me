@@ -1,9 +1,9 @@
 'use client';
 
-import { ExternalLink, FileText, NotebookPen, Github } from 'lucide-react';
+import { ExternalLink, NotebookPen, Github } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { ResearchItem } from '@/data/notes';
-import { localizePathname, type Locale } from '@/lib/i18n';
+import { localizePathname, t, type Locale } from '@/lib/i18n';
 import { PixelImage } from '@/registry/magicui/pixel-image';
 interface ResearchCardProps {
   item: ResearchItem;
@@ -33,7 +33,7 @@ export default function ResearchCard({ item, index, lang }: ResearchCardProps) {
             {item.category === 'paper' ? (
               <>
                 <NotebookPen className="h-3 w-3" />
-                日常
+                {t('NoteDaily')}
               </>
             ) : (
               <>
@@ -75,9 +75,8 @@ export default function ResearchCard({ item, index, lang }: ResearchCardProps) {
                 {t}
               </span>
             ))}
-
             <span className="flex-1" />
-
+            {/* 文章跳转连接 */}
             {item.paperUrl && (
               <a
                 href={item.paperUrl}
@@ -86,13 +85,12 @@ export default function ResearchCard({ item, index, lang }: ResearchCardProps) {
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                 onClick={(e) => e.stopPropagation()}
               >
-                <FileText className="h-3.5 w-3.5" />
-                PDF
+                <NotebookPen className="h-3.5 w-3.5" />
+                {t('NoteLink')}
                 <ExternalLink className="h-3 w-3" />
               </a>
             )}
-
-            <a
+            {/* <a
               href={item.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
@@ -102,7 +100,7 @@ export default function ResearchCard({ item, index, lang }: ResearchCardProps) {
               <Github className="h-3.5 w-3.5" />
               Code
               <ExternalLink className="h-3 w-3" />
-            </a>
+            </a> */}
           </div>
         </div>
         <PixelImage

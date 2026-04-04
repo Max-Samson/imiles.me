@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
-const src = join(root, 'public/images/logo-mark.png');
+const src = join(root, 'public/images/weblogo.jpeg');
 const out = join(root, 'public/icons');
 
 const BG = '#0a0a0a';

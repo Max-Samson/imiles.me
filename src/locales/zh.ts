@@ -15,4 +15,8 @@ export const zh = {
   'NoteSectionTwoTitle': '照片分享',
   'NoteSectionThreeTitle': '功能',
   'NoteSectionFourTitle': '技术栈',
+  'NoteTitle': '生活碎碎念',
+  'NoteDescription': '生活琐事，随手记下。',
+  'NoteLink': '小红书',
+  'NoteDaily': '日常',
 } as const;

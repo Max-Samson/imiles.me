@@ -3,14 +3,15 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import NoteCard from '@/components/note/NoteCard';
 import { research as notes } from '@/data/notes';
 import { getLocaleFromPathname } from '@/lib/i18n';
-
+import { useTranslations } from '@/lib/i18n';
 const lang = getLocaleFromPathname(Astro.url.pathname);
+const { t } = useTranslations(lang);
 ---
 
 <BaseLayout title="Notes - Miles" description="Notes by Miles">
   <main class="container mx-auto px-4 pt-24 pb-16">
-    <h1 class="mb-2 text-4xl font-bold">生活碎碎念</h1>
-    <p class="mb-10 text-muted-foreground">生活琐事，随手记下。</p>
+    <h1 class="mb-2 text-4xl font-bold">{t('NoteTitle')}</h1>
+    <p class="mb-10 text-muted-foreground">{t('NoteDescription')}</p>
 
     <div class="grid gap-6">
       {notes.map((item, i) => (
