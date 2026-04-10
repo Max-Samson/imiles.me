@@ -786,7 +786,7 @@
   }
 
   .landing-root {
-    @apply relative overflow-hidden bg-background;
+    @apply relative overflow-hidden;
     min-height: 100dvh;
   }
 

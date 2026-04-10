@@ -30,17 +30,20 @@ const DARK_THEME: PlexusTheme = {
 
 const LIGHT_THEME: PlexusTheme = {
   isDark: false,
-  // Dark grey/black — high contrast on white backgrounds
-  color0: new THREE.Color(0.15, 0.15, 0.15),
-  color1: new THREE.Color(0.25, 0.25, 0.25),
-  lineColor: new THREE.Color(0.12, 0.12, 0.12),
-  hdrIntensity: 0.25,
-  bloom: { strength: 0.15, radius: 0.3, threshold: 0.5 },
+  // Deep Graphite & Obsidian — neutral high-contrast for a premium, artistic feel
+  color0: new THREE.Color(0.08, 0.08, 0.1), // Near Obsidian
+  color1: new THREE.Color(0.2, 0.2, 0.25), // Slate Charcoal
+  lineColor: new THREE.Color(0.1, 0.1, 0.12), // Deep Graphite
+  hdrIntensity: 0.15, // Subtle HDR to give the points a "ink" feel
+  bloom: { strength: 0.04, radius: 0.2, threshold: 0.9 }, // Extremely sharp points
   blending: THREE.NormalBlending,
 };
 
 function checkDarkMode(): boolean {
-  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  return (
+    typeof document !== 'undefined' &&
+    document.documentElement.classList.contains('dark')
+  );
 }
 
 export function usePlexusTheme(): PlexusTheme {
@@ -48,7 +51,10 @@ export function usePlexusTheme(): PlexusTheme {
 
   useEffect(() => {
     const observer = new MutationObserver(() => setIsDark(checkDarkMode()));
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
     return () => observer.disconnect();
   }, []);
 
