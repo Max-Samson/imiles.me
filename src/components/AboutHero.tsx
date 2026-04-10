@@ -1,7 +1,6 @@
 'use client';
 import Phonetic from './Phonetic';
 import SocialLinksGrid from './SocialLinksGrid';
-import { LightRays } from '@/registry/magicui/light-rays';
 import {
   Terminal,
   TypingAnimation,
@@ -36,8 +35,8 @@ export default function AboutHero() {
           the mats training Brazilian Jiu-Jitsu or exploring a new city. For the
           full story, check out my <a href="/blog/welcome">welcome post</a>.
         </p> */}
-        <div className="flex justify-center p-6 bg-transparent">
-          <Terminal className="max-w-xl font-mono text-sm shadow-xl transition-all duration-300 border border-black/10 dark:border-white/10 bg-white dark:bg-black/90">
+        <div className="flex justify-center px-0 py-6 sm:p-6 bg-transparent">
+          <Terminal className="w-full max-w-xl font-mono text-sm shadow-xl transition-all duration-300 border border-black/10 dark:border-white/10 bg-white dark:bg-black/90 min-h-[450px] sm:min-h-[480px]">
             {/* 1. 输入初始化命令 - 使用中性灰色适配 */}
             <TypingAnimation
               delay={200}

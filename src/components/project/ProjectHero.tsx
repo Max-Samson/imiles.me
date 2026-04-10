@@ -3,8 +3,8 @@
 import { Github } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { Project } from '@/data/projects';
-import ShareButton from './articlebtn/ShareButton';
-import StatusBadge from './StatusBadge';
+import ShareButton from '../articlebtn/ShareButton';
+import StatusBadge from '../StatusBadge';
 
 interface ProjectHeroProps {
   project: Project;

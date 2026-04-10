@@ -37,7 +37,7 @@ const { t } = useTranslations(lang);
       <h1 class="mb-2 text-4xl font-bold tracking-tight text-foreground/90">{t('NoteTitle')}</h1>
       <p class="mb-10 text-muted-foreground">{t('NoteDescription')}</p>
 
-      <div class="grid gap-6">
+      <div class="grid gap-6 ">
         {notes.map((item, i) => (
           <NoteCard item={item} index={i} lang={lang} client:visible />
         ))}

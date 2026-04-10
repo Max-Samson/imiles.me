@@ -3,6 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 import { calculateReadTime } from '@/lib/readTime';
 import { LightRays } from '@/registry/magicui/light-rays';
+import { ShineBorder } from '@/registry/magicui/shine-border';
 import {
   useTranslations,
   getLocaleFromPathname,
@@ -48,20 +49,25 @@ const sortedPosts = posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDa
           <article class="group">
             <a
               href={localizePathname(`/blog/${post.id}`, lang)}
-              class="block rounded-lg border border-border p-6 transition-all duration-300 ease-out hover:border-primary hover:scale-[0.98]"
+              class="relative block overflow-hidden rounded-lg border border-border p-6 transition-all duration-300 ease-out hover:scale-[0.98]"
             >
-              <h2 class="text-xl font-semibold text-foreground group-hover:underline">
+              <ShineBorder
+                client:load
+                className="opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+              />
+              <h2 class="relative z-10 text-xl font-semibold text-foreground group-hover:underline">
                 {post.data.title}
               </h2>
-              <p class="mt-2 text-muted-foreground">{post.data.description}</p>
-              <div class="mt-2 flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
+              <p class="relative z-10 mt-2 text-muted-foreground">{post.data.description}</p>
+              <div class="relative z-10 mt-2 flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
                 <time>{formatDate(post.data.pubDate, lang)}</time>
                 <span class="hidden sm:inline">|</span>
                 <span>{calculateReadTime(post.body || '').text}</span>
               </div>
               {
                 post.data.updatedDate && (
-                  <div class="mt-1 text-xs text-muted-foreground/70">
+                  <div class="relative z-10 mt-1 text-xs text-muted-foreground/70">
                     {t('Labelupdated')}: <time>{formatDate(post.data.updatedDate, lang)}</time>
                   </div>
                 )
