@@ -17,8 +17,8 @@ const { story } = Astro.props;
 const { Content } = await render(story);
 const readTime = calculateReadTime(story.body || '');
 
-const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://urmzd.com';
-const storyUrl = `${siteUrl}/stories/${story.id}`;
+const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://heymiles.us.ci';
+const storyUrl = `${siteUrl}/zh/stories/${story.id}`;
 ---
 
 <BaseLayout

@@ -37,8 +37,8 @@ export const getStaticPaths: GetStaticPaths = async () => {
   const indexPath = {
     params: { slug: 'index' },
     props: {
-      title: 'urmzd.com',
-      description: 'Personal website of urmzd',
+      title: 'heymiles.us.ci',
+      description: 'Personal website of Miles',
     },
   };
 
@@ -160,7 +160,7 @@ function OGImage({ title, description, pubDate, readTime }: OGImageProps) {
                     color: '#71717a',
                     fontWeight: 500,
                   },
-                  children: 'urmzd.com',
+                  children: 'heymiles.us.ci',
                 },
               },
             ],

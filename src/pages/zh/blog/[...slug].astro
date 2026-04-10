@@ -21,7 +21,7 @@ const { Content, headings } = await render(post);
 const readTime = calculateReadTime(post.body || '');
 
 const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://heymiles.us.ci';
-const postUrl = `${siteUrl}/blog/${post.id}`;
+const postUrl = `${siteUrl}/zh/blog/${post.id}`;
 
 const tocHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
 const showTOC = tocHeadings.length >= 3;

@@ -1,6 +1,6 @@
-# urmzd.com
+# heymiles.us.ci
 
-Personal website and blog for [urmzd.com](https://urmzd.com) — built with Astro, React, and Three.js.
+Personal website and blog for [heymiles.us.ci](https://heymiles.us.ci) — built with Astro, React, and Three.js.
 
 ## Tech Stack
 
