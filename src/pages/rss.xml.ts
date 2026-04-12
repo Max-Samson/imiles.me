@@ -7,9 +7,9 @@ export async function GET(context: APIContext) {
   const sortedPosts = posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 
   return rss({
-    title: 'heymiles.us.ci',
+    title: 'imiles.me',
     description: 'Personal website and blog of Urmzd',
-    site: context.site ?? 'https://heymiles.us.ci',
+    site: context.site ?? 'https://imiles.me',
     items: sortedPosts.map((post) => ({
       title: post.data.title,
       description: post.data.description,

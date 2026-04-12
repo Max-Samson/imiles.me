@@ -9,7 +9,7 @@ import rehypeSlug from 'rehype-slug';
 import cloudflare from '@astrojs/cloudflare';
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://heymiles.us.ci',
+  site: 'https://imiles.me',
   output: 'server',
   adapter: cloudflare(),
   i18n: {

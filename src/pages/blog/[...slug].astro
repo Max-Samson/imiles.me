@@ -20,7 +20,7 @@ const { post } = Astro.props;
 const { Content, headings } = await render(post);
 const readTime = calculateReadTime(post.body || '');
 
-const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://heymiles.us.ci';
+const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://imiles.me';
 const postUrl = `${siteUrl}/blog/${post.id}`;
 
 const tocHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);

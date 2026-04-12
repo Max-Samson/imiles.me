@@ -4,7 +4,7 @@ Instructions for AI agents working on this repository.
 
 ## Project overview
 
-Personal website and blog at [urmzd.com](https://urmzd.com). Built with Astro, React islands, Tailwind CSS v4, and Three.js. Content is authored in MDX (blog) and Markdown (stories).
+Personal website and blog at [imiles.me](https://imiles.me). Built with Astro, React islands, Tailwind CSS v4, and Three.js. Content is authored in MDX (blog) and Markdown (stories).
 
 ## Architecture
 

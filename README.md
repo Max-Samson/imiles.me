@@ -1,6 +1,6 @@
-# heymiles.us.ci
+# imiles.me
 
-Personal website and blog for [heymiles.us.ci](https://heymiles.us.ci) — built with Astro, React, and Three.js.
+Personal website and blog for [imiles.me](https://imiles.me) — built with Astro, React, and Three.js.
 
 ## Tech Stack
 

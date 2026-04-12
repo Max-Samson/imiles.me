@@ -10,7 +10,7 @@ interface Props {
 
 const { title, description, image, type = 'website', publishedTime, tags = [] } = Astro.props;
 
-const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://heymiles.us.ci';
+const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://imiles.me';
 const canonicalUrl = new URL(Astro.url.pathname, siteUrl).toString();
 
 // Generate OG image URL from slug if not provided
@@ -40,7 +40,7 @@ const ogImageUrl = image
 <meta property="og:image" content={ogImageUrl} />
 <meta property="og:url" content={canonicalUrl} />
 <meta property="og:type" content={type} />
-<meta property="og:site_name" content="heymiles.us.ci" />
+<meta property="og:site_name" content="imiles.me" />
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
