@@ -27,3 +27,5 @@ pnpm-debug.log*
 .claude/
 .vscode/
 .env.*
+
+/generated/prisma
