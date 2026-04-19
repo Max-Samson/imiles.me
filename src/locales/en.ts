@@ -4,12 +4,13 @@ export const en = {
   'Headerblog': 'Blog',
   'Headerstories': 'Stories',
   'Headerresearch': 'Research',
-  'Headernotes': 'Notes',
+  'Headernotes': 'Daily',
   'Headerprojects': 'Projects',
   'Headerdescription': 'Personal website of Miles',
   'Headercopyright': '© {year} Miles. All rights reserved.',
   'PageblogTitle': 'Blog - {site}',
   'PagestoriesTitle': 'Stories - {site}',
+  'PageDailyTitle': 'Daily - {site}',
   'Labelupdated': 'Updated',
   'NoteSectionOneTitle': 'Overview',
   'NoteSectionTwoTitle': 'Photo Sharing',
@@ -19,5 +20,4 @@ export const en = {
   'NoteDescription':
     'Random thoughts and daily trivialities, jotted down casually.',
   'NoteLink': 'Redbook',
-  'NoteDaily': 'Daily',
 } as const;

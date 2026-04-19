@@ -9,7 +9,8 @@ export const zh = {
   'Headerdescription': '小帅的个人网站',
   'Headercopyright': '© {year} Miles 保留所有权利。',
   'PageblogTitle': '博客 - {site}',
-  'PagestoriesTitle': '随记 - {site}',
+  'PagestoriesTitle': '故事 - {site}',
+  'PageDailyTitle': '日常 - {site}',
   'Labelupdated': '更新于',
   'NoteSectionOneTitle': '概览',
   'NoteSectionTwoTitle': '照片分享',
@@ -18,5 +19,4 @@ export const zh = {
   'NoteTitle': '生活碎碎念',
   'NoteDescription': '生活琐事，随手记下。',
   'NoteLink': '小红书',
-  'NoteDaily': '日常',
 } as const;
