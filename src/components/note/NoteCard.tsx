@@ -39,7 +39,7 @@ export default function ResearchCard({ item, index, lang }: ResearchCardProps) {
             {item.category === 'paper' ? (
               <>
                 <NotebookPen className="h-3 w-3" />
-                {t('NoteDaily')}
+                {t('Headernotes')}
               </>
             ) : (
               <>

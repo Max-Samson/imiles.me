@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-
+//展示国际音标，比如/ʊərˈmuːzd mʊˌhɑːmɑdˈnaɪm/
 interface PhoneticProps {
   ipa: string;
   className?: string;

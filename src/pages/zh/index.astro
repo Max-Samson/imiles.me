@@ -2,9 +2,12 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Hero from '@/components/Hero';
 import { LightRays } from '@/registry/magicui/light-rays';
+import { getLocaleFromPathname, useTranslations } from '@/lib/i18n';
+const lang = getLocaleFromPathname(Astro.url.pathname);
+const { t } = useTranslations(lang);
 ---
 
-<BaseLayout title="小帅的个人网站" showSocialDock={false} fullScreen>
+<BaseLayout title={t('PageHomeTitle')} showSocialDock={false} fullScreen>
   <head slot="head">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

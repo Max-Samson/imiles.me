@@ -6,16 +6,20 @@ import {
   TypingAnimation,
   AnimatedSpan,
 } from '@/registry/magicui/terminal';
+import CommentModal from './CommentModal';
+import { AuroraText } from '@/registry/magicui/aurora-text';
+import { useTranslations } from '@/lib/i18n';
 export default function AboutHero() {
+  const { t } = useTranslations();
   return (
     <main className="relative mx-auto max-w-3xl px-6 pt-24 pb-16">
-      <div className="mb-10">
+      <div className="mb-5">
         <h1 className="text-4xl font-bold font-family:'Rock Salt', cursive">
-          Miles
+          <AuroraText>Miles</AuroraText>
         </h1>
         <Phonetic
-          ipa="Front-end development engineer who is improving his skills"
-          className="mt-1 block"
+          ipa="Front-end development engineer who is improving his skills."
+          className="mt-1 block text-base md:text-lg"
         />
       </div>
 
@@ -35,7 +39,7 @@ export default function AboutHero() {
           the mats training Brazilian Jiu-Jitsu or exploring a new city. For the
           full story, check out my <a href="/blog/welcome">welcome post</a>.
         </p> */}
-        <div className="flex justify-center px-0 py-6 sm:p-6 bg-transparent">
+        <div className="flex justify-center px-0 py-3 sm:p-3 bg-transparent">
           <Terminal className="w-full max-w-xl font-mono text-sm shadow-xl transition-all duration-300 border border-black/10 dark:border-white/10 bg-white dark:bg-black/90 min-h-[450px] sm:min-h-[480px]">
             {/* 1. 输入初始化命令 - 使用中性灰色适配 */}
             <TypingAnimation
@@ -152,7 +156,10 @@ export default function AboutHero() {
             </TypingAnimation>
           </Terminal>
         </div>
-        <h2>Get in Touch</h2>
+        <h2>{t('CommentTitle')}</h2>
+        <p className="text-base text-gray-500">{t('CommentDescription')}</p>
+        <CommentModal />
+        <h2>{t('ContactTitle')}</h2>
         <SocialLinksGrid />
       </div>
     </main>

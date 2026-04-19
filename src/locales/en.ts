@@ -8,9 +8,13 @@ export const en = {
   'Headerprojects': 'Projects',
   'Headerdescription': 'Personal website of Miles',
   'Headercopyright': '© {year} Miles. All rights reserved.',
+  'PageHomeTitle': "Miles's Website",
   'PageblogTitle': 'Blog - {site}',
   'PagestoriesTitle': 'Stories - {site}',
+  'PageStoriesDescription': "Miles's stories",
   'PageDailyTitle': 'Daily - {site}',
+  'PageAboutTitle': 'About - {site}',
+  'PageProjectsTitle': 'Projects - {site}',
   'Labelupdated': 'Updated',
   'NoteSectionOneTitle': 'Overview',
   'NoteSectionTwoTitle': 'Photo Sharing',
@@ -20,4 +24,9 @@ export const en = {
   'NoteDescription':
     'Random thoughts and daily trivialities, jotted down casually.',
   'NoteLink': 'Redbook',
+  'CommitPlaceholder': "Don't you know what to write?",
+  'CommentTitle': 'Leave your comment',
+  'CommentDescription': 'Leave your comment and share your ideas.',
+  'ContactTitle': 'Get in Touch',
+  'Submit': 'Submit',
 } as const;
