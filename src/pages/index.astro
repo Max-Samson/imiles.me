@@ -8,11 +8,6 @@ const { t } = useTranslations(lang);
 ---
 
 <BaseLayout title={t('PageHomeTitle', { site: 'Miles' })} showSocialDock={false} fullScreen>
-  <head slot="head">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap&family=Rock+Salt&display=swap" rel="stylesheet"></link>
-  </head>
   <div class="relative h-screen w-full isolate overflow-hidden">
     <!-- Background layers -->
     <div class="pointer-events-none absolute inset-0 -z-10 h-full w-full [--ray-c:rgba(14,165,233,0.35)] dark:[--ray-c:rgba(251,191,36,0.15)]">
@@ -41,10 +36,3 @@ const { t } = useTranslations(lang);
     </main>
   </div>
 </BaseLayout>
-<style>
-.rock-salt-regular {
-  font-family: "Rock Salt", cursive;
-  font-weight: 400;
-  font-style: normal;
-}
-</style>
