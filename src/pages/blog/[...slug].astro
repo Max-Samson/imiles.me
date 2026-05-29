@@ -9,7 +9,7 @@ import HeadingLinkEnhancer from '@/components/HeadingLinkEnhancer';
 import MobileTOC from '@/components/MobileTOC';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('blog');
+  const posts = await getCollection('blog', ({ data }) => data.draft !== true && data.lang === 'en');
   return posts.map((post) => ({
     params: { slug: post.id },
     props: { post },
@@ -28,11 +28,12 @@ const showTOC = tocHeadings.length >= 3;
 ---
 
 <BaseLayout
-  title={`${post.data.title} - Miles`}
+  title={`${post.data.title} | Miles`}
   description={post.data.description}
   ogType="article"
   publishedTime={post.data.pubDate}
   tags={post.data.tags}
+  articleSection="Blog"
 >
   <ArticleLayout
     title={post.data.title}

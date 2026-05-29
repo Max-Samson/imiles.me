@@ -17,6 +17,7 @@ interface Props {
   ogType?: 'website' | 'article';
   publishedTime?: Date;
   tags?: string[];
+  articleSection?: string;
 }
 
 const {
@@ -28,6 +29,7 @@ const {
   ogType = 'website',
   publishedTime,
   tags = [],
+  articleSection,
 } = Astro.props;
 
 const lang = resolveLocale(Astro.currentLocale as Locale | undefined);
@@ -49,6 +51,7 @@ const pathname = Astro.url.pathname;
       type={ogType}
       publishedTime={publishedTime}
       tags={tags}
+      articleSection={articleSection}
     />
     <link
       rel="stylesheet"
@@ -67,7 +70,6 @@ const pathname = Astro.url.pathname;
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/images/weblogo.jpeg" />
     <slot name="head" />
-    <meta name="theme-color" content="#0a0a0a" />
     <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />
     <title>{title}</title>
     <script is:inline>

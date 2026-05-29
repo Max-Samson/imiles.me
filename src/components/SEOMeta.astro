@@ -1,4 +1,7 @@
 ---
+import { getLocalizedAlternates, getLocaleFromPathname, stripLocaleFromPathname, type Locale } from '@/lib/i18n';
+import { siteSchemas } from '@/lib/seo';
+
 interface Props {
   title: string;
   description: string;
@@ -6,12 +9,29 @@ interface Props {
   type?: 'website' | 'article';
   publishedTime?: Date;
   tags?: string[];
+  author?: string;
+  alternateLocales?: Locale[];
+  articleSection?: string;
 }
 
-const { title, description, image, type = 'website', publishedTime, tags = [] } = Astro.props;
+const {
+  title,
+  description,
+  image,
+  type = 'website',
+  publishedTime,
+  tags = [],
+  author = 'Miles',
+  alternateLocales = ['en', 'zh'],
+  articleSection,
+} = Astro.props;
 
 const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://imiles.me';
-const canonicalUrl = new URL(Astro.url.pathname, siteUrl).toString();
+const pathname = Astro.url.pathname;
+const canonicalUrl = new URL(pathname, siteUrl).toString();
+const locale = getLocaleFromPathname(pathname);
+const unlocalizedPathname = stripLocaleFromPathname(pathname);
+const alternates = getLocalizedAlternates(unlocalizedPathname);
 
 // Generate OG image URL from slug if not provided
 // For blog posts (/blog/slug/), we want /og/slug.png
@@ -29,10 +49,58 @@ function getOgImagePath(pathname: string): string {
 const ogImageUrl = image
   ? new URL(image, siteUrl).toString()
   : `${siteUrl}${getOgImagePath(Astro.url.pathname)}`;
+
+const pageSchemas = type === 'article'
+  ? [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: title,
+        description,
+        image: [ogImageUrl],
+        mainEntityOfPage: canonicalUrl,
+        author: {
+          '@type': 'Person',
+          name: author,
+        },
+        publisher: {
+          '@type': 'Person',
+          name: author,
+        },
+        datePublished: publishedTime?.toISOString(),
+        articleSection,
+        keywords: tags.join(', '),
+        inLanguage: locale === 'zh' ? 'zh-CN' : 'en-US',
+      },
+    ]
+  : [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: title,
+        description,
+        url: canonicalUrl,
+        inLanguage: locale === 'zh' ? 'zh-CN' : 'en-US',
+      },
+    ];
 ---
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalUrl} />
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+<meta name="author" content={author} />
+<meta name="theme-color" content="#0a0a0a" />
+
+{
+  alternateLocales.map((alternateLocale) => (
+    <link
+      rel="alternate"
+      hreflang={alternateLocale === 'zh' ? 'zh-CN' : 'en'}
+      href={new URL(alternates[alternateLocale], siteUrl).toString()}
+    />
+  ))
+}
+<link rel="alternate" hreflang="x-default" href={new URL(alternates.en, siteUrl).toString()} />
 
 <!-- Open Graph -->
 <meta property="og:title" content={title} />
@@ -41,12 +109,22 @@ const ogImageUrl = image
 <meta property="og:url" content={canonicalUrl} />
 <meta property="og:type" content={type} />
 <meta property="og:site_name" content="imiles.me" />
+<meta property="og:locale" content={locale === 'zh' ? 'zh_CN' : 'en_US'} />
+{
+  alternateLocales
+    .filter((alternateLocale) => alternateLocale !== locale)
+    .map((alternateLocale) => (
+      <meta property="og:locale:alternate" content={alternateLocale === 'zh' ? 'zh_CN' : 'en_US'} />
+    ))
+}
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={ogImageUrl} />
+<meta name="twitter:site" content="@y7732772614744" />
+<meta name="twitter:creator" content="@y7732772614744" />
 
 <!-- Article-specific meta tags -->
 {
@@ -55,3 +133,8 @@ const ogImageUrl = image
   )
 }
 {type === 'article' && tags.map((tag) => <meta property="article:tag" content={tag} />)}
+{type === 'article' && articleSection && <meta property="article:section" content={articleSection} />}
+
+<script type="application/ld+json" set:html={JSON.stringify(siteSchemas.person)} />
+<script type="application/ld+json" set:html={JSON.stringify(siteSchemas.website)} />
+{pageSchemas.map((schema) => <script type="application/ld+json" set:html={JSON.stringify(schema)} />)}

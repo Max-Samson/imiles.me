@@ -1,5 +1,5 @@
-import { zh } from '@/locales/zh';
 import { en } from '@/locales/en';
+import { zh } from '@/locales/zh';
 
 export const defaultLocale = 'en' as const;
 export const locales = ['en', 'zh'] as const;
@@ -31,9 +31,7 @@ function parsePathname(pathname: string): { locale: Locale; pathname: string } {
   const normalizedPathname = normalizePathname(pathname);
   const segments = normalizedPathname.split('/').filter(Boolean);
   const hasLocalePrefix = isLocale(segments[0]);
-  const locale: Locale = hasLocalePrefix
-    ? (segments[0] as Locale)
-    : defaultLocale;
+  const locale: Locale = hasLocalePrefix ? (segments[0] as Locale) : defaultLocale;
   const pathnameWithoutLocale = hasLocalePrefix
     ? `/${segments.slice(1).join('/')}` || '/'
     : normalizedPathname;
@@ -61,15 +59,18 @@ export function localizePathname(pathname: string, locale: Locale): string {
   return normalizedPath === '/' ? `/${locale}` : `/${locale}${normalizedPath}`;
 }
 
+export function getLocalizedAlternates(pathname: string): Record<Locale, string> {
+  return Object.fromEntries(
+    locales.map((locale) => [locale, localizePathname(pathname, locale)]),
+  ) as Record<Locale, string>;
+}
+
 // 优先从 Astro、浏览器地址、HTML lang 中获取当前语言，保证全局可用。
 export function getCurrentLocale(): Locale {
-  const astroLocale = (globalThis as { Astro?: { currentLocale?: string } })
-    ?.Astro?.currentLocale;
+  const astroLocale = (globalThis as { Astro?: { currentLocale?: string } })?.Astro?.currentLocale;
   if (isLocale(astroLocale)) return astroLocale;
-  if (typeof window !== 'undefined')
-    return getLocaleFromPathname(window.location.pathname);
-  if (typeof document !== 'undefined')
-    return resolveLocale(document.documentElement.lang);
+  if (typeof window !== 'undefined') return getLocaleFromPathname(window.location.pathname);
+  if (typeof document !== 'undefined') return resolveLocale(document.documentElement.lang);
   return defaultLocale;
 }
 
@@ -99,8 +100,7 @@ export function t(
 export function createTranslations(lang: Locale = getCurrentLocale()) {
   return {
     lang,
-    t: (key: TranslationKey, params?: TranslationParams) =>
-      t(key, params, lang),
+    t: (key: TranslationKey, params?: TranslationParams) => t(key, params, lang),
   };
 }
 

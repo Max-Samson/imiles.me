@@ -13,11 +13,14 @@ import {
 
 const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
-const posts = await getCollection('blog');
+const posts = await getCollection('blog', ({ data }) => data.draft !== true && data.lang === lang);
 const sortedPosts = posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 ---
 
-<BaseLayout title={t('PageblogTitle', { site: 'Miles' })}>
+<BaseLayout
+  title={t('PageblogTitle', { site: 'Miles' })}
+  description={t('PageBlogDescription')}
+>
   <div class="relative min-h-screen isolate overflow-hidden">
     <!-- Background layers -->
     <div class="pointer-events-none absolute inset-0 -z-10 h-full w-full [--ray-c:rgba(14,165,233,0.35)] dark:[--ray-c:rgba(251,191,36,0.15)]">
@@ -42,7 +45,8 @@ const sortedPosts = posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDa
     </div>
 
     <main class="container mx-auto px-4 pt-24 pb-16 relative z-10">
-      <h1 class="mb-8 text-4xl font-bold tracking-tight text-foreground/90">{t('Headerblog')}</h1>
+      <h1 class="mb-2 text-4xl font-bold tracking-tight text-foreground/90">{t('Headerblog')}</h1>
+      <p class="mb-8 max-w-2xl text-muted-foreground">{t('PageBlogDescription')}</p>
       <div class="flex flex-col gap-6">
       {
         sortedPosts.map((post) => (

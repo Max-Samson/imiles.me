@@ -7,9 +7,12 @@ import SocialDock from '@/components/SocialDock';
 import { PlexusBackground } from '@/components/ui/plexus-background';
 import { CODEX, CODEX_CN } from '@/components/ui/plexus-shapes';
 import { useTextScramble } from '@/hooks/useTextScramble';
+import { useTranslations } from '@/lib/i18n';
+
 const NAME_CHARS = 'Shenshuai Ming'.split('');
 
 export default function LandingExperience() {
+  const { t } = useTranslations();
   const nameRef = useRef<HTMLHeadingElement>(null);
   const [nameWidth, setNameWidth] = useState<number | undefined>(undefined);
   const [codexIndex, setCodexIndex] = useState(0);
@@ -24,6 +27,9 @@ export default function LandingExperience() {
   const entry = codex[codexIndex % codex.length];
   const quoteText = useTextScramble(entry.quote);
   const authorText = useTextScramble(entry.author ?? '');
+  const intro = isZh
+    ? '双语技术博客，记录前端工程、AI、全栈实践、项目复盘与长期思考。'
+    : 'A bilingual tech blog on frontend engineering, AI, full-stack building, project breakdowns, and long-form thinking.';
 
   const handleCodexChange = useCallback((index: number) => {
     setCodexIndex(index);
@@ -43,10 +49,7 @@ export default function LandingExperience() {
   return (
     <MotionConfig reducedMotion="user">
       <div className="landing-root">
-        <PlexusBackground
-          className="pointer-events-auto"
-          onCodexChange={handleCodexChange}
-        />
+        <PlexusBackground className="pointer-events-auto" onCodexChange={handleCodexChange} />
 
         <motion.div
           className="final-card-container pointer-events-none"
@@ -57,6 +60,7 @@ export default function LandingExperience() {
           <div className="relative flex flex-col items-center">
             <div className="px-4 sm:px-0">
               <div className="landing-hero pointer-events-auto">
+                <p className="sr-only">{t('PageHomeDescription')}</p>
                 <h1
                   ref={nameRef}
                   className="landing-hero-name"
@@ -114,10 +118,11 @@ export default function LandingExperience() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 1.4 }}
                 >
+                  <p className="mb-3 text-center text-sm leading-6 text-muted-foreground sm:text-base">
+                    {intro}
+                  </p>
                   <span className="landing-hero-quote">{quoteText}</span>
-                  {authorText && (
-                    <span className="landing-hero-author">{authorText}</span>
-                  )}
+                  {authorText && <span className="landing-hero-author">{authorText}</span>}
                 </motion.div>
               </div>
             </div>

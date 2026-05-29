@@ -7,19 +7,22 @@ import SocialLinksGrid from './SocialLinksGrid';
 
 export default function AboutHero() {
   const { t } = useTranslations();
+  const intro = t('PageAboutDescription');
+  const role =
+    t('Headerabout') === '关于'
+      ? '前端工程师，关注 AI、全栈产品、工程体验与长期写作。'
+      : 'Frontend engineer focused on AI, full-stack products, developer experience, and long-form writing.';
   return (
     <main className="relative mx-auto max-w-3xl px-6 pt-24 pb-16">
       <div className="mb-5">
         <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rock Salt, cursive' }}>
           <AuroraText>Miles</AuroraText>
         </h1>
-        <Phonetic
-          ipa="Front-end development engineer who is improving his skills."
-          className="mt-1 block text-base md:text-lg"
-        />
+        <Phonetic ipa={role} className="mt-1 block text-base md:text-lg" />
       </div>
 
       <div className="prose prose-neutral dark:prose-invert max-w-none">
+        <p>{intro}</p>
         {/* <p>
           <strong>Urmzd</strong> derives from <em>Ahura Mazda</em> — the Avestan
           name meaning "Lord of Wisdom." It's a name rooted in Zoroastrian

@@ -8,7 +8,10 @@ const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
 ---
 
-<BaseLayout title={t('PageAboutTitle', { site: 'Miles' })}>
+<BaseLayout
+  title={t('PageAboutTitle', { site: 'Miles' })}
+  description={t('PageAboutDescription')}
+>
   <div class="relative min-h-screen isolate overflow-hidden">
     <!-- Background layers -->
     <div class="pointer-events-none absolute inset-0 -z-10 h-full w-full [--ray-c:rgba(14,165,233,0.35)] dark:[--ray-c:rgba(251,191,36,0.15)]">

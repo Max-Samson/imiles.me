@@ -9,7 +9,10 @@ const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
 ---
 
-<BaseLayout title={t('PageDailyTitle', { site: 'Miles' })}>
+<BaseLayout
+  title={t('PageDailyTitle', { site: 'Miles' })}
+  description={t('PageNotesDescription')}
+>
   <div class="relative min-h-screen isolate overflow-hidden">
     <!-- Background layers -->
     <div class="pointer-events-none absolute inset-0 -z-10 h-full w-full [--ray-c:rgba(14,165,233,0.35)] dark:[--ray-c:rgba(251,191,36,0.15)]">
@@ -35,7 +38,7 @@ const { t } = useTranslations(lang);
 
     <main class="container mx-auto px-4 pt-24 pb-16 relative z-10">
       <h1 class="mb-2 text-4xl font-bold tracking-tight text-foreground/90">{t('NoteTitle')}</h1>
-      <p class="mb-10 text-muted-foreground">{t('NoteDescription')}</p>
+      <p class="mb-10 max-w-2xl text-muted-foreground">{t('PageNotesDescription')}</p>
 
       <div class="grid gap-6 ">
         {notes.map((item, i) => (

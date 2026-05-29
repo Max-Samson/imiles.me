@@ -22,11 +22,12 @@ const storyUrl = `${siteUrl}/stories/${story.id}`;
 ---
 
 <BaseLayout
-  title={`${story.data.title} - Miles`}
+  title={`${story.data.title} | Miles`}
   description={story.data.description}
   ogType="article"
   publishedTime={story.data.pubDate}
   tags={story.data.tags}
+  articleSection="Stories"
 >
   <ArticleLayout
     title={story.data.title}
