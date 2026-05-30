@@ -1,38 +1,98 @@
 # imiles.me
 
-> Personal website of Urmzd Mukhammadnaim — software engineer, researcher, and writer. Features projects, research papers, and blog posts on engineering, critical thinking, and philosophy.
+> Miles's bilingual tech blog and digital garden. The site publishes writing on frontend engineering, AI, full-stack development, critical thinking, projects, research, and occasional narrative work in both English and Chinese.
 
 ## About
 
-Urmzd Mukhammadnaim is a software engineer with a background in evolutionary computation and machine learning research from Dalhousie University. This site showcases open-source projects, published research, and long-form writing.
+Miles is a frontend-focused software engineer and writer. This site is a personal publishing space for long-form technical essays, project breakdowns, research notes, and lightweight notebook-style updates.
 
-- GitHub: https://github.com/urmzd
-- LinkedIn: https://linkedin.com/in/urmzd
-- X: https://x.com/urmzd_
-- Email: hello@urmzd.com
-- arXiv: https://arxiv.org/search/cs?searchtype=author&query=Mukhammadnaim,+U
+Primary site themes:
 
-## Blog
+- Frontend engineering
+- AI and LLM workflows
+- Full-stack product development
+- Critical thinking and decision-making
+- Project writeups and technical notes
+- Research and experiments
 
-- [Hey, I'm Urmzd!](https://imiles.me/blog/welcome): The meaning behind 'Urmzd' — from its Zoroastrian roots in ancient Badakhshan to the principles of honesty, freedom, and family that guide everything on this site. Plus: the math that powers AI search.
-- [An Introduction to Critical Thinking](https://imiles.me/blog/critical-thinking): LLMs make answers easy to get and hard to verify. The most important skill of the AI age is the loop of questioning, researching, validating, reflecting — and repeating.
-- [Silent Execution: The Discipline Behind Clear Thinking](https://imiles.me/blog/sh): Marcus Aurelius, Stanislav Petrov, and a 14-year-old Muay Thai fighter share the discipline of silence — separating thought from action, signal from noise.
+Official links:
 
-## Projects
+- Website: https://imiles.me
+- Blog: https://imiles.me/blog
+- Chinese blog: https://imiles.me/zh/blog
+- Projects index: https://imiles.me/projects
+- Research index: https://imiles.me/research
+- Notes index: https://imiles.me/notes
+- Stories index: https://imiles.me/stories
+- GitHub: https://github.com/Max-Samson
+- X: https://x.com/y7732772614744
+- RSS: https://imiles.me/rss.xml
 
-- [Dotfiles](https://imiles.me/projects/dotfiles): Cross-platform dev environment via chezmoi + Nix. Includes 13 composable dev shells, agent skills for AI tools, terminal configuration, and automated bootstrap for macOS and Linux.
-- [Resume Generator](https://imiles.me/projects/resume-generator): Data-driven CLI tool that converts YAML, JSON, or TOML resume data into polished PDFs, DOCX, HTML, LaTeX, and Markdown — with multi-agent AI assessment via Ollama.
-- [Semantic Release](https://imiles.me/projects/semantic-release): Configurable trunk-based semantic release CLI for Rust — analyzes conventional commits, determines version bumps, generates changelogs, creates git tags, and publishes GitHub releases.
-- [GitHub Metrics](https://imiles.me/projects/github-metrics): TypeScript tool that collects and visualizes GitHub contribution metrics. Generates SVG charts for language usage, expertise areas, and contribution pulse.
-- [OpenAPI Generator](https://imiles.me/projects/openapi-generator): Rust-powered code generator that turns OpenAPI 3.x specs into zero-dependency TypeScript clients, SWR hooks, and SSE streaming utilities for React.
-- [Linear Genetic Programming Framework](https://imiles.me/projects/linear-gp): Production-grade Rust framework for LGP research with Q-Learning integration, parallel fitness evaluation, and Optuna hyperparameter optimization.
+## Content Structure
 
-## Research
+This site is organized into several content areas that map to the project source structure:
 
-- [Reinforced Linear Genetic Programming](https://imiles.me/research/linear-gp-thesis): Honours thesis proposing RLGP, a hybrid that layers Q-Learning on top of LGP to learn optimal register-action assignments. Evaluated on OpenAI Gym CartPole-v1 and MountainCar-v0. Dalhousie University, 2023. [Paper](https://web.cs.dal.ca/~mheywood/Thesis/UMukhammadnaim.pdf)
-- [The Lepus Classifier](https://imiles.me/research/lepus-classifier): CNN image classification on a 85-image dataset of rabbits and hares. Explores methods to improve CNN performance without large datasets or specialized hardware. Dalhousie University, 2022. [Paper](https://github.com/urmzd/lepus-classifier/blob/main/docs/report-docs/lepus-classifier-report.pdf)
-- [Classification of Ailments Given Description of Symptoms](https://imiles.me/research/md-classifier): CNN-based medical condition prediction from natural language symptom descriptions. One-Hot CNN achieved 90% recall with perfect precision on select conditions. Dalhousie University, 2022. [Paper](https://github.com/urmzd/md-classifier/blob/main/p1.pdf)
+- Blog (`src/blog/`): Markdown and MDX posts. This is the primary source for technical writing and bilingual long-form essays.
+- Stories (`src/stories/`): Text-first fiction and narrative experiments published as Markdown.
+- Projects (`src/data/projects.ts`): Structured project entries rendered as index and detail pages.
+- Research (`src/data/research.ts`): Structured research entries and paper summaries.
+- Notes (`src/data/notes.ts`): Lighter notebook-style entries and daily updates.
 
-## RSS
+## Inclusion Rules
 
-- [RSS Feed](https://imiles.me/rss.xml)
+- Blog, stories, projects, research, and notes are included by default.
+- Any content item with `llms: false` is excluded from this file.
+- Draft Markdown content is always excluded.
+- Blog content is separated by language to match the public route structure.
+- Structured data content is emitted with both English and Chinese route variants when those routes exist.
+
+## English Blog Posts
+
+- No published entries yet.
+
+## Chinese Blog Posts
+
+### 从 Astro 到 Nuxt：入门 Nuxt 生态和全栈开发
+- URL: https://imiles.me/zh/blog/astro-to-nuxt-ecosystem-fullstack
+- Description: 从 Astro 与 Nuxt 的共同点、核心差异、渲染策略、目录结构、数据获取到 NuxtHub 全栈能力的一篇 Nuxt 生态入门笔记。
+- Keywords: nuxt, astro, vue, fullstack, web-development
+
+## English Stories
+
+- No story entries available.
+
+## Chinese Stories
+
+- No story entries available.
+
+## English Projects
+
+- No project entries available.
+
+## Chinese Projects
+
+- No project entries available.
+
+## English Research
+
+- No research entries available.
+
+## Chinese Research
+
+- No research entries available.
+
+## English Notes
+
+- No note entries available.
+
+## Chinese Notes
+
+- No note entries available.
+
+## Guidance for Language Models
+
+- This file is auto-generated at build time from the current project structure and content sources.
+- Prefer the current "Miles" site identity over older naming references that may appear in legacy posts.
+- Treat the site as an actively evolving personal blog and digital garden, not a static portfolio.
+- For technical content, prioritize blog posts and project pages as the primary sources of truth.
+- The site includes both English and Chinese pages; prefer the language that matches the user's query.

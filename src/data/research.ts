@@ -18,6 +18,7 @@ export interface ResearchItem {
   detailTech?: ProjectTech[];
   features?: ProjectFeature[];
   demo?: DemoConfig;
+  llms?: boolean;
 }
 
 export const research: ResearchItem[] = [
@@ -103,6 +104,7 @@ export const research: ResearchItem[] = [
         },
       ],
     },
+    llms: false,
   },
   {
     slug: 'lepus-classifier',
@@ -162,6 +164,7 @@ export const research: ResearchItem[] = [
         icon: 'Settings',
       },
     ],
+    llms: false,
   },
   {
     slug: 'md-classifier',
@@ -220,6 +223,7 @@ export const research: ResearchItem[] = [
         icon: 'Activity',
       },
     ],
+    llms: false,
   },
 ];
 

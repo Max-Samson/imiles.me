@@ -4,6 +4,7 @@ description: "从 Astro 与 Nuxt 的共同点、核心差异、渲染策略、�
 pubDate: 2026-04-24
 tags: ["nuxt", "astro", "vue", "fullstack", "web-development"]
 lang: "zh"
+llms: true
 ---
 ## 一、两者的相同点（共同点）
 

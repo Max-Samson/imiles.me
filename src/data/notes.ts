@@ -19,6 +19,7 @@ export interface ResearchItem {
   features?: ProjectFeature[];
   demo?: DemoConfig;
   notePicItems?: NotePicItems[];
+  llms?: boolean;
 }
 
 export interface NotePicItems {
@@ -66,20 +67,17 @@ export const research: ResearchItem[] = [
       },
       {
         title: 'Benchmark Datasets',
-        description:
-          'Built-in support for Iris and other standard classification benchmarks.',
+        description: 'Built-in support for Iris and other standard classification benchmarks.',
         icon: 'FlaskConical',
       },
       {
         title: 'Experiment Tracking',
-        description:
-          'Track fitness, diversity, and convergence across generations.',
+        description: 'Track fitness, diversity, and convergence across generations.',
         icon: 'BarChart3',
       },
       {
         title: 'Rust Performance',
-        description:
-          'Core evolution engine written in Rust for maximum throughput.',
+        description: 'Core evolution engine written in Rust for maximum throughput.',
         icon: 'Cpu',
       },
       {
@@ -90,8 +88,7 @@ export const research: ResearchItem[] = [
       },
       {
         title: 'Configurable Runs',
-        description:
-          'Fine-tune population size, mutation rates, and tournament parameters.',
+        description: 'Fine-tune population size, mutation rates, and tournament parameters.',
         icon: 'Settings',
       },
     ],
@@ -120,24 +117,19 @@ export const research: ResearchItem[] = [
         },
       ],
     },
+    llms: false,
   },
   {
     slug: 'lepus-classifier',
     title:
       'The Lepus Classifier: Exploring Image Classification with Convolutional Neural Networks',
-    tagline:
-      'CNN image classification on a 85-image dataset of rabbits and hares',
+    tagline: 'CNN image classification on a 85-image dataset of rabbits and hares',
     description:
       'Examines methods to improve CNN performance without large datasets or specialized hardware. Trained on just 85 web-scraped images of Eastern cottontail rabbits and European hares, using Stratified K-Fold Cross Validation to handle the small, unbalanced dataset. Best configuration achieved 0.647 test accuracy (F1 0.575, precision 0.8, recall 0.625) with SGD+momentum and batch size 2. Demonstrates that even with optimal architecture choices and dropout regularization, data quantity remains the fundamental bottleneck.',
     category: 'paper',
     year: 2022,
     venue: 'Dalhousie University — Course Project',
-    tags: [
-      'computer vision',
-      'CNN',
-      'small-dataset learning',
-      'image classification',
-    ],
+    tags: ['computer vision', 'CNN', 'small-dataset learning', 'image classification'],
     githubUrl: 'https://github.com/urmzd/lepus-classifier',
     paperUrl:
       'https://github.com/urmzd/lepus-classifier/blob/main/docs/report-docs/lepus-classifier-report.pdf',
@@ -176,8 +168,7 @@ export const research: ResearchItem[] = [
       },
       {
         title: 'Dropout Regularization',
-        description:
-          'Dropout layers to combat overfitting on the limited training set.',
+        description: 'Dropout layers to combat overfitting on the limited training set.',
         icon: 'Shield',
       },
       {
@@ -187,12 +178,12 @@ export const research: ResearchItem[] = [
         icon: 'Settings',
       },
     ],
+    llms: false,
   },
   {
     slug: 'md-classifier',
     title: 'Classification of Ailments Given Description of Symptoms',
-    tagline:
-      'CNN-based medical condition prediction from natural language symptom descriptions',
+    tagline: 'CNN-based medical condition prediction from natural language symptom descriptions',
     description:
       'Addresses the challenge of preliminary medical self-diagnosis by developing a CNN that returns the most probable condition given a natural language symptom description. Compares two preprocessing pipelines — One-Hot Encoding (56x4210 word-stem matrix) and unsupervised FastText embeddings — on data sourced from UpToDate and Mayo Clinic. The One-Hot CNN achieved 90% recall, with perfect precision on migraines and tetanus; FastText underperformed due to semantic information loss during processing.',
     category: 'paper',
@@ -247,6 +238,7 @@ export const research: ResearchItem[] = [
         icon: 'Activity',
       },
     ],
+    llms: false,
   },
 ];
 

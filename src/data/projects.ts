@@ -40,6 +40,7 @@ export interface Project {
   features: ProjectFeature[];
   hasDetailPage: boolean;
   demo?: DemoConfig;
+  llms?: boolean;
 }
 
 export const projects: Project[] = [
@@ -94,6 +95,7 @@ export const projects: Project[] = [
       },
     ],
     hasDetailPage: true,
+    llms: false,
   },
   {
     slug: 'resume-generator',
@@ -143,6 +145,7 @@ export const projects: Project[] = [
       },
     ],
     hasDetailPage: true,
+    llms: false,
   },
   {
     slug: 'semantic-release',
@@ -188,6 +191,7 @@ export const projects: Project[] = [
       },
     ],
     hasDetailPage: true,
+    llms: false,
     demo: {
       kind: 'terminal',
       title: 'semantic-release',
@@ -254,6 +258,7 @@ export const projects: Project[] = [
       },
     ],
     hasDetailPage: true,
+    llms: false,
     demo: {
       kind: 'image',
       images: [
@@ -326,6 +331,7 @@ export const projects: Project[] = [
       },
     ],
     hasDetailPage: true,
+    llms: false,
     demo: {
       kind: 'image',
       images: [
@@ -390,6 +396,7 @@ export const projects: Project[] = [
       },
     ],
     hasDetailPage: true,
+    llms: false,
     demo: {
       kind: 'image',
       images: [

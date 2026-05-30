@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
+    "generate:llms": "node scripts/generate-llms-txt.mjs",
     "build": "astro build && node scripts/prepare-wrangler-assets.mjs",
     "preview": "astro preview",
     "astro": "astro",
