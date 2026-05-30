@@ -36,7 +36,7 @@ export const en = {
   NoteSectionFourTitle: 'Tech Stack',
   NoteTitle: 'Notes',
   NoteDescription: 'Short notes, daily logs, and lightweight thoughts in progress.',
-  NoteLink: 'Redbook',
+  NoteLink: 'Xiaohongshu',
   CommitPlaceholder: "Don't you know what to write?",
   CommentTitle: 'Leave your comment',
   CommentDescription: 'Leave your comment and share your ideas.',

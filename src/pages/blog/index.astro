@@ -2,6 +2,8 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 import { calculateReadTime } from '@/lib/readTime';
+import { ExternalLink, NotebookPen } from 'lucide-react';
+import { getBlogNoteLink } from '@/data/blogLinks';
 import { LightRays } from '@/registry/magicui/light-rays';
 import { ShineBorder } from '@/registry/magicui/shine-border';
 import {
@@ -49,36 +51,56 @@ const sortedPosts = posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDa
       <p class="mb-8 max-w-2xl text-muted-foreground">{t('PageBlogDescription')}</p>
       <div class="flex flex-col gap-6">
       {
-        sortedPosts.map((post) => (
-          <article class="group">
-            <a
-              href={localizePathname(`/blog/${post.id}`, lang)}
-              class="relative block overflow-hidden rounded-lg border border-border p-6 transition-all duration-300 ease-out hover:scale-[0.98]"
-            >
+        sortedPosts.map((post) => {
+          const noteLink = getBlogNoteLink(post.id);
+
+          return (
+          <article class="group relative overflow-hidden rounded-lg border border-border p-6 transition-all duration-300 ease-out hover:scale-[0.98]">
               <ShineBorder
                 client:load
                 className="opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                 shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
               />
-              <h2 class="relative z-10 text-xl font-semibold text-foreground group-hover:underline">
-                {post.data.title}
-              </h2>
-              <p class="relative z-10 mt-2 text-muted-foreground">{post.data.description}</p>
-              <div class="relative z-10 mt-2 flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
-                <time>{formatDate(post.data.pubDate, lang)}</time>
-                <span class="hidden sm:inline">|</span>
-                <span>{calculateReadTime(post.body || '').text}</span>
-              </div>
-              {
-                post.data.updatedDate && (
-                  <div class="relative z-10 mt-1 text-xs text-muted-foreground/70">
-                    {t('Labelupdated')}: <time>{formatDate(post.data.updatedDate, lang)}</time>
+              <div class="relative z-10 flex items-start justify-between gap-4">
+                <a
+                  href={localizePathname(`/blog/${post.id}`, lang)}
+                  class="block min-w-0 flex-1"
+                >
+                  <h2 class="text-xl font-semibold text-foreground group-hover:underline">
+                    {post.data.title}
+                  </h2>
+                  <p class="mt-2 text-muted-foreground">{post.data.description}</p>
+                  <div class="mt-2 flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
+                    <time>{formatDate(post.data.pubDate, lang)}</time>
+                    <span class="hidden sm:inline">|</span>
+                    <span>{calculateReadTime(post.body || '').text}</span>
                   </div>
-                )
-              }
-            </a>
+                  {
+                    post.data.updatedDate && (
+                      <div class="mt-1 text-xs text-muted-foreground/70">
+                        {t('Labelupdated')}: <time>{formatDate(post.data.updatedDate, lang)}</time>
+                      </div>
+                    )
+                  }
+                </a>
+                {
+                  noteLink && (
+                    <a
+                      href={noteLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${post.data.title} ${t('NoteLink')}`}
+                      class="inline-flex shrink-0 items-center gap-1.5 rounded-full border-border bg-background/70 px-3 py-1.5 mt-15 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:text-foreground"
+                    >
+                      <NotebookPen className="h-3.5 w-3.5" />
+                      {t('NoteLink')}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )
+                }
+              </div>
           </article>
-        ))
+        )})
       }
     </div>
   </main>
