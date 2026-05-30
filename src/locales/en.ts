@@ -9,14 +9,14 @@ export const en = {
   Headerdescription: "Miles's bilingual tech blog and digital garden",
   Headercopyright: '© {year} Miles. All rights reserved.',
   PageHomeTitle: "Miles's Tech Blog and Digital Garden",
-  PageblogTitle: 'Blog | {site}',
-  PagestoriesTitle: 'Stories | {site}',
+  PageblogTitle: 'Blog - {site}',
+  PagestoriesTitle: 'Stories - {site}',
   PageStoriesDescription:
     "Short fiction and narrative experiments from Miles, alongside the site's engineering writing.",
-  PageDailyTitle: 'Notes | {site}',
-  PageAboutTitle: 'About | {site}',
-  PageProjectsTitle: 'Projects | {site}',
-  PageResearchTitle: 'Research | {site}',
+  PageDailyTitle: 'Notes - {site}',
+  PageAboutTitle: 'About - {site}',
+  PageProjectsTitle: 'Projects - {site}',
+  PageResearchTitle: 'Research - {site}',
   PageHomeDescription:
     "Miles's bilingual tech blog and digital garden on frontend engineering, AI, full-stack building, project breakdowns, research notes, and long-form thinking.",
   PageBlogDescription:
