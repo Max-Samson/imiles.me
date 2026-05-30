@@ -28,8 +28,8 @@ export default function LandingExperience() {
   const quoteText = useTextScramble(entry.quote);
   const authorText = useTextScramble(entry.author ?? '');
   const intro = isZh
-    ? '双语技术博客，记录前端工程、AI、全栈实践、项目复盘与长期思考。'
-    : 'A bilingual tech blog on frontend engineering, AI, full-stack building, project breakdowns, and long-form thinking.';
+    ? 'Miles技术博客，记录前端工程、AI时代感受、全栈实践、项目复盘与长期思考。'
+    : 'A tech blog on frontend engineering, AI, full-stack building, project breakdowns, and long-form thinking.';
 
   const handleCodexChange = useCallback((index: number) => {
     setCodexIndex(index);
@@ -118,9 +118,7 @@ export default function LandingExperience() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 1.4 }}
                 >
-                  <p className="mb-3 text-center text-sm leading-6 text-muted-foreground sm:text-base">
-                    {intro}
-                  </p>
+                  <p className="landing-hero-intro">{intro}</p>
                   <span className="landing-hero-quote">{quoteText}</span>
                   {authorText && <span className="landing-hero-author">{authorText}</span>}
                 </motion.div>

@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
@@ -89,9 +89,9 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-sans: 'elza-text', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
-  --font-script: 'Great Vibes', cursive;
+  --font-sans: "elza-text", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --font-script: "Great Vibes", cursive;
   --z-index-header: var(--z-header);
   --z-index-navbar-menu: var(--z-navbar-menu);
   --z-index-floating-dock: var(--z-floating-dock);
@@ -267,7 +267,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
   }
 
   body.mobile-menu-open {
@@ -461,11 +461,7 @@
     width: 70vmax;
     height: 70vmax;
     border-radius: 999px;
-    background: radial-gradient(
-      circle,
-      oklch(from var(--brand) l c h / 65%),
-      transparent 62%
-    );
+    background: radial-gradient(circle, oklch(from var(--brand) l c h / 65%), transparent 62%);
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.6);
     pointer-events: none;
@@ -479,11 +475,7 @@
   .splash-texture {
     @apply absolute inset-0;
     background-image:
-      radial-gradient(
-        circle at 20% 20%,
-        oklch(from var(--brand) l c h / 45%),
-        transparent 55%
-      ),
+      radial-gradient(circle at 20% 20%, oklch(from var(--brand) l c h / 45%), transparent 55%),
       radial-gradient(
         circle at 80% 40%,
         oklch(from var(--brand-secondary) l c h / 35%),
@@ -514,7 +506,7 @@
   }
 
   .name-script {
-    font-family: 'Great Vibes', cursive;
+    font-family: "Great Vibes", cursive;
     letter-spacing: 0.05em;
   }
 
@@ -546,7 +538,7 @@
   .splash-node {
     fill: oklch(from var(--brand) l c h / 70%);
     offset-path: path(
-      'M40,80 C200,140 120,240 240,320 C360,400 280,520 420,560 C520,600 520,640 360,620 C320,610 300,600 300,600'
+      "M40,80 C200,140 120,240 240,320 C360,400 280,520 420,560 C520,600 520,640 360,620 C320,610 300,600 300,600"
     );
     animation: node-travel 7.5s ease-out infinite;
     will-change: offset-distance, transform, opacity;
@@ -565,7 +557,7 @@
   .splash-tracer {
     fill: oklch(from var(--brand) l c h / 80%);
     offset-path: path(
-      'M40,80 C200,140 120,240 240,320 C360,400 280,520 420,560 C520,600 520,640 360,620 C320,610 300,600 300,600'
+      "M40,80 C200,140 120,240 240,320 C360,400 280,520 420,560 C520,600 520,640 360,620 C320,610 300,600 300,600"
     );
     animation: tracer-travel 7.5s linear infinite;
     filter: drop-shadow(0 0 12px oklch(from var(--brand) l c h / 40%));
@@ -584,16 +576,15 @@
     filter: grayscale(18%) contrast(0.95);
     animation: splash-reveal 0.9s ease forwards;
     animation-delay: var(--delay, 0s);
-    transform: translateZ(var(--depth, 0px)) rotateX(var(--tilt, 0deg))
-      rotateZ(var(--spin, 0deg));
+    transform: translateZ(var(--depth, 0px)) rotateX(var(--tilt, 0deg)) rotateZ(var(--spin, 0deg));
     transform-style: preserve-3d;
     cursor: pointer;
     will-change: opacity;
   }
 
   .splash-graph-image:hover {
-    transform: translateZ(var(--depth, 0px)) rotateX(var(--tilt, 0deg))
-      rotateZ(var(--spin, 0deg)) scale(1.08);
+    transform: translateZ(var(--depth, 0px)) rotateX(var(--tilt, 0deg)) rotateZ(var(--spin, 0deg))
+      scale(1.08);
     opacity: 0.95;
     filter: grayscale(0%);
     z-index: 20;
@@ -651,7 +642,7 @@
   }
 
   .name-chip::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: -12px;
     border-radius: 999px;
@@ -744,18 +735,8 @@
     opacity: 0;
     transition: opacity 1s ease;
     pointer-events: none;
-    -webkit-mask-image: radial-gradient(
-      circle at 50% 45%,
-      #000 0%,
-      #000 60%,
-      transparent 100%
-    );
-    mask-image: radial-gradient(
-      circle at 50% 45%,
-      #000 0%,
-      #000 60%,
-      transparent 100%
-    );
+    -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, #000 60%, transparent 100%);
+    mask-image: radial-gradient(circle at 50% 45%, #000 0%, #000 60%, transparent 100%);
   }
 
   .textile-visible {
@@ -805,7 +786,7 @@
 
   .film-loading-text {
     @apply text-sm text-white/60;
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
     letter-spacing: 0.1em;
   }
 
@@ -865,7 +846,7 @@
 
   .film-frame-desc {
     @apply text-sm text-white/60;
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
   }
 
   .film-sprocket {
@@ -896,11 +877,7 @@
 
   .film-vignette {
     @apply pointer-events-none absolute inset-0;
-    background: radial-gradient(
-      ellipse at center,
-      transparent 40%,
-      rgba(0, 0, 0, 0.7) 100%
-    );
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
   }
 
   .final-card-container {
@@ -924,7 +901,7 @@
   }
 
   .rolodex-card-image::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background: linear-gradient(90deg, oklch(0 0 0 / 80%), transparent 60%);
@@ -1007,7 +984,7 @@
   }
 
   .final-card-tagline {
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
     font-size: 0.85rem;
     letter-spacing: 0.08em;
     color: var(--muted-foreground);
@@ -1021,20 +998,20 @@
 
   .final-card-title {
     @apply text-2xl font-bold sm:text-4xl;
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
     letter-spacing: 0.04em;
     line-height: 1.1;
   }
 
   .final-card-subtitle {
     @apply text-xs uppercase tracking-[0.25em] text-muted-foreground;
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
     line-height: 1.2;
   }
 
   .final-card-phonetic {
     @apply text-xs text-foreground;
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
     letter-spacing: 0.06em;
     line-height: 1.2;
     margin-top: 0.5rem;
@@ -1047,7 +1024,7 @@
 
   .landing-hero-name {
     @apply flex flex-wrap justify-center;
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
     font-size: clamp(1.6rem, 5vw, 3.5rem);
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -1078,7 +1055,7 @@
 
   .landing-hero-sub {
     position: relative;
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
     letter-spacing: 0.04em;
     line-height: 1.5;
     overflow-wrap: break-word;
@@ -1089,9 +1066,48 @@
     gap: 0.35rem;
   }
 
+  .landing-hero-intro {
+    position: relative;
+    margin: 0 auto 0.95rem;
+    max-width: min(34rem, 92vw);
+    padding: 0.2rem 0.9rem 0.55rem;
+    font-family: "Permanent Marker", cursive;
+    font-size: clamp(0.82rem, 2vw, 1.02rem);
+    line-height: 1.7;
+    letter-spacing: 0.03em;
+    color: oklch(from var(--foreground) l c h / 88%);
+    text-align: center;
+    text-wrap: balance;
+    transform: rotate(-1.2deg);
+    text-shadow:
+      0 1px 0 oklch(from var(--background) l c h / 85%),
+      0 0 16px oklch(from var(--brand) l c h / 12%);
+  }
+
+  .landing-hero-intro::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: min(14rem, 42vw);
+    height: 0.18rem;
+    border-radius: 999px;
+    transform: translateX(-50%) rotate(-1.5deg);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      oklch(from var(--brand) l c h / 18%) 14%,
+      oklch(from var(--brand-secondary) l c h / 40%) 50%,
+      oklch(from var(--brand) l c h / 18%) 86%,
+      transparent 100%
+    );
+    filter: blur(0.2px);
+    opacity: 0.95;
+  }
+
   /* Ornamental gradient line below quote */
   .landing-hero-sub::after {
-    content: '';
+    content: "";
     display: block;
     width: 4rem;
     height: 1px;
@@ -1103,7 +1119,7 @@
   /* Quote body — serif italic for literary quality */
   .landing-hero-quote {
     display: block;
-    font-family: 'ogg-text', serif;
+    font-family: "ogg-text", serif;
     font-style: italic;
     font-size: 0.8rem;
     color: oklch(from var(--foreground) l c h / 75%);
@@ -1112,7 +1128,7 @@
   /* Author attribution — small caps, gold tint */
   .landing-hero-author {
     display: block;
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
     font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.18em;
@@ -1120,12 +1136,12 @@
   }
 
   .landing-hero-author::before {
-    content: '\2014\00a0';
+    content: "\2014\00a0";
   }
 
   .final-card-pronunciation {
     @apply text-xs text-muted-foreground/60;
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
     letter-spacing: 0.04em;
     line-height: 1.2;
     font-style: italic;
@@ -1133,14 +1149,14 @@
 
   .final-card-intro {
     @apply text-sm text-foreground/80;
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
     line-height: 1.4;
     max-width: 30rem;
   }
 
   .final-card-link {
     @apply text-xs uppercase tracking-[0.25em] text-muted-foreground;
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
     transition: color 0.2s ease;
   }
 
@@ -1381,7 +1397,7 @@
   }
 
   .click-hint-text {
-    font-family: 'elza-text', sans-serif;
+    font-family: "elza-text", sans-serif;
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.2em;
@@ -1429,6 +1445,11 @@
 @media (min-width: 640px) {
   .landing-hero-name {
     letter-spacing: 0.12em;
+  }
+
+  .landing-hero-intro {
+    margin-bottom: 1.1rem;
+    font-size: 0.96rem;
   }
 
   .landing-hero-sub {
