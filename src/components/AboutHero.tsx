@@ -1,15 +1,18 @@
 'use client';
-import { useTranslations } from '@/lib/i18n';
+import { type Locale, useTranslations } from '@/lib/i18n';
 import { AuroraText } from '@/registry/magicui/aurora-text';
 import { AnimatedSpan, Terminal, TypingAnimation } from '@/registry/magicui/terminal';
 import Phonetic from './Phonetic';
 import SocialLinksGrid from './SocialLinksGrid';
 
-export default function AboutHero() {
-  const { t } = useTranslations();
-  const intro = t('PageAboutDescription');
+interface AboutHeroProps {
+  lang: Locale;
+}
+
+export default function AboutHero({ lang }: AboutHeroProps) {
+  const { t } = useTranslations(lang);
   const role =
-    t('Headerabout') === '关于'
+    lang === 'zh'
       ? '前端工程师，关注 AI、全栈产品、工程体验与长期写作。'
       : 'Frontend engineer focused on AI, full-stack products, developer experience, and long-form writing.';
   return (
@@ -22,22 +25,6 @@ export default function AboutHero() {
       </div>
 
       <div className="prose prose-neutral dark:prose-invert max-w-none">
-        <p>{intro}</p>
-        {/* <p>
-          <strong>Urmzd</strong> derives from <em>Ahura Mazda</em> — the Avestan
-          name meaning "Lord of Wisdom." It's a name rooted in Zoroastrian
-          tradition, carried across Central Asia into Tajik and Persian cultures
-          where my family originates.
-        </p>
-
-        <p>
-          I'm a software engineer based in Austin, Texas. I build tools that
-          turn structured thinking into working software — from developer
-          utilities and machine learning pipelines to interactive web
-          experiences like this site. When I'm not writing code, I'm likely on
-          the mats training Brazilian Jiu-Jitsu or exploring a new city. For the
-          full story, check out my <a href="/blog/welcome">welcome post</a>.
-        </p> */}
         <div className="flex justify-center px-0 py-3 sm:p-3 bg-transparent">
           <Terminal className="w-full max-w-xl font-mono text-sm shadow-xl transition-all duration-300 border border-black/10 dark:border-white/10 bg-white dark:bg-black/90 min-h-[450px] sm:min-h-[480px]">
             {/* 1. 输入初始化命令 - 使用中性灰色适配 */}

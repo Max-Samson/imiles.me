@@ -3,10 +3,16 @@
 import { MotionConfig, motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
+import {
+  getLocaleFromPathname,
+  type Locale,
+  localizePathname,
+  stripLocaleFromPathname,
+} from '@/lib/i18n';
 import { MobileMenu } from './MobileMenu';
 import { ModeToggle } from './ModeToggle';
 import NavigationMenuDemo from './NavigationMenu';
-import type { Locale } from '@/lib/i18n';
+
 type Props = {
   lang?: Locale;
   pathname?: string;
@@ -15,6 +21,14 @@ type Props = {
 
 export default function AutoHideHeader({ lang, pathname, children }: Props) {
   const { isVisible } = useScrollDirection();
+  const resolvedPathname = pathname ?? '/';
+  const resolvedLang = lang ?? getLocaleFromPathname(resolvedPathname);
+  const alternateLocale: Locale = resolvedLang === 'zh' ? 'en' : 'zh';
+  const languageToggleHref = localizePathname(
+    stripLocaleFromPathname(resolvedPathname),
+    alternateLocale,
+  );
+  const languageToggleLabel = alternateLocale === 'zh' ? '中文' : 'EN';
 
   return (
     <MotionConfig reducedMotion="user">
@@ -48,6 +62,13 @@ export default function AutoHideHeader({ lang, pathname, children }: Props) {
 
           {/* Mobile hamburger + theme toggle */}
           <div className="flex items-center gap-2 md:hidden">
+            <a
+              href={languageToggleHref}
+              className="inline-flex h-9 min-w-9 items-center justify-center rounded-md border border-border bg-background px-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              aria-label={`Switch language to ${alternateLocale === 'zh' ? 'Chinese' : 'English'}`}
+            >
+              {languageToggleLabel}
+            </a>
             <ModeToggle />
             <MobileMenu lang={lang} pathname={pathname} />
           </div>

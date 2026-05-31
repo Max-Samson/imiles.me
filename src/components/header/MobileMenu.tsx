@@ -5,8 +5,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { getLocaleFromPathname } from '@/lib/i18n';
+import {
+  getLocaleFromPathname,
+  type Locale,
+  localizePathname,
+  stripLocaleFromPathname,
+} from '@/lib/i18n';
 import { getNavItems, isNavItemActive } from './NavigationMenu';
+
+const localeLabels: Record<Locale, string> = {
+  en: 'EN',
+  zh: '中文',
+};
 
 function MenuPortal({
   open,
@@ -25,6 +35,8 @@ function MenuPortal({
 }) {
   const resolvedLang = lang ?? getLocaleFromPathname(pathname);
   const navItems = getNavItems(resolvedLang);
+  const normalizedPath = stripLocaleFromPathname(pathname);
+  const alternateLocales: Locale[] = ['en', 'zh'];
 
   return createPortal(
     <AnimatePresence>
@@ -96,6 +108,41 @@ function MenuPortal({
                 );
               })}
             </nav>
+
+            <motion.div
+              className="mt-8 flex items-center gap-2"
+              initial={reduced ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={
+                reduced
+                  ? { duration: 0 }
+                  : {
+                      delay: 0.08 + navItems.length * 0.05 + 0.08,
+                      duration: 0.3,
+                      ease: 'easeOut',
+                    }
+              }
+            >
+              {alternateLocales.map((locale) => {
+                const isCurrent = locale === resolvedLang;
+
+                return (
+                  <a
+                    key={locale}
+                    href={localizePathname(normalizedPath, locale)}
+                    onClick={close}
+                    className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                      isCurrent
+                        ? 'border-foreground/20 bg-foreground text-background'
+                        : 'border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                    aria-current={isCurrent ? 'page' : undefined}
+                  >
+                    {localeLabels[locale]}
+                  </a>
+                );
+              })}
+            </motion.div>
           </motion.div>
         </MotionConfig>
       )}
@@ -210,9 +257,7 @@ export function MobileMenu({
           <motion.line
             x1="3"
             x2="15"
-            animate={
-              open ? { y1: 9, y2: 9, rotate: 45 } : { y1: 4, y2: 4, rotate: 0 }
-            }
+            animate={open ? { y1: 9, y2: 9, rotate: 45 } : { y1: 4, y2: 4, rotate: 0 }}
             transition={{ duration: 0.25 }}
             style={{ transformOrigin: 'center' }}
           />
@@ -227,11 +272,7 @@ export function MobileMenu({
           <motion.line
             x1="3"
             x2="15"
-            animate={
-              open
-                ? { y1: 9, y2: 9, rotate: -45 }
-                : { y1: 14, y2: 14, rotate: 0 }
-            }
+            animate={open ? { y1: 9, y2: 9, rotate: -45 } : { y1: 14, y2: 14, rotate: 0 }}
             transition={{ duration: 0.25 }}
             style={{ transformOrigin: 'center' }}
           />
