@@ -94,18 +94,18 @@
 
 ### P1：字体和渲染阻塞
 
-- [ ] P1-1 审计 Adobe Typekit 字体依赖。
+- [x] P1-1 审计 Adobe Typekit 字体依赖。
   - 截图中 Typekit CSS 是最大渲染阻塞第三方项，约 `400ms`。
   - 当前 CSS 使用 `elza-text`、`ogg-text`；这些来自 Typekit。
   - 约束：不能因为优化让首页字体气质明显变化。
-  - 方案：确认 license 后本地托管 WOFF2，并在本地 `@font-face` 中设置 `font-display: swap`；如果不能本地托管，只考虑 preload/async 策略并视觉回归。
+  - 已采用方案：不自托管 Adobe 字体，保留 Typekit 字体来源，但将 stylesheet 改为 `preload` + `onload` 非阻塞加载，避免在首页 head 中留下外部 `rel="stylesheet"` 字体链接。
   - 验收：字体观感一致，外部 Typekit 不再阻塞或阻塞显著降低。
 
-- [ ] P1-2 精简 Google Fonts。
+- [x] P1-2 精简 Google Fonts。
   - 当前全站加载 `Great Vibes`、`IBM Plex Mono`、`Permanent Marker`、`Rock Salt`。
   - 首页实际用到 `Permanent Marker` 和 `Rock Salt`，`IBM Plex Mono` 更偏代码/终端内容，`Great Vibes` 用于其他装饰场景。
-  - 方案：按页面声明字体需求，首页只加载首页用到的 family；博客/项目页再按需加载 mono/script。
-  - 验收：首页 Google Fonts CSS 请求更小，且标题/品牌视觉不变。
+  - 已采用方案：将 Google Fonts 的 latin WOFF2 文件本地托管到 `public/fonts/google/`，在 `global.css` 定义 `@font-face`，移除 `fonts.googleapis.com` stylesheet 和 `fonts.gstatic.com` preconnect。
+  - 验收：首页 Google Fonts CSS 请求消失，标题/品牌视觉不变。
 
 - [ ] P1-3 首页 CSS 体积和命名异常检查。
   - 截图显示首页阻塞 CSS 文件名类似 `about.*.css`，需要确认构建产物是否存在共享 chunk 命名误导或页面 CSS 被过度合并。
@@ -159,6 +159,13 @@
 - `src/styles/global.css`
   - 为首页 landing 根层增加 `isolate`，稳定 WebGL、LightRays 和内容层叠关系。
   - 新增 `landing-char-reveal` CSS 动画和 reduced-motion 兜底。
+  - 新增本地 Google Fonts 的 `@font-face`：`Great Vibes`、`IBM Plex Mono`、`Permanent Marker`、`Rock Salt`。
+- `public/fonts/google/`
+  - 新增本地托管的 Google Fonts WOFF2 文件。
+- `src/layouts/BaseLayout.astro`
+  - 移除 Google Fonts 外部 stylesheet/preconnect。
+  - 预加载首页关键字体 `Rock Salt` 和 `Permanent Marker`。
+  - 将 Typekit stylesheet 改为非阻塞 preload/onload 加载。
 
 ## 复测流程
 
