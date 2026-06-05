@@ -80,16 +80,16 @@
   - 已采用方案 B：继续使用 React/motion 版本，但移入 `LandingExperience`，与 `Hero client:load` 共用同一个岛，减少重复 runtime 调度。
   - 验收：视觉对比无明显差异；首页初始 JS chunk 或 hydration task 减少。
 
-- [ ] P0-4 拆分 `LandingExperience` 首轮初始化路径。
+- [x] P0-4 拆分 `LandingExperience` 首轮初始化路径。
   - 当前 `LandingExperience` 同时负责标题动效、quote scramble、SocialDock、PlexusBackground。
   - 约束：逐字标题动画、quote 变化、WebGL plexus 和 dock 效果都保留。
-  - 方案：把 WebGL 背景封装为单独增强岛，使用 `client:idle` 或组件内部 idle mount；标题和可见文案继续 `client:load`，保证首屏动画及时出现。
+  - 已采用方案：`LandingExperience` 内部延后挂载 `PlexusBackground`；标题、quote、LightRays 和 dock 继续首屏 `client:load`，WebGL 背景在标题入场后等待浏览器 idle 再初始化。
   - 验收：动画仍在首屏出现；Three 相关 chunk 不阻塞标题首轮动画 task。
 
-- [ ] P0-5 保留动画但降低 motion 首轮工作量。
+- [x] P0-5 保留动画但降低 motion 首轮工作量。
   - 当前标题每个字符都是一个 `motion.span`，LCP 元素正是其中一个字符。
   - 约束：逐字出现、发光过渡和 hover 效果保留。
-  - 方案：用 CSS animation/stagger 复刻逐字入场，减少 React render + motion timeline 数量；或保留 motion 但只让容器驱动，字符用 CSS 变量控制 delay。
+  - 已采用方案：用 CSS animation/stagger 复刻逐字入场，字符节点改为普通 `span`，减少 React render + motion timeline 数量。
   - 验收：逐字动画肉眼一致；TBT 和 LCP render delay 下降。
 
 ### P1：字体和渲染阻塞
@@ -154,8 +154,11 @@
   - 移除页面级 `LightRays client:load`，保留静态背景层。
 - `src/components/LandingExperience.tsx`
   - 在 Hero 岛内部渲染 `LightRays`，保持光线动画效果并减少独立 island。
+  - 延后挂载 `PlexusBackground`，让 Three/WebGL chunk 等标题入场后再 idle 初始化。
+  - 将标题逐字动画从多个 `motion.span` 改为 CSS stagger，保留入场/光晕效果并降低 motion 节点数量。
 - `src/styles/global.css`
   - 为首页 landing 根层增加 `isolate`，稳定 WebGL、LightRays 和内容层叠关系。
+  - 新增 `landing-char-reveal` CSS 动画和 reduced-motion 兜底。
 
 ## 复测流程
 

@@ -1037,7 +1037,15 @@
   .landing-hero-char {
     position: relative;
     display: inline-block;
-    will-change: transform, opacity, color;
+    opacity: 0;
+    color: var(--brand);
+    text-shadow:
+      0 0 20px oklch(from var(--brand) l c h / 70%),
+      0 0 40px oklch(from var(--brand) l c h / 35%);
+    transform: translateY(20px);
+    animation: landing-char-reveal 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    animation-delay: var(--landing-char-delay, 0s);
+    will-change: transform, opacity, color, text-shadow;
     transition:
       color 0.8s ease,
       text-shadow 0.8s ease;
@@ -1137,6 +1145,33 @@
 
   .landing-hero-author::before {
     content: "\2014\00a0";
+  }
+
+  @keyframes landing-char-reveal {
+    0% {
+      opacity: 0;
+      color: var(--brand);
+      text-shadow:
+        0 0 20px oklch(from var(--brand) l c h / 70%),
+        0 0 40px oklch(from var(--brand) l c h / 35%);
+      transform: translateY(20px);
+    }
+
+    28% {
+      opacity: 1;
+      color: var(--brand);
+      text-shadow:
+        0 0 20px oklch(from var(--brand) l c h / 70%),
+        0 0 40px oklch(from var(--brand) l c h / 35%);
+      transform: translateY(0);
+    }
+
+    100% {
+      opacity: 1;
+      color: var(--foreground);
+      text-shadow: 0 0 0 transparent;
+      transform: translateY(0);
+    }
   }
 
   .final-card-pronunciation {
@@ -1435,6 +1470,11 @@
 
   .landing-hero-char {
     transition: none !important;
+    animation: none !important;
+    opacity: 1;
+    color: var(--foreground);
+    text-shadow: 0 0 0 transparent;
+    transform: translateY(0);
   }
 
   .landing-hero-char:hover {

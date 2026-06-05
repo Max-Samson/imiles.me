@@ -1,7 +1,7 @@
 'use client';
 
 import { MotionConfig, motion } from 'motion/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 
 import SocialDock from '@/components/SocialDock';
 import { PlexusBackground } from '@/components/ui/plexus-background';
@@ -11,6 +11,7 @@ import { useTranslations } from '@/lib/i18n';
 import { LightRays } from '@/registry/magicui/light-rays';
 
 const NAME_CHARS = 'Shenshuai Ming'.split('');
+const PLEXUS_IDLE_DELAY_MS = 2200;
 
 export default function LandingExperience() {
   const { t } = useTranslations();
@@ -18,10 +19,31 @@ export default function LandingExperience() {
   const [nameWidth, setNameWidth] = useState<number | undefined>(undefined);
   const [codexIndex, setCodexIndex] = useState(0);
   const [isZh, setIsZh] = useState(false);
+  const [shouldMountPlexus, setShouldMountPlexus] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     setIsZh(window.location.pathname.startsWith('/zh'));
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let idleId: number | undefined;
+    const timeoutId = window.setTimeout(() => {
+      if ('requestIdleCallback' in window) {
+        idleId = window.requestIdleCallback(() => setShouldMountPlexus(true));
+      } else {
+        setShouldMountPlexus(true);
+      }
+    }, PLEXUS_IDLE_DELAY_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (idleId !== undefined && 'cancelIdleCallback' in window) {
+        window.cancelIdleCallback(idleId);
+      }
+    };
   }, []);
 
   const codex = isZh ? CODEX_CN : CODEX;
@@ -50,7 +72,9 @@ export default function LandingExperience() {
   return (
     <MotionConfig reducedMotion="user">
       <div className="landing-root">
-        <PlexusBackground className="pointer-events-auto z-0" onCodexChange={handleCodexChange} />
+        {shouldMountPlexus && (
+          <PlexusBackground className="pointer-events-auto z-0" onCodexChange={handleCodexChange} />
+        )}
         <LightRays
           count={8}
           speed={12}
@@ -76,46 +100,19 @@ export default function LandingExperience() {
                   aria-label="Shenshuai Ming"
                   style={{ fontFamily: 'Rock Salt, cursive' }}
                 >
-                  {NAME_CHARS.map((char, i) => {
-                    const baseDelay = 0.6 + i * 0.04;
+                  {NAME_CHARS.map((char, index) => {
+                    const baseDelay = 0.6 + index * 0.04;
+
                     return char === ' ' ? (
-                      <motion.span
-                        key={`space-${i}`}
-                        className="w-full"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5, delay: baseDelay }}
-                      />
+                      <span key={`space-${index}`} className="w-full" />
                     ) : (
-                      <motion.span
-                        key={`char-${i}`}
+                      <span
+                        key={`char-${index}`}
                         className="landing-hero-char md:mt-10 mt-5"
-                        initial={{
-                          opacity: 0,
-                          y: 20,
-                          color: 'var(--brand)',
-                          textShadow:
-                            '0 0 20px oklch(from var(--brand) l c h / 70%), 0 0 40px oklch(from var(--brand) l c h / 35%)',
-                        }}
-                        animate={{
-                          opacity: 1,
-                          y: 0,
-                          color: 'var(--foreground)',
-                          textShadow: '0 0 0px transparent',
-                        }}
-                        transition={{
-                          opacity: { duration: 0.3, delay: baseDelay },
-                          y: {
-                            duration: 0.4,
-                            delay: baseDelay,
-                            ease: [0.25, 0.46, 0.45, 0.94],
-                          },
-                          color: { duration: 1.0, delay: baseDelay + 0.3 },
-                          textShadow: { duration: 1.2, delay: baseDelay + 0.2 },
-                        }}
+                        style={{ '--landing-char-delay': `${baseDelay}s` } as CSSProperties}
                       >
                         {char}
-                      </motion.span>
+                      </span>
                     );
                   })}
                 </h1>
