@@ -767,7 +767,7 @@
   }
 
   .landing-root {
-    @apply relative overflow-hidden;
+    @apply relative isolate overflow-hidden;
     min-height: 100dvh;
   }
 

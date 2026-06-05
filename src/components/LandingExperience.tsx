@@ -8,6 +8,7 @@ import { PlexusBackground } from '@/components/ui/plexus-background';
 import { CODEX, CODEX_CN } from '@/components/ui/plexus-shapes';
 import { useTextScramble } from '@/hooks/useTextScramble';
 import { useTranslations } from '@/lib/i18n';
+import { LightRays } from '@/registry/magicui/light-rays';
 
 const NAME_CHARS = 'Shenshuai Ming'.split('');
 
@@ -49,10 +50,18 @@ export default function LandingExperience() {
   return (
     <MotionConfig reducedMotion="user">
       <div className="landing-root">
-        <PlexusBackground className="pointer-events-auto" onCodexChange={handleCodexChange} />
+        <PlexusBackground className="pointer-events-auto z-0" onCodexChange={handleCodexChange} />
+        <LightRays
+          count={8}
+          speed={12}
+          color="var(--ray-c)"
+          length="120vh"
+          blur={40}
+          className="z-[1] opacity-100 dark:opacity-80"
+        />
 
         <motion.div
-          className="final-card-container pointer-events-none"
+          className="final-card-container pointer-events-none z-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}

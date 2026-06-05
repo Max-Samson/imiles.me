@@ -18,6 +18,7 @@ interface Props {
   publishedTime?: Date;
   tags?: string[];
   articleSection?: string;
+  loadKatex?: boolean;
 }
 
 const {
@@ -30,6 +31,7 @@ const {
   publishedTime,
   tags = [],
   articleSection,
+  loadKatex = false,
 } = Astro.props;
 
 const lang = resolveLocale(Astro.currentLocale as Locale | undefined);
@@ -53,12 +55,16 @@ const pathname = Astro.url.pathname;
       tags={tags}
       articleSection={articleSection}
     />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
-      integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV"
-      crossorigin="anonymous"
-    />
+    {
+      loadKatex && (
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+          integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV"
+          crossorigin="anonymous"
+        />
+      )
+    }
     <link rel="alternate" type="application/rss+xml" title="imiles.me RSS Feed" href="/rss.xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -108,9 +114,17 @@ const pathname = Astro.url.pathname;
     <script is:inline>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker
-            .register('/sw.js', { updateViaCache: 'none' })
-            .then((registration) => registration.update());
+          const registerServiceWorker = () => {
+            navigator.serviceWorker
+              .register('/sw.js', { updateViaCache: 'none' })
+              .then((registration) => registration.update());
+          };
+
+          if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(registerServiceWorker, { timeout: 3000 });
+          } else {
+            window.setTimeout(registerServiceWorker, 1200);
+          }
         });
       }
     </script>
