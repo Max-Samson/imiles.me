@@ -6,6 +6,7 @@
     "dev": "astro dev",
     "generate:llms": "node scripts/generate-llms-txt.mjs",
     "build": "astro build && node scripts/prepare-wrangler-assets.mjs",
+    "perf:budget": "node scripts/check-homepage-performance.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",

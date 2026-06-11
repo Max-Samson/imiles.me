@@ -1,7 +1,7 @@
 'use client';
 import type { MotionValue } from 'motion/react';
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from 'motion/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 export const FloatingDock = ({
@@ -76,12 +76,33 @@ const FloatingDockDesktop = ({
   className?: string;
 }) => {
   const mouseX = useMotionValue(Infinity);
+  const frameRef = useRef<number | null>(null);
+  const latestMouseXRef = useRef(Infinity);
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, []);
+
+  const scheduleMouseX = (value: number) => {
+    latestMouseXRef.current = value;
+    if (frameRef.current !== null) return;
+
+    frameRef.current = requestAnimationFrame(() => {
+      mouseX.set(latestMouseXRef.current);
+      frameRef.current = null;
+    });
+  };
+
   return (
     <motion.div
       role="toolbar"
       aria-label="Social links"
-      onMouseMove={(e) => mouseX.set(e.pageX)}
-      onMouseLeave={() => mouseX.set(Infinity)}
+      onMouseMove={(e) => scheduleMouseX(e.pageX)}
+      onMouseLeave={() => scheduleMouseX(Infinity)}
       className={cn('mx-auto hidden h-16 items-end gap-4 rounded-2xl px-4 pb-3 md:flex', className)}
     >
       {items.map((item) => (

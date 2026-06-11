@@ -1,6 +1,6 @@
 # imiles.me 首页性能优化方案
 
-更新时间：2026-06-05
+更新时间：2026-06-11
 
 ## 约束
 
@@ -26,6 +26,17 @@
   - Cloudflare Insights beacon：`12KiB`，TTL `1天`。
   - Typekit CSS：截图显示 TTL `7天`。
 - 字体显示提示：建议 `font-display: swap` 或 `optional`，预计节省约 `10ms`。
+
+## 最新复测
+
+基于用户提供的完成第一轮优化后的 2026-06-05 PageSpeed/Lighthouse 桌面截图：
+
+- Performance `57`，Accessibility `100`，Best Practices `96`，SEO `100`。
+- FCP `0.8s`，LCP `1.2s`，TBT `9,620ms`，CLS `0`，Speed Index `7.4s`。
+- LCP 与 CLS 已经很稳，继续优化时不应压缩或移除可见动画、WebGL 背景和社交 dock。
+- 剩余主要问题仍是主线程长任务：React/motion、Three/WebGL、dock hover runtime、字体加载和第三方脚本需要继续分层调度。
+- 渲染阻塞请求预计可节省约 `490ms`，主要来自 Adobe Typekit、首页共享 CSS 和少量字体 CSS。
+- 字体显示仍提示可节省约 `450ms`，说明需要继续观察 Typekit 非阻塞加载和首屏字体 fallback 的实际效果。
 
 ## 当前首页架构
 
@@ -115,32 +126,41 @@
 
 ### P2：Three.js 与交互成本
 
-- [ ] P2-1 Three 场景 idle mount。
+- [x] P2-1 Three 场景 idle mount。
   - 当前 `PlexusScene` 使用 `frameloop="always"`，桌面 `800` 粒子，移动 `250` 粒子。
   - 约束：最终背景效果不降级。
-  - 方案：首屏标题动画开始后再 mount canvas；mount 前保留同色静态背景层，避免视觉空洞。
+  - 已采用方案：首屏标题动画开始后再 mount canvas；`LandingExperience` 在 `2200ms` 后等待浏览器 idle 再挂载 `PlexusBackground`。
+  - 边界：Three/WebGL 动态背景保留，mount 前保留当前 landing 背景和 LightRays，避免视觉空洞。
   - 验收：用户仍看到动态 plexus；Lighthouse 主线程长任务下降。
 
-- [ ] P2-2 动画运行时分层。
+- [x] P2-2 动画运行时分层。
   - 将文字入场、quote scramble、dock、WebGL 背景分成可独立调度的 islands。
   - 首屏必须显示的标题动画优先；背景增强与 dock 交互可以稍后初始化，但不能消失或降级。
-  - 验收：主线程长任务被拆小，动画仍连续。
+  - 已采用方案：标题逐字动画保持 CSS stagger 首屏执行，quote scramble 和 LightRays 保持随 Hero 水合；`SocialDock` 改为 `React.lazy`，在 `1100ms` 后挂载并加载自己的 chunk，早于外层 `1.6s` fade-in，避免视觉延迟。
+  - 验收：主线程长任务被拆小，动画仍连续；构建产物中 `SocialDock`、社交链接数据和相关图标已从 Hero 静态 import 路径改为动态加载路径。
 
-- [ ] P2-3 复测 forced reflow 来源。
+- [x] P2-3 复测 forced reflow 来源。
   - Lighthouse 截图未展开该项，但 TBT 极高时需要用 Chrome Performance 定位长任务。
   - 重点看 `ResizeObserver` 测量标题宽度、motion layout、dock hover measurement、Three canvas 初始化。
-  - 验收：减少同步 layout read/write 交错。
+  - 已完成源码侧检查：dock hover 是最明确的同步布局风险点，每个图标会随鼠标移动读取 `getBoundingClientRect()`。
+  - 已采用方案：不改变 dock 放大尺寸、弹性曲线或 hover tooltip，只把 desktop dock 的 `mouseX` 更新用 `requestAnimationFrame` 合并到每帧一次，减少高频 pointermove 触发的同步测量压力。
+  - 验收：减少同步 layout read/write 交错；动画表现保留。
 
 ### P3：监控与缓存
 
-- [ ] P3-1 Cloudflare Insights 延迟或采样加载。
+- [x] P3-1 Cloudflare Insights 延迟或采样加载。
   - 截图中 beacon 缓存 TTL 只有 `1天`，体积约 `12KiB`。
   - 方案：确认是否必须首屏加载；如可延迟，放到 idle 或交互后。
-  - 验收：真实监控保留，首页初始网络更轻。
+  - 已完成源码侧检查：仓库中没有 `cloudflareinsights`、`beacon.min.js`、Zaraz 或自定义 analytics 注入；本地首页 HTML 也不包含 Cloudflare beacon。
+  - 结论：该项来自 Cloudflare/部署平台自动注入，不能在当前源码内延迟；如需继续优化，需要到 Cloudflare 面板关闭、采样或改为部署层规则。
+  - 验收：确认源码不再额外注入监控脚本，真实监控是否保留由部署配置决定。
 
-- [ ] P3-2 增加性能预算脚本。
+- [x] P3-2 增加性能预算脚本。
   - 构建后统计首页 HTML、stylesheet、modulepreload、script 数量和 `_astro` 资源体积。
-  - 验收：每次优化都有可比较的本地数据。
+  - 已新增 `npm run perf:budget`，默认输出可读摘要并统计 `dist/_astro` CSS/JS、Hero、PlexusScene、SocialDock chunk 体积。
+  - 可选传入 `PERF_URL=http://127.0.0.1:4323/ npm run perf:budget` 抓首页 HTML，检查阻塞 stylesheet、KaTeX、Google Fonts、Cloudflare beacon、Hero island 和独立 SocialDock island。
+  - 如需完整机器可读数据，使用 `npm run perf:budget -- --json`。
+  - 验收：每次优化都有可比较的本地数据；当前预算检查全部通过。
 
 ## 已开始的代码改动
 
@@ -156,7 +176,10 @@
 - `src/components/LandingExperience.tsx`
   - 在 Hero 岛内部渲染 `LightRays`，保持光线动画效果并减少独立 island。
   - 延后挂载 `PlexusBackground`，让 Three/WebGL chunk 等标题入场后再 idle 初始化。
+  - 将 `SocialDock` 改为 `React.lazy`，在外层 dock 容器淡入前预加载并挂载，保留原有社交 dock 动画和 hover 交互。
   - 将标题逐字动画从多个 `motion.span` 改为 CSS stagger，保留入场/光晕效果并降低 motion 节点数量。
+- `src/components/ui/floating-dock.tsx`
+  - desktop dock 的 `mouseX` 更新改为 `requestAnimationFrame` 合并，减少高频 pointermove 对 motion transform 和布局读取的压力。
 - `src/styles/global.css`
   - 为首页 landing 根层增加 `isolate`，稳定 WebGL、LightRays 和内容层叠关系。
   - 新增 `landing-char-reveal` CSS 动画和 reduced-motion 兜底。
@@ -168,6 +191,17 @@
   - 移除 Google Fonts 外部 stylesheet/preconnect。
   - 预加载首页关键字体 `Rock Salt` 和 `Permanent Marker`。
   - 将 Typekit stylesheet 改为非阻塞 preload/onload 加载。
+- `scripts/check-homepage-performance.mjs`
+  - 新增构建产物和首页 HTML 性能预算检查。
+- `package.json`
+  - 新增 `perf:budget` 脚本。
+
+## 本轮任务完成检查
+
+- P2-3：已完成源码侧 forced reflow 检查，并对 dock pointer tracking 做每帧合并；未改变 dock 动画视觉。
+- P3-1：已确认 Cloudflare beacon 不来自源码，本地 HTML 无该脚本；后续只剩部署平台配置项。
+- P3-2：已完成预算脚本，并通过构建产物和本地首页 HTML 两种检查。
+- 当前可自动验证项全部通过：CSS raw `123,133B`，Hero chunks raw `13,334B`，首页阻塞 stylesheet `0`，首页 KaTeX `0`，Google Fonts stylesheet `0`。
 
 ## 复测流程
 
@@ -188,21 +222,114 @@ npm run dev -- --host 127.0.0.1
 首页资源检查：
 
 ```sh
-curl -sL http://127.0.0.1:4321/ -o /tmp/imiles-home.html
-node - <<'NODE'
-const fs = require("fs");
-const html = fs.readFileSync("/tmp/imiles-home.html", "utf8");
-console.log({
-  htmlBytes: Buffer.byteLength(html),
-  stylesheetCount: (html.match(/rel="stylesheet"/g) || []).length,
-  modulepreloadCount: (html.match(/rel="modulepreload"/g) || []).length,
-  scriptCount: (html.match(/<script/g) || []).length,
-  katex: html.includes("katex.min.css"),
-  typekit: html.includes("use.typekit.net"),
-  googleFonts: html.includes("fonts.googleapis.com"),
-});
-NODE
+npm run perf:budget
+PERF_URL=http://127.0.0.1:4321/ npm run perf:budget
+npm run perf:budget -- --json
+npm run perf:budget -- --help
 ```
+
+## 性能预算脚本说明
+
+脚本位置：`scripts/check-homepage-performance.mjs`
+命令入口：`npm run perf:budget` 或 `pnpm perf:budget`
+
+### 功能
+
+- 读取 `dist/_astro`，统计生产构建产物里的 CSS/JS 资源体积。
+- 单独列出首页相关重点 chunk：
+  - `Hero.*.js`：首页首屏 React island 和 landing runtime。
+  - `PlexusScene.*.js`：Three/WebGL 背景场景，预期较大，但应延迟加载。
+  - `SocialDock.*.js`：社交 dock 交互，预期应从 Hero 首轮路径拆出。
+- 根据内置预算检查关键项是否过线：
+  - CSS raw size `<= 130 KiB`。
+  - Hero chunks raw size `<= 24 KiB`。
+  - 如果提供 `PERF_URL`，首页阻塞 stylesheet、Google Fonts stylesheet、首页 KaTeX 都必须为 `0`。
+- 可选抓取正在运行的首页 HTML，检查源码层是否仍包含：
+  - 阻塞 stylesheet。
+  - KaTeX CSS。
+  - Google Fonts stylesheet。
+  - Cloudflare beacon。
+  - Hero island。
+  - 独立 SocialDock island。
+
+### 使用前提
+
+先运行生产构建：
+
+```sh
+npm run build
+```
+
+脚本依赖 `dist/_astro`，如果没有构建产物会报错。它不是 Lighthouse 替代品，不会直接测 FCP、LCP、TBT 或 CLS；它用于检查“这次代码改动有没有让首页资源预算倒退”。
+
+### 常用命令
+
+只检查构建产物：
+
+```sh
+npm run perf:budget
+```
+
+检查构建产物，同时抓本地首页 HTML：
+
+```sh
+npm run dev -- --host 127.0.0.1
+PERF_URL=http://127.0.0.1:4321/ npm run perf:budget
+```
+
+输出完整 JSON，便于保存、diff 或接入 CI：
+
+```sh
+npm run perf:budget -- --json
+```
+
+预算失败时让命令返回非 0 状态，适合 CI：
+
+```sh
+PERF_BUDGET_FAIL=1 npm run perf:budget
+```
+
+查看脚本帮助：
+
+```sh
+npm run perf:budget -- --help
+```
+
+### 参数与环境变量
+
+- `--json`：输出完整机器可读 JSON。默认不加时输出人类可读摘要。
+- `--help` / `-h`：显示脚本帮助。
+- `PERF_URL`：可选。传入正在运行的首页 URL 后，脚本会额外抓 HTML 并检查首页 link/script/island 状态。
+- `PERF_BUDGET_FAIL=1`：可选。默认预算失败只在输出中显示 `FAIL`；设置后会让命令以非 0 状态退出。
+
+### 输出解释
+
+默认摘要示例字段：
+
+- `CSS`：全部构建 CSS 的 raw/gzip 体积。当前只有一个共享 CSS chunk，名字可能是 `about.*.css`，这是构建命名结果，不代表首页依赖 about 页面。
+- `JS total`：`dist/_astro` 下所有客户端 JS chunk 的总体积。这个值用于观察整体趋势，不等于首页首屏必须下载的 JS。
+- `Hero chunks`：首页 Hero 相关 chunk 体积，是首屏预算重点。这里增长通常意味着 landing 首轮水合成本增加。
+- `Plexus chunk`：Three/WebGL 背景 chunk。它可以较大，但必须保持动态/延迟加载，不能重新并回 Hero 首轮路径。
+- `SocialDock chunks`：社交 dock 交互 chunk。它应保持较小，并与 Hero 首轮路径分离。
+- `Home HTML: not checked`：没有设置 `PERF_URL`，所以只检查了构建产物，没有检查实际首页 HTML。
+- `Blocking stylesheet links`：首页 HTML 中同步阻塞 stylesheet 数量。目标为 `0`。
+- `KaTeX on home`：首页是否加载 KaTeX。目标为 `no`。
+- `Google Fonts stylesheet on home`：首页是否加载 `fonts.googleapis.com` stylesheet。目标为 `no`。
+- `Cloudflare beacon in source HTML`：源码返回的 HTML 是否包含 Cloudflare beacon。若线上 Lighthouse 仍显示 beacon，但这里是 `no`，说明它来自 Cloudflare/部署平台自动注入。
+- `Standalone SocialDock island`：首页 HTML 是否有独立 `SocialDock` island。目标为 `no`，因为首页 dock 现在应由 Hero 内部延迟加载。
+- `Checks`：内置预算检查结果。`PASS` 表示该项未超过预算，`FAIL` 表示需要回看最近改动。
+
+### 如何解读用户贴出的输出
+
+如果只看到：
+
+```txt
+Home HTML: not checked. Set PERF_URL to inspect the served homepage.
+```
+
+说明这次只检查了 `dist/_astro` 文件体积，没有检查真实首页 HTML。需要启动 dev server 后带 `PERF_URL` 再跑。
+
+如果 `CSS` 或 `Hero chunks` 变大但仍是 `PASS`，说明还在预算内，可以结合 Lighthouse 判断是否需要继续拆分。如果变成 `FAIL`，优先检查是否把动画、dock、Three、搜索或文章组件重新并入了首页首轮路径。
 
 线上复测：
 

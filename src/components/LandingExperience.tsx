@@ -1,9 +1,16 @@
 'use client';
 
 import { MotionConfig, motion } from 'motion/react';
-import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
-import SocialDock from '@/components/SocialDock';
 import { PlexusBackground } from '@/components/ui/plexus-background';
 import { CODEX, CODEX_CN } from '@/components/ui/plexus-shapes';
 import { useTextScramble } from '@/hooks/useTextScramble';
@@ -11,7 +18,9 @@ import { useTranslations } from '@/lib/i18n';
 import { LightRays } from '@/registry/magicui/light-rays';
 
 const NAME_CHARS = 'Shenshuai Ming'.split('');
+const DOCK_PRELOAD_DELAY_MS = 1100;
 const PLEXUS_IDLE_DELAY_MS = 2200;
+const SocialDock = lazy(() => import('@/components/SocialDock'));
 
 export default function LandingExperience() {
   const { t } = useTranslations();
@@ -19,11 +28,22 @@ export default function LandingExperience() {
   const [nameWidth, setNameWidth] = useState<number | undefined>(undefined);
   const [codexIndex, setCodexIndex] = useState(0);
   const [isZh, setIsZh] = useState(false);
+  const [shouldMountDock, setShouldMountDock] = useState(false);
   const [shouldMountPlexus, setShouldMountPlexus] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     setIsZh(window.location.pathname.startsWith('/zh'));
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const timeoutId = window.setTimeout(() => {
+      setShouldMountDock(true);
+    }, DOCK_PRELOAD_DELAY_MS);
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {
@@ -137,10 +157,14 @@ export default function LandingExperience() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 1.6 }}
             >
-              <SocialDock
-                mobileClassName="z-40"
-                desktopClassName="fixed bottom-16 left-1/2 -translate-x-1/2 z-40"
-              />
+              {shouldMountDock && (
+                <Suspense fallback={null}>
+                  <SocialDock
+                    mobileClassName="z-40"
+                    desktopClassName="fixed bottom-16 left-1/2 -translate-x-1/2 z-40"
+                  />
+                </Suspense>
+              )}
             </motion.div>
           </div>
         </motion.div>
