@@ -107,10 +107,11 @@
   - 已采用方案：将 Google Fonts 的 latin WOFF2 文件本地托管到 `public/fonts/google/`，在 `global.css` 定义 `@font-face`，移除 `fonts.googleapis.com` stylesheet 和 `fonts.gstatic.com` preconnect。
   - 验收：首页 Google Fonts CSS 请求消失，标题/品牌视觉不变。
 
-- [ ] P1-3 首页 CSS 体积和命名异常检查。
+- [x] P1-3 首页 CSS 体积和命名异常检查。
   - 截图显示首页阻塞 CSS 文件名类似 `about.*.css`，需要确认构建产物是否存在共享 chunk 命名误导或页面 CSS 被过度合并。
-  - 方案：构建后分析 `dist/_astro/*.css`，确认首页实际依赖的 CSS，移除未使用页面级样式进入首页的路径。
-  - 验收：首页 CSS 传输体积继续下降，样式不缺失。
+  - 已采用方案：确认 `about.*.css` 是全站共享 CSS chunk 的命名结果，不是首页真正依赖 about 页面；仅删除全仓库无引用的 legacy splash/film/rolodex/textile/click-hint/final-card 尾部样式。
+  - 边界：不删除当前页面可见的 landing、header、article、project、timeline、code block、status 和首页动画样式，避免破坏页面展示。
+  - 验收：构建后 CSS 产物从约 `145.7KB` 降到约 `123.1KB`；首页 HTML 保持无外部 stylesheet 字体链接，样式不缺失。
 
 ### P2：Three.js 与交互成本
 
@@ -160,6 +161,7 @@
   - 为首页 landing 根层增加 `isolate`，稳定 WebGL、LightRays 和内容层叠关系。
   - 新增 `landing-char-reveal` CSS 动画和 reduced-motion 兜底。
   - 新增本地 Google Fonts 的 `@font-face`：`Great Vibes`、`IBM Plex Mono`、`Permanent Marker`、`Rock Salt`。
+  - 删除全仓库无引用的 legacy splash/film/rolodex/textile/click-hint/final-card 尾部样式，降低全站共享 CSS 体积。
 - `public/fonts/google/`
   - 新增本地托管的 Google Fonts WOFF2 文件。
 - `src/layouts/BaseLayout.astro`
