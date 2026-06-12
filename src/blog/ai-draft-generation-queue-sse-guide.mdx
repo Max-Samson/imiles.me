@@ -35,6 +35,8 @@ SSE 承载前端实时体验
 final result_json 承载业务正确性
 ```
 
+![AI 初稿生成从同步超时拆分到异步可靠执行的设计对比](/images/blog/zh/ai-draft-generation-queue-sse-guide-panel-01.png)
+
 这篇文章把整个方案沉淀为一份开发、优化和排查指南。它不只记录做了什么，也记录哪些问题还没有彻底解决，尤其是一个容易被误判的边界：`stream: true` 并不自动等于“浏览器实时流式响应”，如果 Queue worker 仍然在内部读完整个上游 SSE，它仍然可能长时间占用一次 Worker invocation。
 
 ## 现实场景：为什么这个问题不能只靠 timeout 解决
@@ -129,6 +131,8 @@ taskId
 -> SSE EventStream ID
 ```
 
+![AI 初稿生成系统的四条链路总体架构：POST 创建任务、Queue 后台执行、D1 持久化、SSE 实时推送](/images/blog/zh/ai-draft-generation-queue-sse-guide-panel-02.png)
+
 这四条链路要互相配合，但职责不能混在一起。混在一起以后，最常见的坏味道就是：一个 `POST` handler 既校验参数、又调用模型、又流式返回、又修 JSON、又保存文章、又处理重试。短内容看起来没问题，长内容一上线就会变成排查泥潭。
 
 ## 设计原则：每个层只解决自己的问题
@@ -165,6 +169,8 @@ taskId
 | partial 被误保存 | 用户页面出现半成品 revision | 生成期间跳过 autosave，completed 后才应用 final draft |
 | SSE 断线误判失败 | network error 后弹失败，但后台还在跑 | 保存 `nextSequence`，查终态后自动续接 |
 | 高并发 D1 空读 | 多个 SSE 连接持续查库 | 无事件时退避读取，有事件时保持短间隔 |
+
+![AI 初稿生成系统的问题、表现和处理思路矩阵](/images/blog/zh/ai-draft-generation-queue-sse-guide-panel-06.png)
 
 这个矩阵的核心判断是：先确定问题发生在哪一层，再决定优化方式。不要用一个更大的 timeout 去掩盖所有层的问题。
 
@@ -297,6 +303,8 @@ SSE endpoint 读取任务事件
 浏览器消费任务事件
 ```
 
+![SSE 任务事件流从 snapshot、field、block 到 completed 的实时体验](/images/blog/zh/ai-draft-generation-queue-sse-guide-panel-03.png)
+
 ## 四、完整架构
 
 当前可运行架构可以写成：
@@ -337,6 +345,8 @@ Cloudflare Queue
 - Queue worker 仍可能在一次 invocation 里等待完整上游模型输出。
 
 这就是后续阶段化生成要解决的事情。
+
+![AI 初稿任务从 pending、processing、partial 到 completed 或 failed 的生命周期](/images/blog/zh/ai-draft-generation-queue-sse-guide-panel-04.png)
 
 ## 五、数据模型：任务表与事件表
 
@@ -666,6 +676,8 @@ runtimeConfig
 -> global fallback
 ```
 
+![Queue worker 执行文章初稿任务时从 claim、调用 AI、写事件、解析校验到完成状态的流程](/images/blog/zh/ai-draft-generation-queue-sse-guide-panel-05.png)
+
 日志里只记录：
 
 ```txt
@@ -788,6 +800,8 @@ image-prompt/hero           -> 图片 prompt 面板
 partial event = 预览
 final result_json = 正式结果
 ```
+
+![AI 初稿生成期间禁止自动保存，完成后应用最终结果，并在断线后通过 nextSequence 恢复](/images/blog/zh/ai-draft-generation-queue-sse-guide-panel-09.png)
 
 ## 十二、生产事故一：EventStream ID 卡在 1
 
@@ -922,6 +936,8 @@ Queue worker 长时间挂住：尚未彻底解决
 ```
 
 真正降低这个风险的方向是阶段化小任务。
+
+![把一次性大 JSON 拆成 metadata、entries、body blocks、image prompts 和 finalize 的阶段化生成方案](/images/blog/zh/ai-draft-generation-queue-sse-guide-panel-07.png)
 
 ## 十六、阶段化生成：把一个大 JSON 拆成多个可恢复阶段
 
@@ -1085,6 +1101,8 @@ repair 阶段收到 SSE，但没有 content
 也可能任务排队
 线上确认 Queue 可消费后，提示文案应从“失败”改成“后台排队中”
 ```
+
+![AI 初稿任务排查时需要串联 taskId、requestId、cfRay、sequence 和 EventStream ID 等关键指标](/images/blog/zh/ai-draft-generation-queue-sse-guide-panel-08.png)
 
 ## 十八、验收清单
 
