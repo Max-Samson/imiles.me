@@ -1,0 +1,1207 @@
+---
+title: "AI 初稿生成系统设计：从同步超时到 Queue、SSE 与阶段化任务编排"
+description: "面向真实 CMS 场景的 AI 初稿生成设计、优化和排查指南：如何从同步请求超时，演进到 Cloudflare Queue 异步执行、任务事件表、SSE 实时渲染、D1 事件序列修复、长 JSON 排查和阶段化生成。"
+pubDate: 2026-06-12
+tags: ["nuxt", "cloudflare", "sse", "queue", "ai", "fullstack", "debugging"]
+lang: "zh"
+llms: true
+---
+
+import ExploreCard from '../components/ExploreCard';
+
+这是一篇从真实故障里长出来的工程笔记。
+
+问题的入口很普通：用户在 CMS 里点一次“AI 初稿”，浏览器发起 `POST /api/user/articles-v2/ai-drafts`，然后等。短内容偶尔成功，长内容经常失败。网络面板里看到的是一个没有回应的请求，Cloudflare 或 AI Gateway 日志里看到的是 `502 Bad Gateway`、`timeout`、`operation was aborted`。
+
+但真正的问题不只是“请求超时”。更准确地说，它是一个长链路系统没有边界的问题：
+
+```txt
+浏览器 HTTP request
+-> Cloudflare Worker
+-> AI Gateway
+-> 上游大模型
+-> 完整 JSON 聚合
+-> JSON parse / repair / validate
+-> 写入编辑器
+```
+
+任何一段慢，用户都会看到失败。任何一段中断，前端都很难知道任务到底是没开始、正在跑、已经生成一半，还是后端其实已经完成但响应丢了。
+
+最终落地的方向不是“把 timeout 调大”，而是把链路拆成三个职责：
+
+```txt
+Queue 承载后台可靠执行
+SSE 承载前端实时体验
+final result_json 承载业务正确性
+```
+
+这篇文章把整个方案沉淀为一份开发、优化和排查指南。它不只记录做了什么，也记录哪些问题还没有彻底解决，尤其是一个容易被误判的边界：`stream: true` 并不自动等于“浏览器实时流式响应”，如果 Queue worker 仍然在内部读完整个上游 SSE，它仍然可能长时间占用一次 Worker invocation。
+
+## 现实场景：为什么这个问题不能只靠 timeout 解决
+
+先把场景放清楚。
+
+这是一个 CMS 里的 AI 初稿功能。用户不是在聊天框里问一句话，而是在一个文章编辑器里选择模板、语言、关键词、条目数量、语气、图片需求，然后希望系统生成一篇可以继续编辑的结构化草稿。
+
+真实请求通常具备这些特征：
+
+```txt
+输入复杂：模板、locale、SEO、标题、正文结构、图片 prompt、业务约束
+输出很长：Long Form、Ranking、Steps Guide、Compare、Checklist 都可能很大
+结果必须结构化：不能只返回自然语言，需要 frontmatter + templatePayload
+结果必须可保存：刷新页面后应能恢复任务或结果
+结果必须可校验：最终写入编辑器前要 parse / repair / validate
+用户需要反馈：不能 2-4 分钟只看到一个 loading spinner
+平台有边界：Cloudflare Worker、Queue、D1、AI Gateway、浏览器连接都会超时或中断
+```
+
+所以这个功能不是“调用一次 AI 接口”那么简单。它更接近一个后台生成工作流：
+
+```txt
+创建任务
+-> 后台执行
+-> 实时进度
+-> 部分预览
+-> 最终校验
+-> 可恢复结果
+-> 可排查日志
+```
+
+这也决定了设计目标不能只写成“生成成功”。更合理的目标是：
+
+| 目标 | 设计要求 |
+| --- | --- |
+| 用户不被长请求卡住 | 创建任务接口必须快速返回 `taskId` |
+| 用户能看到进度 | 用 SSE 推送任务事件，而不是等待最终响应 |
+| 后端能承受长任务 | AI 生成放到 Queue，失败写任务状态 |
+| 结果能恢复 | 任务、事件、最终结果都持久化 |
+| 页面不保存半成品 | partial event 只做预览，completed 后再应用 final draft |
+| 线上能排查 | 所有链路用 `taskId / requestId / cfRay / sequence` 串起来 |
+| 成本可控 | 业务错误不无限 retry，repair/fallback 有边界 |
+| 后续可优化 | 从一次性大 JSON 演进到阶段化小 JSON |
+
+## 总体设计：把“生成文章”拆成四条链路
+
+一个可维护的 AI 初稿系统，最好不要把所有逻辑塞进一个 API handler。可以拆成四条链路。
+
+第一条是请求链路，只负责创建任务：
+
+```txt
+前端点击生成
+-> POST /ai-drafts
+-> 校验参数和权限
+-> 写 content_generation_tasks
+-> 入队
+-> 返回 taskId
+```
+
+第二条是执行链路，由 Queue consumer 承担：
+
+```txt
+Queue message
+-> claim task
+-> 更新 processing
+-> 执行 AI 阶段
+-> 写 task events
+-> parse / repair / validate
+-> 写 result_json
+-> completed / failed
+```
+
+第三条是体验链路，由 SSE 承担：
+
+```txt
+前端拿到 taskId
+-> GET /events-stream
+-> 收 snapshot / ping / field / block / completed / failed
+-> 分区渲染预览
+-> completed 后应用最终 draft
+```
+
+第四条是排查链路，由事件和日志承担：
+
+```txt
+taskId
+-> task status
+-> task events sequence
+-> Queue logs
+-> AI Gateway requestId / cfRay
+-> SSE EventStream ID
+```
+
+这四条链路要互相配合，但职责不能混在一起。混在一起以后，最常见的坏味道就是：一个 `POST` handler 既校验参数、又调用模型、又流式返回、又修 JSON、又保存文章、又处理重试。短内容看起来没问题，长内容一上线就会变成排查泥潭。
+
+## 设计原则：每个层只解决自己的问题
+
+这套方案里最重要的取舍是：不要让某一种技术承担它不该承担的职责。
+
+| 技术 | 负责什么 | 不负责什么 |
+| --- | --- | --- |
+| HTTP POST | 创建任务、快速返回 `taskId` | 不等待完整 AI 输出 |
+| Cloudflare Queue | 后台执行、削峰、任务隔离 | 不直接写浏览器 response |
+| Task Events | 持久化进度、支持续传、支持排查 | 不代表最终业务正确性 |
+| SSE | 实时把任务事件推给前端 | 不替代 Queue，也不保证任务成功 |
+| AI Gateway stream | 降低上游无响应风险、观察首包 | 不自动等于浏览器流式响应 |
+| `result_json` | 最终校验通过的正式结果 | 不承担实时预览体验 |
+| Repair / fallback | 修复确定失败的结构化输出 | 不无限重试，不并发烧钱 |
+
+这个表是现实项目里最实用的部分。很多问题不是代码不会写，而是边界混了。比如把 AI Gateway 原始 SSE 直接接给浏览器，短文本聊天很好用；但对 CMS 初稿这种需要保存、恢复、校验和最终结构化结果的任务，它会把问题重新绑回 HTTP request 生命周期。
+
+## 优化处理矩阵
+
+下面是这次方案沉淀出来的处理矩阵。遇到类似系统，可以先按这个表判断该改哪里。
+
+| 问题 | 表现 | 处理思路 |
+| --- | --- | --- |
+| 同步请求超时 | POST `<no response>`、浏览器 Failed to fetch | POST 只创建任务并返回 `taskId`，AI 放 Queue |
+| 前端短轮询太多 | Network 每秒 `events + status` 两个请求 | 改为一个 `events-stream` SSE 连接 |
+| 用户看不到进度 | 长时间 loading，完成后一次性出现 | Queue 写 task events，SSE 推 `field / block / image-prompt` |
+| Queue 没消费 | task 长期 `pending`，无 AI Gateway request | 查 Queue binding、consumer 日志、`hasEnv/hasGatewayKey` |
+| 事件流卡住 | status `processing`，EventStream ID 不增长 | 查事件写入、sequence 唯一索引、D1 insert warning |
+| AI 首包慢 | `first-chunk-timeout` | 区分 first-chunk 和 first-content，检查网关/模型响应 |
+| 长 JSON 截断 | JSON 未闭合、parse 失败、字段 undefined | 增加 maxTokens 只是短期方案，最终拆阶段小 JSON |
+| repair 空响应 | HTTP 200，有 first-chunk，但 `hasContent=false` | 记录 `deltaKeys/finishReason/hasContent`，允许确定失败 fallback |
+| Queue worker 挂太久 | Queue invocation 被完整大输出占住 | 拆 metadata、entries batch、image prompts 等阶段 |
+| partial 被误保存 | 用户页面出现半成品 revision | 生成期间跳过 autosave，completed 后才应用 final draft |
+| SSE 断线误判失败 | network error 后弹失败，但后台还在跑 | 保存 `nextSequence`，查终态后自动续接 |
+| 高并发 D1 空读 | 多个 SSE 连接持续查库 | 无事件时退避读取，有事件时保持短间隔 |
+
+这个矩阵的核心判断是：先确定问题发生在哪一层，再决定优化方式。不要用一个更大的 timeout 去掩盖所有层的问题。
+
+## 一、故障现象
+
+线上最常见的用户侧表现是：
+
+```txt
+[POST] "/api/user/articles-v2/ai-drafts": <no response> Failed to fetch
+```
+
+AI Gateway 侧常见失败类似：
+
+```json
+{
+  "message": "[ai-gateway] request failed",
+  "endpoint": "chat/completions",
+  "model": "qwen/qwen3.6-plus",
+  "status": "failed",
+  "errorMessage": "[POST] \"https://aigw.example.com/v1/chat/completions\": 502 Bad Gateway"
+}
+```
+
+排查时有几个关键观察：
+
+- 简短非流式请求可以成功，说明鉴权、模型路由、基础网络连通性不是主因。
+- 真实文章初稿请求的输出很长，completion tokens 可能达到数千甚至更多。
+- 非流式请求需要等上游完整生成后才返回，任何中间层超时都会导致前端失败。
+- 同样请求改成 AI Gateway 上游 `stream: true` 后，可以持续收到 `chat.completion.chunk`，最终收到 `[DONE]`。
+- 只调大同步 HTTP timeout 不能根治。浏览器、Cloudflare Worker、AI Gateway、上游模型任一层断开，用户仍会看到失败。
+
+这里最重要的判断是：问题不是一个局部 timeout，而是“长任务被错误地放在用户 HTTP request 生命周期里”。
+
+## 二、第一条分界线：创建任务必须快速返回
+
+原链路是同步接口：
+
+```txt
+POST /api/user/articles-v2/ai-drafts
+-> 构造 prompt
+-> 调用 AI Gateway
+-> 等完整 JSON
+-> parse / repair / validate
+-> 返回 draft
+```
+
+第一阶段先把它拆成任务：
+
+```txt
+POST /api/user/articles-v2/ai-drafts
+-> 创建 content_generation_tasks
+-> status = pending
+-> 发送 Cloudflare Queue message
+-> 立即返回 taskId
+```
+
+响应结构变成：
+
+```json
+{
+  "success": true,
+  "data": {
+    "taskId": "draft_task_xxx",
+    "status": "pending"
+  },
+  "message": "AI 初稿任务已创建"
+}
+```
+
+这一步解决的是同步请求风险。用户发起的 `POST` 不再等待 AI 完整输出。就算模型生成很慢，创建任务接口也能快速返回。
+
+但这还不够。因为如果前端随后每秒轮询任务状态，用户体验仍然很粗糙，网络面板也会变成一串碎片化 XHR。
+
+## 三、第二条分界线：SSE 推任务事件，不再短轮询
+
+历史过渡方案是：
+
+```txt
+createDraftTask()
+-> pollDraftTask(taskId)
+-> GET /api/user/articles-v2/ai-drafts/:taskId
+-> completed 后应用 draft
+```
+
+这证明了异步任务模型可行，但它有明显问题：
+
+- 请求数量随任务时长线性增长。
+- 进度粒度很粗，用户经常只看到“处理中”。
+- 如果同时轮询 events 和 task status，会出现每秒两个请求。
+- 即使后端生成了部分结果，前端也不能自然地分区渲染。
+
+于是主链路改成：
+
+```txt
+createDraftTask()
+-> connectDraftTaskEventStream(taskId)
+-> GET /api/user/articles-v2/ai-drafts/:taskId/events-stream
+-> SSE snapshot / field / block / image-prompt / completed / failed
+-> completed snapshot 返回 final result_json
+```
+
+理想的 Network 面板应该只出现：
+
+```txt
+1 x POST /api/user/articles-v2/ai-drafts
+1 x GET  /api/user/articles-v2/ai-drafts/:taskId/events-stream
+```
+
+不应该再看到每秒重复的：
+
+```txt
+GET /events?afterSequence=...
+GET /ai-drafts/:taskId
+```
+
+SSE endpoint 输出统一事件：
+
+```txt
+snapshot   携带新增 task events、当前 status、nextSequence、result/error
+ping       保活，不代表业务变化
+completed 终态，携带 final result_json / draft
+failed    终态，携带 errorMessage
+```
+
+浏览器订阅的是“任务事件 SSE”，不是 AI Gateway 原始 SSE 直通。这一点非常重要。Cloudflare Queue consumer 是后台 invocation，它不能直接写入某个浏览器 response。正确模型是：
+
+```txt
+Queue 写任务事件
+SSE endpoint 读取任务事件
+浏览器消费任务事件
+```
+
+## 四、完整架构
+
+当前可运行架构可以写成：
+
+```txt
+Browser
+  POST /api/user/articles-v2/ai-drafts
+    -> createDraftTask()
+    -> insert content_generation_tasks
+    -> insert queued event
+    -> QUEUE.send({ type: "article-draft", taskId, userId })
+    <- { taskId, status: "pending" }
+
+Browser
+  GET /api/user/articles-v2/ai-drafts/:taskId/events-stream
+    -> permission check created_by === currentUser.id
+    -> read task events afterSequence
+    -> push snapshot / ping / completed / failed
+
+Cloudflare Queue
+  article-draft message
+    -> runDraftTask(taskId, { env })
+    -> status pending -> processing
+    -> createStreamingChatCompletion(stream: true, onDelta)
+    -> write raw delta / structured preview events
+    -> parse / repair / validate
+    -> write result_json
+    -> status completed / failed
+```
+
+这个架构解决了两个核心问题：
+
+- 用户创建任务的 HTTP 请求不再被 AI 生成时间绑住。
+- 前端生成体验不再依赖短轮询，而是通过 SSE 持续收到任务事件。
+
+但它还没有彻底解决第三个问题：
+
+- Queue worker 仍可能在一次 invocation 里等待完整上游模型输出。
+
+这就是后续阶段化生成要解决的事情。
+
+## 五、数据模型：任务表与事件表
+
+任务表保存最终状态和结果：
+
+```txt
+content_generation_tasks
+```
+
+关键字段：
+
+```txt
+id                draft_task_xxx
+type              article-draft
+status            pending / processing / completed / failed / cancelled
+request_json      { batchId, request }
+result_json       完整 AdminArticleV2AIDraftResponseData
+error_message     用户可见失败原因
+created_by        权限归属
+completed_at      完成或失败时间
+```
+
+事件表保存可增量消费的任务过程：
+
+```txt
+content_generation_task_events
+```
+
+每条事件属于一个 `taskId`，并有递增 `sequence`。前端或 SSE endpoint 可以通过 `afterSequence` 续传。
+
+典型事件包括：
+
+```txt
+queued
+started
+stage-started/raw-draft
+delta/raw-draft
+field/frontmatter.title
+field/frontmatter.slug
+field/frontmatter.seo
+block/templatePayload.*
+image-prompt/*
+parsing
+repairing
+validating
+completed
+failed
+```
+
+这里的设计像一个轻量事件日志。它的价值不只是实时 UI，也包括排查。
+
+当用户说“卡住了”，你不应该先猜模型慢不慢。你应该先看：
+
+```txt
+task status 是 pending 还是 processing？
+events sequence 有没有增长？
+EventStream ID 有没有增长？
+Queue 日志有没有 processing article draft task？
+AI Gateway request 在 fetch 事件里，还是 queue 事件里？
+```
+
+## 六、接口契约：让前端、后端、Queue 对同一套状态说话
+
+一个现实项目里，AI 生成链路最怕“每层都有自己的状态”。前端说 loading，后端说 pending，Queue 说 processing，AI Gateway 说 opened，最后用户只看到 failed。状态必须统一。
+
+建议最小状态机：
+
+```txt
+pending
+  -> processing
+  -> completed
+  -> failed
+  -> cancelled
+```
+
+如果引入阶段化生成，可以再加阶段字段，而不是把状态无限扩展：
+
+```txt
+status = processing
+current_stage = metadata | intro | entries | image-prompts | assemble | validating
+stage_cursor = { offset, limit, batchIndex }
+stage_attempt = 1
+```
+
+创建任务接口只返回任务身份：
+
+```json
+{
+  "success": true,
+  "data": {
+    "taskId": "draft_task_xxx",
+    "status": "pending"
+  }
+}
+```
+
+任务状态接口用于恢复和排查，不作为主链路轮询：
+
+```json
+{
+  "success": true,
+  "data": {
+    "taskId": "draft_task_xxx",
+    "status": "processing",
+    "result": null,
+    "draft": null,
+    "errorMessage": null,
+    "createdAt": "2026-06-12T00:00:00.000Z",
+    "updatedAt": "2026-06-12T00:01:00.000Z",
+    "completedAt": null
+  }
+}
+```
+
+SSE snapshot 则要同时满足“渲染”和“续传”：
+
+```json
+{
+  "type": "snapshot",
+  "taskId": "draft_task_xxx",
+  "status": "processing",
+  "events": [
+    {
+      "sequence": 12,
+      "type": "block",
+      "stage": "entries",
+      "path": "templatePayload.items[2]",
+      "payload": {
+        "title": "第三段标题",
+        "body": "..."
+      }
+    }
+  ],
+  "nextSequence": 13,
+  "result": null,
+  "draft": null,
+  "errorMessage": null
+}
+```
+
+completed snapshot 必须带最终可应用结果：
+
+```json
+{
+  "type": "completed",
+  "taskId": "draft_task_xxx",
+  "status": "completed",
+  "events": [],
+  "nextSequence": 42,
+  "result": {
+    "batchId": "draft_batch_xxx",
+    "taskIds": ["draft_task_xxx"],
+    "warnings": [],
+    "draft": {
+      "frontmatter": {},
+      "templatePayload": {}
+    }
+  },
+  "draft": {
+    "frontmatter": {},
+    "templatePayload": {}
+  },
+  "errorMessage": null
+}
+```
+
+这里有一个关键约定：前端可以用 `events` 更新预览，但只在 `completed` 后把 `draft` 当作正式结果应用。
+
+## 七、落地路线：从止血到可恢复工作流
+
+不要试图一次把所有能力做完。现实项目更适合分阶段。
+
+### Phase 0：同步接口止血
+
+目标：
+
+```txt
+POST 不再等待 AI 完整输出
+```
+
+改动：
+
+- 新增 `content_generation_tasks`。
+- 新增 Queue message。
+- `POST /ai-drafts` 只创建任务并入队。
+- Queue consumer 执行原来的生成逻辑。
+- 失败写任务状态。
+
+验收：
+
+- Network 中 `POST /ai-drafts` 快速返回。
+- AI Gateway 请求出现在 Queue eventType，而不是 POST fetch eventType。
+
+### Phase 1：任务状态恢复
+
+目标：
+
+```txt
+用户刷新后仍能通过 taskId 找回结果
+```
+
+改动：
+
+- 新增 `GET /ai-drafts/:taskId`。
+- 只允许 `created_by === currentUser.id` 查询。
+- completed 返回 `result` 和便捷 `draft`。
+- failed 返回 `errorMessage`。
+
+验收：
+
+- taskId 可恢复。
+- completed 后能拿到和旧同步接口一致的数据结构。
+
+### Phase 2：任务事件表
+
+目标：
+
+```txt
+后端能记录过程，前端能增量获取
+```
+
+改动：
+
+- 新增 `content_generation_task_events`。
+- 写入 `queued / started / delta / parsing / repairing / validating / completed / failed`。
+- 每条事件有递增 `sequence`。
+- 支持 `afterSequence`。
+
+验收：
+
+- task event sequence 持续增长。
+- 失败时能从事件里看到卡在哪个 stage。
+
+### Phase 3：SSE 替代短轮询
+
+目标：
+
+```txt
+生成主链路只保留一个持续事件流
+```
+
+改动：
+
+- 新增 `events-stream`。
+- 输出 `snapshot / ping / completed / failed`。
+- 前端 `createDraftTask()` 后立即订阅 SSE。
+- SSE 断线后用 `nextSequence` 续接。
+
+验收：
+
+- Network 只出现 `POST create task + GET events-stream`。
+- 不再每秒请求 `events + task status`。
+
+### Phase 4：结构化预览
+
+目标：
+
+```txt
+用户能看到标题、SEO、正文块、图片 prompt 分区出现
+```
+
+改动：
+
+- 在 raw delta 聚合过程中提取已闭合 JSON 片段。
+- 写入 `field / block / image-prompt` 事件。
+- 前端按 path 更新页面区域。
+- 生成期间跳过 autosave。
+- completed 后用 final `result_json.draft` 覆盖。
+
+验收：
+
+- 页面不展示 raw JSON。
+- 部分内容可提前出现。
+- 失败时不会自动保存半成品。
+
+### Phase 5：阶段化生成
+
+目标：
+
+```txt
+降低 Queue worker 单次等待完整大输出的风险
+```
+
+改动：
+
+- 新增 `current_stage / stage_cursor / partial_result_json / lease_owner / lease_expires_at / stage_attempt`。
+- 按模板生成 stage plan。
+- `metadata / intro / entries batch / image prompts / assemble / validating` 分开执行。
+- 每个阶段输出小 JSON。
+- 每个阶段完成后写 checkpoint。
+
+验收：
+
+- Long Form 不再依赖一次完整大 JSON。
+- 单阶段失败可定位。
+- Worker 被回收后能判断恢复点。
+
+Phase 5 才是最终优化。前面几步主要解决用户体验、可恢复和可观测性；阶段化才真正降低后台 invocation 长时间挂住的核心风险。
+
+## 八、Queue consumer 的边界
+
+Queue consumer 的职责是执行后台任务：
+
+```txt
+cloudflare:queue
+-> resolveQueueEnv(params)
+-> dispatchQueueMessage(message.body, env)
+-> type === article-draft
+-> ArticleV2AIDraftService.runDraftTask(taskId, { env })
+-> ack
+```
+
+有几个工程边界很重要。
+
+第一，未知消息类型要告警并 ack，避免毒消息反复 retry。
+
+第二，业务失败应该落任务状态，而不是无限抛错让 Queue 重试。AI 生成是高成本任务，如果 schema repair 失败、JSON 不合法或模型返回空响应，反复自动 retry 可能只是在烧钱。
+
+第三，系统级异常才考虑 retry，例如数据库短暂不可用或 Worker runtime 异常。
+
+第四，Queue worker 要显式拿到 Cloudflare env。后台 consumer 不一定有普通 H3 request event，因此密钥读取不能只依赖请求上下文。更稳妥的顺序是：
+
+```txt
+runtimeConfig
+-> explicit env
+-> event.cloudflare.env
+-> global fallback
+```
+
+日志里只记录：
+
+```txt
+hasEnv=true
+hasGatewayKey=true
+```
+
+不要输出真实密钥。
+
+## 九、AI Gateway streaming：首包和正文不是一回事
+
+`createStreamingChatCompletion()` 的流式路径大概是：
+
+```txt
+fetch POST /chat/completions { stream: true }
+-> response.body.getReader()
+-> TextDecoder
+-> 按 SSE data: 行解析
+-> JSON.parse()
+-> 记录 first-chunk
+-> 拼接 choices[0].delta.content
+-> 记录 first-content
+-> [DONE] 后返回完整 content
+```
+
+这里有一个容易写错的地方：首包超时不应该以 `delta.content` 为标准。
+
+更合理的语义是：
+
+```txt
+first-chunk = 收到任意合法非空 SSE data JSON
+first-content = 第一次收到 choices[0].delta.content
+```
+
+为什么要分开？
+
+因为有些上游会先返回 role、reasoning、metadata 或空 delta。它们已经证明连接打开了，网关和上游已经开始返回流。如果你坚持等 `delta.content` 才清除首包 timeout，就会把“流已打开但正文还没开始”的正常情况误判成首包超时。
+
+建议日志字段至少包含：
+
+```txt
+requestId
+taskId
+model
+endpoint
+stream
+timeoutMs
+firstChunkTimeoutMs
+abortReason
+cfRay
+httpStatus
+durationMs
+choicesCount
+deltaKeys
+finishReason
+hasContent
+errorMessage
+```
+
+这样遇到 `HTTP 200 + SSE data + content 为空` 的情况，才有足够证据判断是模型空响应、repair prompt 问题，还是 parser 把事件吃掉了。
+
+## 十、SSE endpoint 的工程细节
+
+SSE endpoint 不是简单 `while true` 写响应。它要处理四件事。
+
+第一，权限。只能订阅 `created_by === currentUser.id` 的任务。
+
+第二，断线。浏览器关闭页面或 SSE 连接断开时，服务端要监听 request abort signal，尽快停止查库和写入。
+
+第三，保活。长时间无业务事件时发送 `ping`，避免中间层把连接视为空闲。
+
+第四，退避。没有新事件时不要固定短间隔空读 D1。更好的策略是：
+
+```txt
+有新事件 -> 继续 1s 间隔，保持体验
+无新事件 -> 逐步退到 5s，降低 D1 read
+终态      -> 发送 completed / failed snapshot 并关闭连接
+```
+
+前端也要支持断线续接：
+
+```txt
+保存 nextSequence
+SSE 异常结束
+-> 查询一次 task 终态
+-> 如果仍 pending / processing
+-> 重新连接 events-stream?afterSequence=nextSequence
+```
+
+这样临时网络错误不会直接变成“AI 初稿失败”。
+
+## 十一、结构化预览：不要把 raw JSON 塞进编辑器
+
+一开始可以把模型原始 delta 写出来给用户看，但这很快会变成体验负担。用户不需要看半截 JSON。
+
+更好的方式是把事件分层：
+
+```txt
+raw delta       用于调试和审计
+field event     更新 frontmatter / SEO 等字段
+block event     更新正文分区
+image-prompt    更新图片 prompt 区域
+completed       用最终 result_json 覆盖正式 draft
+```
+
+前端收到结构化事件后可以分区渲染：
+
+```txt
+field/frontmatter.title     -> 标题区域
+field/frontmatter.seo       -> SEO 面板
+block/templatePayload.intro -> 正文 intro
+image-prompt/hero           -> 图片 prompt 面板
+```
+
+但正式保存必须以后端完整校验通过的 `result_json.draft` 为准。生成期间应该跳过 autosave，避免把 partial preview 存成正式 revision。
+
+这个边界很关键：
+
+```txt
+partial event = 预览
+final result_json = 正式结果
+```
+
+## 十二、生产事故一：EventStream ID 卡在 1
+
+一次线上现象很典型：
+
+```txt
+task status: pending -> processing
+EventStream ID: 长时间停在 1
+```
+
+这说明 Queue 已开始执行，但后续 `started / stage-started / delta / field / block` 事件没有写进去，或者写了但读不到。
+
+后来怀疑点落在事件序号计算：
+
+```txt
+coalesce(max(sequence), 0) as maxSequence
+```
+
+在生产 D1 / Drizzle 映射下，聚合别名可能没有按预期取到，导致后续事件仍尝试插入 `sequence=1`。如果表上有唯一索引 `(task_id, sequence)`，第二条事件就会冲突。更糟的是，如果 `writeDraftTaskEvent()` 只捕获 warning，不中断主流程，表面看任务仍在跑，前端却永远收不到新事件。
+
+修复方式：
+
+```txt
+读取 taskId 下最新事件
+order by sequence desc
+limit 1
+nextSequence = latest.sequence + 1
+```
+
+如果仍遇到唯一索引冲突：
+
+```txt
+重新读取最新 sequence
+最多重试 3 次
+```
+
+上线验证标准很简单：
+
+```txt
+EventStream ID 必须从 1 继续增长到 2 / 3 / 4...
+```
+
+如果仍停在 `1`，优先查：
+
+```txt
+[ai-draft] failed to write task event
+```
+
+## 十三、生产事故二：Long Form JSON 截断
+
+长文章模板在一次性输出完整 JSON 时，出现过模型输出中途截断，最后 JSON 未闭合。
+
+短期修复包括：
+
+- 提升主生成 `maxTokens`，例如从 `6000` 提到 `16000`。
+- JSON parser 不再接受半截 JSON 里误抽出来的内部对象。
+- 文章初稿只接受包含 `frontmatter + templatePayload` 的完整 draft 根对象。
+- 如果根对象不完整，强制进入 JSON repair。
+- adapter 兼容包装层：
+  - `{ draft: ... }`
+  - `{ data: { draft: ... } }`
+  - `{ result: ... }`
+  - `{ article: ... }`
+
+但要承认：增加 `maxTokens` 只是降低截断概率，不是最终解法。
+
+只要仍然要求模型一次性输出完整大 JSON，长模板就会继续存在：
+
+```txt
+输出慢
+JSON 截断
+repair 成本高
+Queue worker 等待过久
+```
+
+最终还是要拆阶段。
+
+## 十四、生产事故三：repair 空响应
+
+另一次失败更隐蔽：
+
+```txt
+raw-draft 阶段有 stream-progress
+repairing 阶段 httpStatus=200
+repairing 阶段收到 first-chunk
+但 hasContent=false
+最终 AI_EMPTY_RESPONSE
+```
+
+这说明不是网络完全失败，也不是 Gateway 没响应。它更像是上游返回了 SSE 数据，但没有有效正文 content。
+
+处理方式：
+
+- repair 链路允许 fallback 到第二模型。
+- 但对 `total-timeout / first-chunk-timeout / aborted` 不做 fallback，避免第一个 provider 侧可能仍在运行时重复烧钱。
+- 日志补齐 `choicesCount / deltaKeys / finishReason / dataLength / hasContent`。
+- 避免同一个 request 在抛错前和 catch 中重复打两条 failed 日志。
+
+这里的原则是：能确认快速失败的错误可以 fallback；无法确认上游是否仍在运行的 timeout 不要轻易并发补偿。
+
+## 十五、仍未彻底解决的问题：Queue worker 仍会读完整上游流
+
+这是整套方案里最容易被误解的一点。
+
+当前 `stream: true` 只表示：
+
+```txt
+Worker -> AI Gateway 使用 SSE transport
+```
+
+它不表示：
+
+```txt
+AI Gateway SSE 直接转发给浏览器
+```
+
+如果 `AIChatService.createStreamingChatCompletion()` 仍返回 `Promise<string>`，那么它实际做的是：
+
+```txt
+打开上游 SSE
+-> 在 Worker 内 read 到 [DONE]
+-> 拼成完整字符串
+-> 返回给业务层 parse / validate
+```
+
+这已经把用户 HTTP request 从长任务中解救出来了，但 Queue worker 本身仍会长时间等待模型输出。也就是说：
+
+```txt
+前端同步超时问题：已解决
+前端短轮询体验问题：已解决
+Queue worker 长时间挂住：尚未彻底解决
+```
+
+真正降低这个风险的方向是阶段化小任务。
+
+## 十六、阶段化生成：把一个大 JSON 拆成多个可恢复阶段
+
+最终目标不是一次生成完整文章，而是拆成：
+
+```txt
+metadata
+template intro
+entries batch 1
+entries batch 2
+entries batch N
+image prompts
+assemble
+validating
+```
+
+每个阶段输出小 JSON，并立刻落事件：
+
+```txt
+stage-started/entries
+block/templatePayload.items[0]
+block/templatePayload.items[1]
+stage-completed/entries
+```
+
+这样可以同时改善三件事：
+
+- 单次模型调用更短，降低 Queue worker 被长输出占住的时间。
+- 每个阶段有 checkpoint，Worker 被回收后更容易判断恢复点。
+- 前端能更自然地分区渲染，不需要扫描一个越来越大的完整 JSON 字符串。
+
+阶段化地基可以包括：
+
+```txt
+current_stage
+stage_cursor
+partial_result_json
+lease_owner
+lease_expires_at
+stage_attempt
+```
+
+Queue message 也可以携带：
+
+```json
+{
+  "type": "article-draft",
+  "taskId": "draft_task_xxx",
+  "userId": "user_xxx",
+  "stage": "entries",
+  "cursor": {
+    "offset": 0,
+    "limit": 3
+  }
+}
+```
+
+这里的重点不是为了让架构看起来高级，而是为了让后台任务从“一口气跑完”变成“可观测、可恢复、可限制成本”的多个小步骤。
+
+## 十七、排查手册：从 taskId 串完整链路
+
+遇到用户反馈“AI 初稿卡住”，先拿 `taskId`。没有 `taskId`，排查会非常痛苦。
+
+### 1. 看创建任务是否成功
+
+确认 `POST /api/user/articles-v2/ai-drafts` 是否快速返回：
+
+```json
+{
+  "taskId": "draft_task_xxx",
+  "status": "pending"
+}
+```
+
+如果这个 POST 仍然很久才返回，说明生产代码还在旧同步链路里。
+
+### 2. 看 Queue 是否消费
+
+新版日志应该出现：
+
+```txt
+[Queue] queue=asksoul-me-queue, messages=1, hasEnv=true, hasGatewayKey=true
+[Queue] processing article draft task
+```
+
+旧日志如果只有：
+
+```txt
+[Queue] queue=asksoul-me-queue, messages=1
+[Queue] processing message <message-id>
+```
+
+可能说明线上 Worker 还没有跑到新版 dispatch。
+
+### 3. 看 AI Gateway 请求在哪个事件类型里
+
+正确情况：
+
+```json
+{
+  "$workers": {
+    "eventType": "queue",
+    "event": {
+      "queue": "asksoul-me-queue"
+    }
+  }
+}
+```
+
+如果 AI Gateway 请求仍出现在：
+
+```txt
+eventType = fetch
+POST /api/user/articles-v2/ai-drafts
+```
+
+说明还是旧同步生成逻辑。
+
+### 4. 看 SSE EventStream ID 是否增长
+
+正常情况：
+
+```txt
+ID: 1
+ID: 2
+ID: 3
+ID: 4
+...
+```
+
+如果 `status=processing` 但 ID 长期停在 `1`：
+
+```txt
+优先查 task event 写入失败
+尤其是 sequence 唯一索引冲突
+```
+
+### 5. 看失败类型
+
+`raw-draft total-timeout`：
+
+```txt
+请求已到 AI Gateway
+HTTP 可能是 200
+但完整输出没有在 timeoutMs 内结束
+根因多半是一次性 Long Form JSON 太大或模型太慢
+```
+
+`repairing AI_EMPTY_RESPONSE`：
+
+```txt
+repair 阶段收到 SSE，但没有 content
+优先看 choicesCount / deltaKeys / finishReason / hasContent
+再看 repair 模型 fallback 是否启用
+```
+
+`pending 超过阈值`：
+
+```txt
+可能 Queue 没启动
+也可能任务排队
+线上确认 Queue 可消费后，提示文案应从“失败”改成“后台排队中”
+```
+
+## 十八、验收清单
+
+代码级验收：
+
+- `POST /api/user/articles-v2/ai-drafts` 不再同步等待 AI 完整生成。
+- `POST` 返回 `taskId + pending`。
+- Queue 能识别 `article-draft` 消息。
+- Queue 内部 AI draft 生成使用 `stream: true`。
+- 任务状态能从 `pending -> processing -> completed / failed`。
+- 查询任务和订阅事件都校验 `created_by === currentUser.id`。
+- `completed` 时返回完整 `result` 和便捷 `draft`。
+- 生成主链路不再调用 `pollDraftTask()`。
+- 生成主链路只保留 `POST create task + GET events-stream`。
+- `events-stream` 能持续输出 snapshot / ping / completed / failed。
+- SSE 断线后能通过 `afterSequence` 续接。
+- `content_generation_task_events` sequence 能持续增长。
+- 业务失败落任务状态，不触发无限 Queue retry。
+
+线上日志验收：
+
+```txt
+[Queue] queue=asksoul-me-queue, messages=1, hasEnv=true, hasGatewayKey=true
+[Queue] processing article draft task
+```
+
+AI Gateway 日志应显示：
+
+```txt
+stream: true
+eventType: queue
+timeoutMs: 300000
+Streaming response opened
+Upstream stream response accepted
+Streaming first chunk received
+```
+
+前端 Network 面板应显示：
+
+```txt
+POST /api/user/articles-v2/ai-drafts
+GET  /api/user/articles-v2/ai-drafts/:taskId/events-stream
+```
+
+不应持续出现：
+
+```txt
+GET /events?afterSequence=...
+GET /ai-drafts/:taskId
+```
+
+## 十九、设计原则总结
+
+这次改造最后沉淀出几个原则。
+
+第一，长任务不要绑定用户 HTTP request。创建任务要快，真正执行放后台。
+
+第二，Queue 不等于实时体验。Queue 解决可靠执行，SSE 解决用户可见进度。
+
+第三，SSE 也不是最终正确性来源。页面可以分区预览，但正式结果必须以后端校验通过的 `result_json` 为准。
+
+第四，`stream: true` 要看流在哪里被消费。Worker 内部读完整个上游流，和浏览器实时流式响应不是一回事。
+
+第五，事件表不仅是 UI 数据源，也是排查系统。没有 `taskId / sequence / requestId / cfRay`，线上排查会变成猜谜。
+
+第六，长 JSON 生成的最终解法不是更大的 timeout，而是更小的阶段、更明确的 checkpoint 和更可控的 repair。
+
+第七，失败要分层：用户连接失败、Queue 没消费、AI Gateway 超时、上游空响应、JSON 截断、事件写入失败，它们看起来都像“AI 初稿失败”，但处理方式完全不同。
+
+## Snippet of the Week
+
+<ExploreCard client:load title="银行流水账 — Event Sourcing 的非软件版本">
+
+任务事件表的思想很像银行流水账。
+
+银行不会只存一个“当前余额”，然后把所有历史交易忘掉。它会保存每一笔交易：
+
+```txt
+salary +1000
+rent   -400
+food    -50
+```
+
+余额只是这些事件 replay 后的结果：
+
+```ts
+type LedgerEvent =
+  | { type: "deposit"; amount: number }
+  | { type: "withdraw"; amount: number };
+
+function replay(events: LedgerEvent[]) {
+  return events.reduce((balance, event) => {
+    if (event.type === "deposit") return balance + event.amount;
+    return balance - event.amount;
+  }, 0);
+}
+
+const balance = replay([
+  { type: "deposit", amount: 1000 },
+  { type: "withdraw", amount: 400 },
+  { type: "withdraw", amount: 50 },
+]);
+
+console.log(balance); // 550
+```
+
+AI 初稿任务事件也是同一个思路：
+
+```txt
+queued
+started
+field/title
+block/intro
+block/item-1
+completed
+```
+
+前端看到的是当前 draft 状态，但真正可排查、可恢复、可续传的是事件序列。余额错了，可以查流水；页面卡住了，可以查 task events。
+
+</ExploreCard>
