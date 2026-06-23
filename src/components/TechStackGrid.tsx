@@ -16,15 +16,22 @@ import {
   SiSqlite,
   SiTailwindcss,
   SiTypescript,
+  SiVite,
+  SiVuedotjs,
+  SiWails,
 } from '@icons-pack/react-simple-icons';
+import { BarChart3 } from 'lucide-react';
 import { motion, useInView } from 'motion/react';
 import { useRef } from 'react';
 import type { ProjectTech } from '@/data/projects';
-import { useTranslations, type Locale } from '@/lib/i18n';
+import { type Locale, useTranslations } from '@/lib/i18n';
+
 const iconMap: Record<string, React.ReactNode> = {
   go: <SiGo className="h-8 w-8" />,
   react: <SiReact className="h-8 w-8" />,
   typescript: <SiTypescript className="h-8 w-8" />,
+  vue: <SiVuedotjs className="h-8 w-8" />,
+  vite: <SiVite className="h-8 w-8" />,
   tailwindcss: <SiTailwindcss className="h-8 w-8" />,
   googlechrome: <SiGooglechrome className="h-8 w-8" />,
   rust: <SiRust className="h-8 w-8" />,
@@ -37,7 +44,8 @@ const iconMap: Record<string, React.ReactNode> = {
   keras: <SiKeras className="h-8 w-8" />,
   docker: <SiDocker className="h-8 w-8" />,
   postgresql: <SiPostgresql className="h-8 w-8" />,
-  wails: <span className="text-2xl font-bold">W</span>,
+  echarts: <BarChart3 className="h-8 w-8" />,
+  wails: <SiWails className="h-8 w-8" />,
   nltk: <span className="text-2xl font-bold">N</span>,
 };
 
@@ -65,9 +73,7 @@ export default function TechStackGrid({ tech, lang }: TechStackGridProps) {
             whileHover={{ y: -4, scale: 1.02 }}
           >
             <div className="mb-2 text-muted-foreground transition-colors group-hover:text-foreground">
-              {iconMap[t.icon] ?? (
-                <span className="text-2xl font-bold">{t.name[0]}</span>
-              )}
+              {iconMap[t.icon] ?? <span className="text-2xl font-bold">{t.name[0]}</span>}
             </div>
             <span className="text-sm font-medium">{t.name}</span>
           </motion.div>

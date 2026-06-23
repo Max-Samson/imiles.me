@@ -6,6 +6,7 @@ import {
   Brain,
   Code,
   Cpu,
+  Database,
   Dna,
   Eye,
   FileInput,
@@ -31,7 +32,8 @@ import {
 import { motion, useInView } from 'motion/react';
 import { useRef } from 'react';
 import type { ProjectFeature } from '@/data/projects';
-import { useTranslations, type Locale } from '@/lib/i18n';
+import { type Locale, useTranslations } from '@/lib/i18n';
+
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   FileInput,
   FileOutput,
@@ -50,6 +52,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Github,
   Activity,
   Cpu,
+  Database,
   Brain,
   Dna,
   FlaskConical,
@@ -91,9 +94,7 @@ export default function FeatureGrid({ features, lang }: FeatureGridProps) {
                 </div>
               )}
               <h3 className="mb-1 text-sm font-semibold">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground">
-                {feature.description}
-              </p>
+              <p className="text-sm text-muted-foreground">{feature.description}</p>
             </motion.div>
           );
         })}

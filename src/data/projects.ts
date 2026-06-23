@@ -148,6 +148,94 @@ export const projects: Project[] = [
     llms: false,
   },
   {
+    slug: 'mtimer',
+    title: 'MTimer',
+    tagline: 'Wails-powered Pomodoro desktop app with AI planning',
+    description:
+      'MTimer 是一个围绕番茄工作法构建的跨平台桌面专注工具。项目使用 Wails 将 Go 后端与 Vue 3 前端打包为原生桌面应用，提供番茄/自定义双专注模式、任务清单、专注会话记录、白噪音与背景音乐、统计可视化，以及可接入 DeepSeek 或自定义 OpenAI-compatible API 的 AI 时间规划助手。后端通过 SQLite 保存任务、会话、每日统计与事件统计，并在会话完成时用事务同步更新统计数据；前端用 Pinia 管理计时器、任务和设置状态，用 ECharts 展示每日汇总、番茄趋势、任务完成率与时段分布。',
+    status: 'active',
+    githubUrl: 'https://github.com/Max-Samson/MTimer_v2.1.1.0',
+    tech: [
+      { name: 'Go', icon: 'go' },
+      { name: 'Wails', icon: 'wails' },
+      { name: 'Vue 3', icon: 'vue' },
+      { name: 'TypeScript', icon: 'typescript' },
+      { name: 'SQLite', icon: 'sqlite' },
+      { name: 'ECharts', icon: 'echarts' },
+      { name: 'Tailwind CSS', icon: 'tailwindcss' },
+      { name: 'Vite', icon: 'vite' },
+    ],
+    features: [
+      {
+        title: '双专注模式',
+        description:
+          '内置标准番茄钟和自定义专注模式，任务可以拥有独立的工作、短休息和长休息设置，切换全局模式时不会打断正在进行的计时。',
+        icon: 'Settings',
+      },
+      {
+        title: '任务与会话持久化',
+        description:
+          'Go 后端通过 Wails 暴露任务 CRUD、专注会话开始/完成等 API，并用 SQLite 保存 todos、focus_sessions、daily_stats 和 event_stats。',
+        icon: 'Database',
+      },
+      {
+        title: '事务化统计更新',
+        description:
+          '完成专注会话时在事务中同步写入会话、每日统计和事件统计；应用启动后还会自动回算最近 30 天，修复历史统计数据。',
+        icon: 'RefreshCw',
+      },
+      {
+        title: 'AI 时间规划助手',
+        description:
+          'AI 助手支持任务规划、日常对话和学习辅导模式，可调用 DeepSeek 或自定义 Base URL，并从回复 JSON 中提取任务计划自动创建待办。',
+        icon: 'Brain',
+      },
+      {
+        title: '专注数据可视化',
+        description:
+          '统计模块用 ECharts 展示每日汇总、番茄趋势、时段分布、任务完成率和工作负载趋势，并支持图表导出为 PNG。',
+        icon: 'BarChart3',
+      },
+      {
+        title: '沉浸式音频体验',
+        description:
+          '内置计时结束音效、按钮音效、白噪音和背景音乐播放列表，设置通过 Pinia 与 localStorage 持久化。',
+        icon: 'Activity',
+      },
+    ],
+    hasDetailPage: true,
+    llms: false,
+    demo: {
+      kind: 'terminal',
+      title: 'MTimer architecture',
+      lines: [
+        { type: 'command', text: 'wails dev' },
+        { type: 'output', text: 'Wails boots the Go backend and Vite-powered Vue frontend' },
+        { type: 'output', text: '' },
+        {
+          type: 'output',
+          text: 'App.startup -> Load .env -> Init SQLite -> Wire repositories/controllers',
+        },
+        {
+          type: 'output',
+          text: 'Vue/Pinia -> Wails JS bindings -> Go controllers -> SQLite repositories',
+        },
+        { type: 'output', text: '' },
+        { type: 'command', text: 'CompleteFocusSession(sessionId, breakTime)' },
+        {
+          type: 'output',
+          text: 'transaction: complete session + update daily_stats + update event_stats',
+        },
+        { type: 'output', text: '' },
+        { type: 'command', text: 'AI task planning' },
+        {
+          type: 'output',
+          text: 'DeepSeek/OpenAI-compatible response -> extract JSON tasks -> CreateTodo',
+        },
+      ],
+    },
+  },
+  {
     slug: 'semantic-release',
     title: 'Semantic Release',
     tagline: 'Trunk-based semantic versioning CLI',
