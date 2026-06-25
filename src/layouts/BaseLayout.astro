@@ -68,6 +68,20 @@ const pathname = Astro.url.pathname;
     <link rel="alternate" type="application/rss+xml" title="imiles.me RSS Feed" href="/rss.xml" />
     <link
       rel="preload"
+      href="/fonts/Inter-Regular.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/Inter-Bold.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin
+    />
+    <link
+      rel="preload"
       href="/fonts/google/rock-salt-latin.woff2"
       as="font"
       type="font/woff2"
@@ -79,14 +93,6 @@ const pathname = Astro.url.pathname;
       as="font"
       type="font/woff2"
       crossorigin
-    />
-    <link rel="preconnect" href="https://use.typekit.net" crossorigin />
-    <link rel="preconnect" href="https://p.typekit.net" crossorigin />
-    <link
-      rel="preload"
-      href="https://use.typekit.net/qyu8tlw.css"
-      as="style"
-      onload="this.onload=null;this.rel='stylesheet'"
     />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/images/weblogo.jpeg" />

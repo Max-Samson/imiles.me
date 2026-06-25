@@ -3,7 +3,7 @@
 import { motion, useInView } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 
-const FONT = '"elza-text",sans-serif';
+const FONT = '"Inter",ui-sans-serif,system-ui,sans-serif';
 
 const TXT = {
   SM: {

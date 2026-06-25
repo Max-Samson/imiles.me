@@ -3,6 +3,22 @@
 @plugin "@tailwindcss/typography";
 
 @font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/Inter-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/Inter-Bold.ttf") format("truetype");
+}
+
+@font-face {
   font-family: "Great Vibes";
   font-style: normal;
   font-weight: 400;
@@ -137,7 +153,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-sans: "elza-text", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: "IBM Plex Mono", monospace;
   --font-script: "Great Vibes", cursive;
   --z-index-header: var(--z-header);
@@ -159,7 +176,8 @@
  *   Achromatic grays (0 chroma) for all neutral surfaces.
  *
  * Fonts
- *   --font-sans   "elza-text"      — body copy, headings
+ *   --font-sans   "Inter"          — body copy, headings
+ *   --font-serif  Georgia stack    — quote and literary accents
  *   --font-mono   "IBM Plex Mono"  — code, terminals
  *   --font-script "Great Vibes"    — decorative name treatment
  *
@@ -315,7 +333,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "elza-text", sans-serif;
+    font-family: var(--font-sans);
   }
 
   body.mobile-menu-open {
@@ -368,7 +386,7 @@
 
   .landing-hero-name {
     @apply flex flex-wrap justify-center;
-    font-family: "elza-text", sans-serif;
+    font-family: var(--font-sans);
     font-size: clamp(1.6rem, 5vw, 3.5rem);
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -407,7 +425,7 @@
 
   .landing-hero-sub {
     position: relative;
-    font-family: "elza-text", sans-serif;
+    font-family: var(--font-sans);
     letter-spacing: 0.04em;
     line-height: 1.5;
     overflow-wrap: break-word;
@@ -471,7 +489,7 @@
   /* Quote body — serif italic for literary quality */
   .landing-hero-quote {
     display: block;
-    font-family: "ogg-text", serif;
+    font-family: var(--font-serif);
     font-style: italic;
     font-size: 0.8rem;
     color: oklch(from var(--foreground) l c h / 75%);
@@ -480,7 +498,7 @@
   /* Author attribution — small caps, gold tint */
   .landing-hero-author {
     display: block;
-    font-family: "elza-text", sans-serif;
+    font-family: var(--font-sans);
     font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.18em;
