@@ -18,7 +18,7 @@ export function getStaticPaths() {
 }
 
 const { slug } = Astro.params;
-const project = getProject(slug!);
+const project = getProject(slug!, lang);
 
 if (!project) {
   return Astro.redirect(localizePathname(`/${lang}/projects`, lang));
@@ -29,7 +29,7 @@ if (!project) {
   <main class="relative isolate min-h-screen overflow-x-clip pb-16">
     <ContentFlickeringBackground client:only="react" />
 
-    <ProjectHero project={project} client:load />
+    <ProjectHero project={project} lang={lang} client:load />
 
     <section class="container mx-auto px-4 py-12">
       <h2 class="mb-4 text-2xl font-bold">{t('NoteSectionOneTitle')}</h2>
@@ -39,9 +39,9 @@ if (!project) {
     </section>
 
     {project.demo?.kind === 'terminal' && <TerminalDemo title={project.demo.title} lines={project.demo.lines} client:visible />}
-    {project.demo?.kind === 'image' && <ImageShowcase images={project.demo.images} client:visible />}
+    {project.demo?.kind === 'image' && <ImageShowcase images={project.demo.images} title={t('ProjectDetailsTitle')} client:visible />}
 
-    <FeatureGrid features={project.features} className={project.demo?.kind === 'image' ? 'pt-4 lg:pt-6' : undefined} client:visible />
-    <TechStackGrid tech={project.tech} client:visible />
+    <FeatureGrid features={project.features} lang={lang} className={project.demo?.kind === 'image' ? 'pt-4 lg:pt-6' : undefined} client:visible />
+    <TechStackGrid tech={project.tech} lang={lang} client:visible />
   </main>
 </BaseLayout>

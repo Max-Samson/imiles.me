@@ -10,12 +10,13 @@ interface ShowcaseImage {
 
 interface ImageShowcaseProps {
   images: ShowcaseImage[];
+  title?: string;
 }
 
 const stickyHeight = 'clamp(500px, calc(100vh - 10rem), 640px)';
 const transitionDistance = 'clamp(160px, 24vh, 260px)';
 
-export default function ImageShowcase({ images }: ImageShowcaseProps) {
+export default function ImageShowcase({ images, title = 'Details' }: ImageShowcaseProps) {
   const isSingle = images.length === 1;
   const sectionRef = useRef<HTMLElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
@@ -126,7 +127,7 @@ export default function ImageShowcase({ images }: ImageShowcaseProps) {
 
     return (
       <section className="container mx-auto px-4 py-8">
-        <h2 className="mb-6 text-2xl font-bold">Demo</h2>
+        <h2 className="mb-6 text-2xl font-bold">{title}</h2>
         <div className="relative overflow-hidden rounded-xl">
           {image.caption && (
             <span className="absolute left-4 top-4 z-10 rounded-md border border-border bg-background/80 px-3 py-1 text-xs font-medium text-foreground shadow-sm backdrop-blur">
@@ -169,7 +170,7 @@ export default function ImageShowcase({ images }: ImageShowcaseProps) {
             className="sticky top-24"
             style={{ minHeight: 'var(--image-showcase-sticky-height)' }}
           >
-            <h2 className="mb-6 text-2xl font-bold">Demo</h2>
+            <h2 className="mb-6 text-2xl font-bold">{title}</h2>
             <div className="grid grid-cols-[minmax(11rem,0.24fr)_minmax(0,1fr)] items-start gap-8 xl:gap-12">
               <div>
                 <ol className="flex flex-col gap-2">
@@ -232,15 +233,15 @@ export default function ImageShowcase({ images }: ImageShowcaseProps) {
           {images[activeIndex]?.caption ?? images[activeIndex]?.alt}
         </div>
       </section>
-      <ImageShowcaseMobileFallback images={images} />
+      <ImageShowcaseMobileFallback images={images} title={title} />
     </>
   );
 }
 
-export function ImageShowcaseMobileFallback({ images }: ImageShowcaseProps) {
+export function ImageShowcaseMobileFallback({ images, title = 'Details' }: ImageShowcaseProps) {
   return (
     <section className="container mx-auto px-4 py-8 lg:hidden">
-      <h2 className="mb-6 text-2xl font-bold">Demo</h2>
+      <h2 className="mb-6 text-2xl font-bold">{title}</h2>
       <div className="grid gap-4">
         {images.map((img, i) => (
           <div

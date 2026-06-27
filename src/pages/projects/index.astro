@@ -1,11 +1,12 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import ProjectCard from '@/components/project/ProjectCard';
-import { projects } from '@/data/projects';
+import { getProjects } from '@/data/projects';
 import { LightRays } from '@/registry/magicui/light-rays';
 import { getLocaleFromPathname, useTranslations } from '@/lib/i18n';
 const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
+const projects = getProjects(lang);
 ---
 
 <BaseLayout

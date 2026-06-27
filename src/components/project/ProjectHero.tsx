@@ -5,13 +5,17 @@ import { motion } from 'motion/react';
 import ShareButton from '@/components/article/actions/ShareButton';
 import StatusBadge from '@/components/common/StatusBadge';
 import type { Project } from '@/data/projects';
+import { type Locale, useTranslations } from '@/lib/i18n';
+import { InteractiveHoverButton } from '@/registry/magicui/interactive-hover-button';
 
 interface ProjectHeroProps {
   project: Project;
+  lang?: Locale;
 }
 
-export default function ProjectHero({ project }: ProjectHeroProps) {
+export default function ProjectHero({ project, lang }: ProjectHeroProps) {
   const chars = project.title.split('');
+  const { t } = useTranslations(lang);
 
   return (
     <section className="container mx-auto px-4 pt-28 pb-12">
@@ -64,13 +68,21 @@ export default function ProjectHero({ project }: ProjectHeroProps) {
           className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
         >
           <Github className="h-4 w-4" />
-          View on GitHub
+          {t('ProjectGithubButton')}
         </a>
         <ShareButton
           url={typeof window !== 'undefined' ? window.location.href : ''}
           title={project.title}
           description={project.tagline}
         />
+        {project.pageUrl && (
+          <InteractiveHoverButton
+            type="button"
+            onClick={() => window.open(project.pageUrl, '_blank', 'noopener,noreferrer')}
+          >
+            {t('ProjectPageButton')}
+          </InteractiveHoverButton>
+        )}
       </motion.div>
     </section>
   );
