@@ -23,8 +23,17 @@ const maskable = [
 
 await mkdir(out, { recursive: true });
 
+const circleMask = (size) =>
+  Buffer.from(
+    `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="#fff"/></svg>`,
+  );
+
 for (const { size, name } of standard) {
-  await sharp(src).resize(size, size, { fit: 'contain', background: BG }).png().toFile(join(out, name));
+  await sharp(src)
+    .resize(size, size, { fit: 'cover' })
+    .composite([{ input: circleMask(size), blend: 'dest-in' }])
+    .png()
+    .toFile(join(out, name));
   console.log(`✓ ${name}`);
 }
 
@@ -33,7 +42,8 @@ for (const { size, name } of maskable) {
   const padding = Math.round((size - inner) / 2);
 
   await sharp(src)
-    .resize(inner, inner, { fit: 'contain', background: BG })
+    .resize(inner, inner, { fit: 'cover' })
+    .composite([{ input: circleMask(inner), blend: 'dest-in' }])
     .extend({ top: padding, bottom: padding, left: padding, right: padding, background: BG })
     .png()
     .toFile(join(out, name));
