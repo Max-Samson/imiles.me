@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+
 //展示国际音标，比如/ʊərˈmuːzd mʊˌhɑːmɑdˈnaɪm/
 interface PhoneticProps {
   ipa: string;
@@ -9,13 +10,6 @@ interface PhoneticProps {
 
 export default function Phonetic({ ipa, className }: PhoneticProps) {
   return (
-    <span
-      className={cn(
-        'font-mono text-muted-foreground/70 tracking-wide',
-        className,
-      )}
-    >
-      {ipa}
-    </span>
+    <span className={cn('font-mono text-muted-foreground/70 tracking-wide', className)}>{ipa}</span>
   );
 }

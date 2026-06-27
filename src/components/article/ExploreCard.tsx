@@ -1,21 +1,22 @@
 'use client';
-import { IconChevronDown } from '@tabler/icons-react';
+import { IconChevronDown, IconCompass } from '@tabler/icons-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
-import { enhanceCodeBlocks } from '../lib/enhanceCodeBlocks';
+import { enhanceCodeBlocks } from '@/lib/enhanceCodeBlocks';
 
-interface CollapsibleProps {
-  label: string;
+interface ExploreCardProps {
+  title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
 }
 
-export default function Collapsible({ label, children, defaultOpen = false }: CollapsibleProps) {
+export default function ExploreCard({ title, children, defaultOpen = false }: ExploreCardProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen && contentRef.current) {
+      // Small delay to ensure content is rendered
       setTimeout(() => {
         if (contentRef.current) {
           enhanceCodeBlocks(contentRef.current);
@@ -25,28 +26,36 @@ export default function Collapsible({ label, children, defaultOpen = false }: Co
   }, [isOpen]);
 
   return (
-    <div className="my-4">
+    <div className="my-6 rounded-lg border border-border bg-card">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        className="flex w-full items-center justify-between px-4 py-3 text-left font-medium text-card-foreground"
         aria-expanded={isOpen}
+        aria-controls="explore-card-content"
       >
+        <span className="flex items-center gap-2">
+          <IconCompass size={20} className="text-muted-foreground" />
+          <span className="font-semibold">Explore: {title}</span>
+        </span>
         <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <IconChevronDown size={16} />
+          <IconChevronDown size={18} />
         </motion.span>
-        <span>{label}</span>
       </button>
 
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            id="explore-card-content"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div ref={contentRef} className="pt-2 prose dark:prose-invert max-w-none">
+            <div
+              ref={contentRef}
+              className="border-t border-border px-4 py-4 prose dark:prose-invert max-w-none"
+            >
               {children}
             </div>
           </motion.div>

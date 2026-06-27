@@ -2,8 +2,8 @@
 
 import { FileText, Github } from 'lucide-react';
 import { motion } from 'motion/react';
+import ShareButton from '@/components/article/actions/ShareButton';
 import type { ResearchItem } from '@/data/research';
-import ShareButton from './articlebtn/ShareButton';
 
 interface ResearchHeroProps {
   item: ResearchItem;
@@ -33,12 +33,8 @@ export default function ResearchHero({ item }: ResearchHeroProps) {
             </>
           )}
         </span>
-        {item.venue && (
-          <span className="text-xs text-muted-foreground">{item.venue}</span>
-        )}
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {item.year}
-        </span>
+        {item.venue && <span className="text-xs text-muted-foreground">{item.venue}</span>}
+        <span className="text-xs tabular-nums text-muted-foreground">{item.year}</span>
       </motion.div>
 
       <h1 className="mb-4 text-4xl font-bold sm:text-5xl lg:text-6xl">

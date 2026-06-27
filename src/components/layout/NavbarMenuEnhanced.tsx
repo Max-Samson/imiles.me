@@ -4,11 +4,7 @@ import { useState } from 'react';
 import { HoveredLink, Menu, MenuItem } from '@/components/ui/navbar-menu';
 import { cn } from '@/lib/utils';
 
-export default function NavbarMenuEnhanced({
-  className,
-}: {
-  className?: string;
-}) {
+export default function NavbarMenuEnhanced({ className }: { className?: string }) {
   const [active, setActive] = useState<string | null>(null);
 
   return (

@@ -1,13 +1,25 @@
-export { default as ArchitectureFlow } from './ArchitectureFlow';
-export { default as Aside } from './Aside';
-export { default as AutoHideHeader } from './header/AutoHideHeader';
-export { default as BlockQuote } from './BlockQuote';
-export { default as BlogSearch } from './BlogSearch';
-export { default as ChatDemo } from './ChatDemo';
-export { default as Cite } from './Cite';
-export { default as CodeBlockEnhancer } from './CodeBlockEnhancer';
-export { default as Collapsible } from './Collapsible';
-export { default as CopyMarkdownButton } from './articlebtn/CopyMarkdownButton';
+export { default as TimelineImage } from './about/TimelineImage';
+export { default as WelcomeTimeline } from './about/WelcomeTimeline';
+export { default as Aside } from './article/Aside';
+export { default as CopyMarkdownButton } from './article/actions/CopyMarkdownButton';
+export { default as ShareButton } from './article/actions/ShareButton';
+export { default as BlockQuote } from './article/BlockQuote';
+export { default as BlogSearch } from './article/BlogSearch';
+export { default as ChatDemo } from './article/ChatDemo';
+export { default as Cite } from './article/Cite';
+export { default as CodeBlockEnhancer } from './article/CodeBlockEnhancer';
+export { default as Collapsible } from './article/Collapsible';
+export { default as ExploreCard } from './article/ExploreCard';
+export { default as HeadingLinkEnhancer } from './article/HeadingLinkEnhancer';
+export { default as MobileTOC } from './article/MobileTOC';
+export { default as YouTubeEmbed } from './article/media/YouTubeEmbed';
+export { default as Phonetic } from './article/Phonetic';
+export { default as PreviewLink } from './article/PreviewLink';
+export { default as PullQuote } from './article/PullQuote';
+export { default as References } from './article/References';
+export { default as ScriptInline } from './article/ScriptInline';
+export { default as ScriptTranslator } from './article/ScriptTranslator';
+export { default as TableOfContents } from './article/TableOfContents';
 export {
   ConfirmationBiasVisual,
   ConsilienceVisual,
@@ -15,31 +27,19 @@ export {
   ExtrapolationVisual,
   FirstPrinciplesVisual,
   SearchLandscapeVisual,
-} from './CriticalThinkingVisuals';
-export { default as ExploreCard } from './ExploreCard';
-export { default as FeatureGrid } from './FeatureGrid';
-export { default as GPEvolutionVisualizer } from './GPEvolutionVisualizer';
-export { default as HeadingLinkEnhancer } from './HeadingLinkEnhancer';
-export { default as Hero } from './Hero';
-export { default as LandingExperience } from './LandingExperience';
-export { default as MobileTOC } from './MobileTOC';
+} from './article/visuals/CriticalThinkingVisuals';
+export { default as GPEvolutionVisualizer } from './article/visuals/GPEvolutionVisualizer';
+export { default as ArchitectureFlow } from './common/ArchitectureFlow';
+export { default as FeatureGrid } from './common/FeatureGrid';
+export { default as StatusBadge } from './common/StatusBadge';
+export { default as TechStackGrid } from './common/TechStackGrid';
+export { default as AutoHideHeader } from './header/AutoHideHeader';
 export { ModeToggle } from './header/ModeToggle';
-export { default as NavbarMenuEnhanced } from './NavbarMenuEnhanced';
 export { default as NavigationMenuDemo } from './header/NavigationMenu';
-export { default as Phonetic } from './Phonetic';
-export { default as PreviewLink } from './PreviewLink';
+export { default as Hero } from './home/Hero';
+export { default as LandingExperience } from './home/LandingExperience';
+export { default as NavbarMenuEnhanced } from './layout/NavbarMenuEnhanced';
+export { default as SocialDock } from './layout/SocialDock';
+export { default as SocialLinksGrid } from './layout/SocialLinksGrid';
 export { default as ProjectCard } from './project/ProjectCard';
 export { default as ProjectHero } from './project/ProjectHero';
-export { default as PullQuote } from './PullQuote';
-export { default as References } from './References';
-export { default as ScriptInline } from './ScriptInline';
-export { default as ScriptTranslator } from './ScriptTranslator';
-export { default as ShareButton } from './articlebtn/ShareButton';
-export { default as SocialDock } from './SocialDock';
-export { default as SocialLinksGrid } from './SocialLinksGrid';
-export { default as StatusBadge } from './StatusBadge';
-export { default as TableOfContents } from './TableOfContents';
-export { default as TechStackGrid } from './TechStackGrid';
-export { default as TimelineImage } from './TimelineImage';
-export { default as WelcomeTimeline } from './WelcomeTimeline';
-export { default as YouTubeEmbed } from './YouTubeEmbed';

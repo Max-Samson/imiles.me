@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { enhanceCodeBlocks } from '../lib/enhanceCodeBlocks';
+import { enhanceCodeBlocks } from '@/lib/enhanceCodeBlocks';
 
 export default function CodeBlockEnhancer() {
   useEffect(() => {

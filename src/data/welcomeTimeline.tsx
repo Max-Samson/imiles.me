@@ -1,7 +1,7 @@
 'use client';
-import PreviewLink from '@/components/PreviewLink';
-import TimelineImage from '@/components/TimelineImage';
-import YouTubeEmbed from '@/components/YouTubeEmbed';
+import TimelineImage from '@/components/about/TimelineImage';
+import YouTubeEmbed from '@/components/article/media/YouTubeEmbed';
+import PreviewLink from '@/components/article/PreviewLink';
 import { imageCredits } from '@/data/imageCredits';
 
 interface Subsection {

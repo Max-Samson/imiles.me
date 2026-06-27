@@ -1,10 +1,10 @@
 ---
 export const prerender = true;
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import ResearchHero from '@/components/ResearchHero';
-import ImageShowcase from '@/components/ImageShowcase';
-import FeatureGrid from '@/components/FeatureGrid';
-import TechStackGrid from '@/components/TechStackGrid';
+import ResearchHero from '@/components/research/ResearchHero';
+import ImageShowcase from '@/components/common/ImageShowcase';
+import FeatureGrid from '@/components/common/FeatureGrid';
+import TechStackGrid from '@/components/common/TechStackGrid';
 import { research, getResearchItem } from '@/data/research';
 
 export function getStaticPaths() {

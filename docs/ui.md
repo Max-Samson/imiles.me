@@ -15,18 +15,20 @@
 
 ### `src/components/`
 
-这是项目的一方业务组件层，放和站点内容、页面结构、交互体验强绑定的组件。
+这是项目的一方组件根目录，按功能域继续拆分。根目录只保留 `index.tsx` barrel export，不再平铺页面组件。
 
-典型组件包括：
+当前目录职责：
 
-- 首页和视觉体验：`Hero`、`LandingExperience`
-- About 页面：`AboutHero`、`WelcomeTimeline`、`TimelineImage`
-- 内容增强：`ExploreCard`、`Aside`、`BlockQuote`、`PullQuote`、`PreviewLink`
-- 博客功能：`BlogSearch`、`TableOfContents`、`MobileTOC`
-- 项目和研究：`ProjectCard`、`ProjectHero`、`ResearchCard`、`ResearchHero`
-- 站点外壳：`AutoHideHeader`、`MobileMenu`、`NavigationMenu`、`Footer`
+- `article/`：博客正文和文章详情页相关组件，包括 MDX 内容组件、目录、代码增强、引用、分享按钮和文章内视觉 demo。
+- `about/`：About 页面组件，包括 `AboutHero`、`WelcomeTimeline`、`TimelineImage`。
+- `common/`：跨页面复用的展示组件，包括 `FeatureGrid`、`TechStackGrid`、`ImageShowcase`、`TerminalDemo`、`StatusBadge`。
+- `home/`：首页首屏和 landing experience。
+- `layout/`：站点外壳和跨页面布局组件，包括 `SocialDock`、`NewsletterSignup`、`LanguageSwitcher`、`SEOMeta`、内容页背景。
+- `header/`、`footer/`：导航和页脚。
+- `project/`、`note/`、`research/`：对应内容域的卡片和详情 hero。
+- `ui/`：shadcn/ui、本地 UI primitive、Three.js plexus 基础设施。
 
-这一层的特点是“组合”。它们通常会引用 `src/components/ui/` 的基础组件，也会引用 `src/registry/magicui/` 的视觉组件，再结合项目自己的数据、hooks 和页面语义组成最终体验。
+这一层的特点是“按功能组合”。功能组件通常会引用 `src/components/ui/` 的基础组件，也会引用 `src/registry/magicui/` 的视觉组件，再结合项目自己的数据、hooks 和页面语义组成最终体验。
 
 例如：
 

@@ -20,7 +20,7 @@ import { LightRays } from '@/registry/magicui/light-rays';
 const NAME_CHARS = 'Shenshuai Ming'.split('');
 const DOCK_PRELOAD_DELAY_MS = 1100;
 const PLEXUS_IDLE_DELAY_MS = 2200;
-const SocialDock = lazy(() => import('@/components/SocialDock'));
+const SocialDock = lazy(() => import('@/components/layout/SocialDock'));
 
 export default function LandingExperience() {
   const { t } = useTranslations();

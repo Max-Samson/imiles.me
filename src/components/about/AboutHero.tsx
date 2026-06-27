@@ -1,9 +1,9 @@
 'use client';
+import Phonetic from '@/components/article/Phonetic';
+import SocialLinksGrid from '@/components/layout/SocialLinksGrid';
 import { type Locale, useTranslations } from '@/lib/i18n';
 import { AuroraText } from '@/registry/magicui/aurora-text';
 import { AnimatedSpan, Terminal, TypingAnimation } from '@/registry/magicui/terminal';
-import Phonetic from './Phonetic';
-import SocialLinksGrid from './SocialLinksGrid';
 
 interface AboutHeroProps {
   lang: Locale;

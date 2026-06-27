@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import Hero from '@/components/Hero';
+import Hero from '@/components/home/Hero';
 import { getLocaleFromPathname, useTranslations } from '@/lib/i18n';
 const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);

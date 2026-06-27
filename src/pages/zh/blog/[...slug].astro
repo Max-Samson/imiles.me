@@ -4,9 +4,9 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import ArticleLayout from '@/layouts/ArticleLayout.astro';
 import { getCollection, render } from 'astro:content';
 import { calculateReadTime } from '@/lib/readTime';
-import CodeBlockEnhancer from '@/components/CodeBlockEnhancer';
-import HeadingLinkEnhancer from '@/components/HeadingLinkEnhancer';
-import MobileTOC from '@/components/MobileTOC';
+import CodeBlockEnhancer from '@/components/article/CodeBlockEnhancer';
+import HeadingLinkEnhancer from '@/components/article/HeadingLinkEnhancer';
+import MobileTOC from '@/components/article/MobileTOC';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog', ({ data }) => data.draft !== true && data.lang === 'zh');

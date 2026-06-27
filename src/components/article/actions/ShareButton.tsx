@@ -1,11 +1,5 @@
 'use client';
-import {
-  IconBrandLinkedin,
-  IconBrandX,
-  IconCheck,
-  IconLink,
-  IconShare,
-} from '@tabler/icons-react';
+import { IconBrandLinkedin, IconBrandX, IconCheck, IconLink, IconShare } from '@tabler/icons-react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -102,8 +96,7 @@ export default function ShareButton({
     },
   ];
 
-  const supportsNativeShare =
-    typeof navigator !== 'undefined' && navigator.share;
+  const supportsNativeShare = typeof navigator !== 'undefined' && navigator.share;
 
   return (
     <MotionConfig reducedMotion="user">
