@@ -33,6 +33,7 @@ import { motion, useInView } from 'motion/react';
 import { useRef } from 'react';
 import type { ProjectFeature } from '@/data/projects';
 import { type Locale, useTranslations } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   FileInput,
@@ -67,15 +68,16 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 interface FeatureGridProps {
   features: ProjectFeature[];
   lang?: Locale;
+  className?: string;
 }
 
-export default function FeatureGrid({ features, lang }: FeatureGridProps) {
+export default function FeatureGrid({ features, lang, className }: FeatureGridProps) {
   const { t } = useTranslations(lang);
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-60px' });
 
   return (
-    <section ref={ref} className="container mx-auto px-4 py-12">
+    <section ref={ref} className={cn('container mx-auto px-4 py-12', className)}>
       <h2 className="mb-8 text-2xl font-bold">{t('NoteSectionThreeTitle')}</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {features.map((feature, i) => {

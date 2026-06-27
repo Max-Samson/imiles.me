@@ -1,9 +1,9 @@
 'use client';
 
-import { ExternalLink, NotebookPen, Github } from 'lucide-react';
+import { ExternalLink, Github, NotebookPen } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { ResearchItem } from '@/data/notes';
-import { localizePathname, t, type Locale } from '@/lib/i18n';
+import { type Locale, localizePathname, t } from '@/lib/i18n';
 import { PixelImage } from '@/registry/magicui/pixel-image';
 import { ShineBorder } from '@/registry/magicui/shine-border';
 
@@ -14,14 +14,10 @@ interface ResearchCardProps {
 }
 
 export default function ResearchCard({ item, index, lang }: ResearchCardProps) {
-  const Wrapper = item.hasDetailPage ? motion.a : motion.div;
-  const wrapperProps = item.hasDetailPage
-    ? { href: localizePathname(`/notes/${item.slug}`, lang) }
-    : {};
+  const detailHref = item.hasDetailPage ? localizePathname(`/notes/${item.slug}`, lang) : undefined;
 
   return (
-    <Wrapper
-      {...wrapperProps}
+    <motion.div
       className="group relative block overflow-hidden rounded-xl border border-border bg-white/5 dark:bg-black/5 backdrop-blur-md p-6 transition-all duration-300 ease-out hover:scale-[0.98] hover:border-primary/50"
       initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
       whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -29,11 +25,16 @@ export default function ResearchCard({ item, index, lang }: ResearchCardProps) {
       transition={{ duration: 0.5, delay: index * 0.08 }}
       whileHover={{ y: -4 }}
     >
+      {detailHref && (
+        <a href={detailHref} className="absolute inset-0 z-0" aria-label={item.title}>
+          <span className="sr-only">{item.title}</span>
+        </a>
+      )}
       <ShineBorder
         className="opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         shineColor={['#A07CFE', '#FE8FB5', '#FFBE7B']}
       />
-      <div className="relative z-10 mb-3 flex items-center justify-between">
+      <div className="pointer-events-none relative z-10 mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground">
             {item.category === 'paper' ? (
@@ -48,22 +49,14 @@ export default function ResearchCard({ item, index, lang }: ResearchCardProps) {
               </>
             )}
           </span>
-          {item.venue && (
-            <span className="text-xs text-muted-foreground">{item.venue}</span>
-          )}
+          {item.venue && <span className="text-xs text-muted-foreground">{item.venue}</span>}
         </div>
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {item.year}
-        </span>
+        <span className="text-xs tabular-nums text-muted-foreground">{item.year}</span>
       </div>
-      <div className="note-content relative z-10 flex flex-col gap-6 md:flex-row md:items-center">
+      <div className="note-content pointer-events-none relative z-10 flex flex-col gap-6 md:flex-row md:items-center">
         <div className="note-text w-full md:w-2/3">
-          <h3 className="mb-1 text-lg font-semibold text-foreground">
-            {item.title}
-          </h3>
-          <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-            {item.description}
-          </p>
+          <h3 className="mb-1 text-lg font-semibold text-foreground">{item.title}</h3>
+          <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
           <div className="mb-4 flex flex-wrap gap-1.5">
             {item.tags.map((tag) => (
               <span
@@ -88,7 +81,7 @@ export default function ResearchCard({ item, index, lang }: ResearchCardProps) {
                 href={item.paperUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center  gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="pointer-events-auto relative z-20 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                 onClick={(e) => e.stopPropagation()}
               >
                 <NotebookPen className="h-3.5 w-3.5" />
@@ -117,6 +110,6 @@ export default function ResearchCard({ item, index, lang }: ResearchCardProps) {
           className="h-52 w-52 md:h-58 md:w-58 note-pic w-full md:w-1/3"
         />
       </div>
-    </Wrapper>
+    </motion.div>
   );
 }
