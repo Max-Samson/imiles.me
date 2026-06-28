@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { HoveredLink, Menu, MenuItem } from '@/components/ui/navbar-menu';
+import { author } from '@/data/author';
 import { cn } from '@/lib/utils';
 
 export default function NavbarMenuEnhanced({ className }: { className?: string }) {
@@ -19,7 +20,7 @@ export default function NavbarMenuEnhanced({ className }: { className?: string }
         <MenuItem setActive={setActive} active={active} item="Projects">
           <div className="flex flex-col space-y-4 text-sm">
             <HoveredLink href="/projects">View All</HoveredLink>
-            <HoveredLink href="https://github.com/urmzd">GitHub</HoveredLink>
+            <HoveredLink href={author.social.github.url}>GitHub</HoveredLink>
           </div>
         </MenuItem>
         <HoveredLink href="/about">About</HoveredLink>

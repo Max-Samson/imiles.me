@@ -1,3 +1,5 @@
+import { author } from './author';
+
 export interface SocialLink {
   title: string;
   href: string;
@@ -8,7 +10,7 @@ export interface SocialLink {
 export const socialLinks: SocialLink[] = [
   {
     title: 'GitHub',
-    href: 'https://github.com/Max-Samson',
+    href: author.social.github.url,
     target: '_blank',
     icon: 'github',
   },
@@ -19,13 +21,13 @@ export const socialLinks: SocialLink[] = [
   // },
   {
     title: 'X',
-    href: 'https://x.com/y7732772614744',
+    href: author.social.x.url,
     target: '_blank',
     icon: 'x',
   },
   // {
   //   title: 'Email',
-  //   href: 'maxshuai355@gmail.com',
+  //   href: `mailto:${author.email}`,
   //   target: '_blank',
   //   icon: 'email',
   // },

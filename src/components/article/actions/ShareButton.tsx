@@ -2,6 +2,7 @@
 import { IconBrandLinkedin, IconBrandX, IconCheck, IconLink, IconShare } from '@tabler/icons-react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
+import { author } from '@/data/author';
 import { cn } from '@/lib/utils';
 
 interface ShareButtonProps {
@@ -74,7 +75,7 @@ export default function ShareButton({
       icon: <IconBrandX size={18} />,
       action: () => {
         window.open(
-          `https://twitter.com/intent/tweet?url=${encodeURIComponent(resolvedUrl)}&text=${encodeURIComponent(shareMessage)}&via=urmzd_`,
+          `https://twitter.com/intent/tweet?url=${encodeURIComponent(resolvedUrl)}&text=${encodeURIComponent(shareMessage)}&via=${author.social.x.username}`,
           '_blank',
           'noopener,noreferrer',
         );

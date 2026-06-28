@@ -1,4 +1,5 @@
 ---
+import { author as siteAuthor } from '@/data/author';
 import { getLocalizedAlternates, getLocaleFromPathname, stripLocaleFromPathname, type Locale } from '@/lib/i18n';
 import { siteSchemas } from '@/lib/seo';
 
@@ -21,12 +22,12 @@ const {
   type = 'website',
   publishedTime,
   tags = [],
-  author = 'Miles',
+  author = siteAuthor.name,
   alternateLocales = ['en', 'zh'],
   articleSection,
 } = Astro.props;
 
-const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://imiles.me';
+const siteUrl = Astro.site?.toString().replace(/\/$/, '') || siteAuthor.site.url;
 const pathname = Astro.url.pathname;
 const canonicalUrl = new URL(pathname, siteUrl).toString();
 const locale = getLocaleFromPathname(pathname);
@@ -108,7 +109,7 @@ const pageSchemas = type === 'article'
 <meta property="og:image" content={ogImageUrl} />
 <meta property="og:url" content={canonicalUrl} />
 <meta property="og:type" content={type} />
-<meta property="og:site_name" content="imiles.me" />
+<meta property="og:site_name" content={siteAuthor.site.name} />
 <meta property="og:locale" content={locale === 'zh' ? 'zh_CN' : 'en_US'} />
 {
   alternateLocales
@@ -123,8 +124,8 @@ const pageSchemas = type === 'article'
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={ogImageUrl} />
-<meta name="twitter:site" content="@y7732772614744" />
-<meta name="twitter:creator" content="@y7732772614744" />
+<meta name="twitter:site" content={siteAuthor.social.x.handle} />
+<meta name="twitter:creator" content={siteAuthor.social.x.handle} />
 
 <!-- Article-specific meta tags -->
 {

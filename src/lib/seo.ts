@@ -1,9 +1,10 @@
+import { author } from '@/data/author';
 import { socialLinks } from '@/data/socialLinks';
 import { type Locale, localizePathname } from '@/lib/i18n';
 
-export const siteName = 'imiles.me';
-export const authorName = 'Miles';
-export const siteUrl = 'https://imiles.me';
+export const siteName = author.site.name;
+export const authorName = author.name;
+export const siteUrl = author.site.url;
 
 const sameAs = socialLinks.map((link) => link.href).filter((href) => href.startsWith('http'));
 

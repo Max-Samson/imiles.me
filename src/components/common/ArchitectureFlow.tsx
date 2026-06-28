@@ -2,6 +2,7 @@
 
 import { motion, useInView } from 'motion/react';
 import React, { useRef, useState } from 'react';
+import { author } from '@/data/author';
 import { cn } from '@/lib/utils';
 
 // Pipeline stage positions — horizontal layout (desktop)
@@ -159,8 +160,9 @@ function HorizontalDiagram({ isInView }: { isInView: boolean }) {
     <svg
       viewBox="0 0 760 300"
       className="hidden w-full sm:block"
-      aria-label="Architecture pipeline diagram"
+      aria-labelledby="architecture-flow-horizontal-title"
     >
+      <title id="architecture-flow-horizontal-title">Architecture pipeline diagram</title>
       {/* Input → Parser lines */}
       {S.inputs.map((inp, i) => (
         <ConnectionLine
@@ -308,8 +310,9 @@ function VerticalDiagram({ isInView }: { isInView: boolean }) {
     <svg
       viewBox="0 0 380 430"
       className="block w-full sm:hidden"
-      aria-label="Architecture pipeline diagram"
+      aria-labelledby="architecture-flow-vertical-title"
     >
+      <title id="architecture-flow-vertical-title">Architecture pipeline diagram</title>
       {/* Input → Parser lines */}
       {S.inputs.map((inp, i) => (
         <ConnectionLine
@@ -446,46 +449,35 @@ function VerticalDiagram({ isInView }: { isInView: boolean }) {
 }
 
 const RESUME_YAML = `contact:
-  name: Jane Doe
-  email: jane@example.com
-  phone: (555) 123-4567
-  location: { city: San Francisco, state: CA }
+  name: ${author.name}
+  email: ${author.email}
+  location: { city: ${author.location.city}, country: ${author.location.country} }
   links:
-    - url: github.com/janedoe
-    - url: linkedin.com/in/janedoe
+    - url: ${author.social.github.displayUrl}
+    - url: ${author.social.x.displayUrl}
 
 education:
   degrees:
-    - institution: MIT
-      area: Computer Science
-      degree: M.S.
-      date: May 2020
-    - institution: UC Berkeley
-      area: Computer Science
-      degree: B.S.
-      date: May 2018
+    - institution: Self-directed engineering practice
+      area: Frontend and full-stack product development
+      degree: Continuous Learning
+      date: Present
 
 experience:
   positions:
-    - company: Stripe
-      title: Senior Software Engineer
-      date: Jun 2022 - Present
+    - company: imiles.me
+      title: Frontend Engineer
+      date: 2026 - Present
       highlights:
-        - Led payments infra migration
-        - Reduced latency by 40%
-    - company: Google
-      title: Software Engineer
-      date: Jul 2020 - May 2022
-      highlights:
-        - Built real-time ML pipeline
-        - Mentored 3 junior engineers
+        - Built a bilingual tech blog and digital garden
+        - Explored AI, DX, and full-stack workflows
 
 skills:
   categories:
     - category: Languages
-      items: [Go, Python, TypeScript]
+      items: [TypeScript, Go, Java]
     - category: Tools
-      items: [Kubernetes, Terraform]`;
+      items: [Vue, React, Astro, Nuxt, TailwindCSS, Wails]`;
 
 function TypingYaml() {
   const [displayedLen, setDisplayedLen] = useState(0);
@@ -614,7 +606,7 @@ export default function ArchitectureFlow() {
       {/* CTAs */}
       <div className="mt-8 flex items-center justify-center gap-4">
         <a
-          href="https://github.com/urmzd/resume-generator"
+          href={author.repositories.resumeGenerator.url}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground/5"
@@ -625,7 +617,7 @@ export default function ArchitectureFlow() {
           View on GitHub
         </a>
         <a
-          href="https://github.com/urmzd/resume-generator/releases"
+          href={author.repositories.resumeGenerator.releasesUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-foreground/90"
