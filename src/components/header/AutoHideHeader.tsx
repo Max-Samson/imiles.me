@@ -23,6 +23,7 @@ export default function AutoHideHeader({ lang, pathname, children }: Props) {
   const { isVisible } = useScrollDirection();
   const resolvedPathname = pathname ?? '/';
   const resolvedLang = lang ?? getLocaleFromPathname(resolvedPathname);
+  const homeHref = localizePathname('/', resolvedLang);
   const alternateLocale: Locale = resolvedLang === 'zh' ? 'en' : 'zh';
   const languageToggleHref = localizePathname(
     stripLocaleFromPathname(resolvedPathname),
@@ -40,7 +41,7 @@ export default function AutoHideHeader({ lang, pathname, children }: Props) {
       >
         <div className="container mx-auto flex h-14 items-center justify-between px-4">
           <a
-            href="/"
+            href={homeHref}
             className="text-xl font-semibold tracking-tight text-foreground"
             style={{
               fontFamily: 'Permanent Marker',

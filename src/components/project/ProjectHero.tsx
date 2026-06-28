@@ -16,6 +16,10 @@ interface ProjectHeroProps {
 export default function ProjectHero({ project, lang }: ProjectHeroProps) {
   const chars = project.title.split('');
   const { t } = useTranslations(lang);
+  const actionButtonClass =
+    'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto';
+  const interactiveButtonSizeClass =
+    'col-span-2 min-h-11 w-full px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto';
 
   return (
     <section className="container mx-auto px-4 pt-28 pb-12">
@@ -56,7 +60,7 @@ export default function ProjectHero({ project, lang }: ProjectHeroProps) {
       </motion.p>
 
       <motion.div
-        className="flex gap-3"
+        className="grid grid-cols-2 gap-3 sm:flex sm:flex-row sm:flex-wrap"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.65 }}
@@ -65,7 +69,7 @@ export default function ProjectHero({ project, lang }: ProjectHeroProps) {
           href={project.githubUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          className={actionButtonClass}
         >
           <Github className="h-4 w-4" />
           {t('ProjectGithubButton')}
@@ -74,11 +78,13 @@ export default function ProjectHero({ project, lang }: ProjectHeroProps) {
           url={typeof window !== 'undefined' ? window.location.href : ''}
           title={project.title}
           description={project.tagline}
+          className={actionButtonClass}
         />
         {project.pageUrl && (
           <InteractiveHoverButton
             type="button"
             onClick={() => window.open(project.pageUrl, '_blank', 'noopener,noreferrer')}
+            className={interactiveButtonSizeClass}
           >
             {t('ProjectPageButton')}
           </InteractiveHoverButton>

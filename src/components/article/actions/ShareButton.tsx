@@ -2,6 +2,7 @@
 import { IconBrandLinkedin, IconBrandX, IconCheck, IconLink, IconShare } from '@tabler/icons-react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface ShareButtonProps {
   url: string;
@@ -9,6 +10,7 @@ interface ShareButtonProps {
   description?: string;
   shareText?: string;
   variant?: 'icon' | 'button';
+  className?: string;
 }
 
 export default function ShareButton({
@@ -17,6 +19,7 @@ export default function ShareButton({
   description = '',
   shareText,
   variant = 'button',
+  className,
 }: ShareButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -33,11 +36,12 @@ export default function ShareButton({
   }, []);
 
   const shareMessage = shareText || description;
+  const resolvedUrl = url || (typeof window !== 'undefined' ? window.location.href : '');
 
   const handleShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title, text: shareMessage, url });
+        await navigator.share({ title, text: shareMessage, url: resolvedUrl });
       } catch {
         // User cancelled
       }
@@ -48,10 +52,10 @@ export default function ShareButton({
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(resolvedUrl);
     } catch {
       const textArea = document.createElement('textarea');
-      textArea.value = url;
+      textArea.value = resolvedUrl;
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand('copy');
@@ -70,7 +74,7 @@ export default function ShareButton({
       icon: <IconBrandX size={18} />,
       action: () => {
         window.open(
-          `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(shareMessage)}&via=urmzd_`,
+          `https://twitter.com/intent/tweet?url=${encodeURIComponent(resolvedUrl)}&text=${encodeURIComponent(shareMessage)}&via=urmzd_`,
           '_blank',
           'noopener,noreferrer',
         );
@@ -82,7 +86,7 @@ export default function ShareButton({
       icon: <IconBrandLinkedin size={18} />,
       action: () => {
         window.open(
-          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(resolvedUrl)}`,
           '_blank',
           'noopener,noreferrer',
         );
@@ -105,9 +109,11 @@ export default function ShareButton({
           onClick={handleShare}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className={`flex items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground ${
-            variant === 'icon' ? 'p-2' : ''
-          }`}
+          className={cn(
+            'flex items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground',
+            variant === 'icon' && 'p-2',
+            className,
+          )}
           aria-label="Share"
         >
           <IconShare size={18} />
