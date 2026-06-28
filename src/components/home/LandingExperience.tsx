@@ -17,9 +17,23 @@ import { useTextScramble } from '@/hooks/useTextScramble';
 import { useTranslations } from '@/lib/i18n';
 import { LightRays } from '@/registry/magicui/light-rays';
 
-const NAME_CHARS = 'Shenshuai Ming'.split('');
+const NAME_CHARS = [
+  { id: 'shenshuai-s', char: 'S' },
+  { id: 'shenshuai-h', char: 'h' },
+  { id: 'shenshuai-e', char: 'e' },
+  { id: 'shenshuai-n', char: 'n' },
+  { id: 'shenshuai-s-2', char: 's' },
+  { id: 'shenshuai-h-2', char: 'h' },
+  { id: 'shenshuai-u', char: 'u' },
+  { id: 'shenshuai-a', char: 'a' },
+  { id: 'shenshuai-i', char: 'i' },
+  { id: 'space', char: ' ' },
+  { id: 'ming-m', char: 'M' },
+  { id: 'ming-i', char: 'i' },
+  { id: 'ming-n', char: 'n' },
+  { id: 'ming-g', char: 'g' },
+];
 const DOCK_PRELOAD_DELAY_MS = 1100;
-const PLEXUS_IDLE_DELAY_MS = 2200;
 const SocialDock = lazy(() => import('@/components/layout/SocialDock'));
 
 export default function LandingExperience() {
@@ -29,7 +43,6 @@ export default function LandingExperience() {
   const [codexIndex, setCodexIndex] = useState(0);
   const [isZh, setIsZh] = useState(false);
   const [shouldMountDock, setShouldMountDock] = useState(false);
-  const [shouldMountPlexus, setShouldMountPlexus] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -44,26 +57,6 @@ export default function LandingExperience() {
     }, DOCK_PRELOAD_DELAY_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    let idleId: number | undefined;
-    const timeoutId = window.setTimeout(() => {
-      if ('requestIdleCallback' in window) {
-        idleId = window.requestIdleCallback(() => setShouldMountPlexus(true));
-      } else {
-        setShouldMountPlexus(true);
-      }
-    }, PLEXUS_IDLE_DELAY_MS);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      if (idleId !== undefined && 'cancelIdleCallback' in window) {
-        window.cancelIdleCallback(idleId);
-      }
-    };
   }, []);
 
   const codex = isZh ? CODEX_CN : CODEX;
@@ -92,9 +85,7 @@ export default function LandingExperience() {
   return (
     <MotionConfig reducedMotion="user">
       <div className="landing-root">
-        {shouldMountPlexus && (
-          <PlexusBackground className="pointer-events-auto z-0" onCodexChange={handleCodexChange} />
-        )}
+        <PlexusBackground className="pointer-events-auto z-0" onCodexChange={handleCodexChange} />
         <LightRays
           count={8}
           speed={12}
@@ -120,14 +111,14 @@ export default function LandingExperience() {
                   aria-label="Shenshuai Ming"
                   style={{ fontFamily: 'Rock Salt, cursive' }}
                 >
-                  {NAME_CHARS.map((char, index) => {
+                  {NAME_CHARS.map(({ id, char }, index) => {
                     const baseDelay = 0.6 + index * 0.04;
 
                     return char === ' ' ? (
-                      <span key={`space-${index}`} className="w-full" />
+                      <span key={id} className="w-full" />
                     ) : (
                       <span
-                        key={`char-${index}`}
+                        key={id}
                         className="landing-hero-char md:mt-10 mt-5"
                         style={{ '--landing-char-delay': `${baseDelay}s` } as CSSProperties}
                       >
