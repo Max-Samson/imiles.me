@@ -81,15 +81,17 @@ export default function ResearchHero({ item }: ResearchHeroProps) {
             Read Paper
           </a>
         )}
-        <a
-          href={item.githubUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-        >
-          <Github className="h-4 w-4" />
-          View on GitHub
-        </a>
+        {item.githubUrl && (
+          <a
+            href={item.githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            <Github className="h-4 w-4" />
+            View on GitHub
+          </a>
+        )}
         <ShareButton
           url={typeof window !== 'undefined' ? window.location.href : ''}
           title={item.title}
