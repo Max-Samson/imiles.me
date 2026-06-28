@@ -36,6 +36,30 @@ public/
 - **Linting:** Biome handles lint and format. Run `npm run lint` and `npm run format:check` before committing.
 - **Pre-commit:** Husky + lint-staged runs Biome on staged files.
 
+## Commands
+
+Use npm scripts directly. This repository does not use an extra command runner.
+
+| Task | Command |
+|------|---------|
+| Install dependencies | `npm install` |
+| Start dev server | `npm run dev` |
+| Build production output | `npm run build` |
+| Preview production build | `npm run preview` |
+| Run lint/checks | `npm run lint` |
+| Format files | `npm run format` |
+
+Additional npm-only scripts:
+
+- `npm run format:check` checks formatting without writing changes.
+- `npm run lint:fix` runs Biome with autofix.
+- `npm run check` runs Astro's type/content check, but it requires `@astrojs/check` to be installed.
+- `npm run generate-icons` regenerates PWA icons.
+- `npm run generate:llms` regenerates LLM-facing text output.
+- `npm run perf:budget` runs the homepage performance budget script.
+
+When changing code, prefer targeted checks first, such as `npx biome check <file>`, then run broader checks or `npm run build` when the change affects routing, content collections, Astro pages, or build-time behavior.
+
 ## Available components
 
 ### Content components (for use in MDX blog posts)
