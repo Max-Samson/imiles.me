@@ -1,23 +1,23 @@
 'use client';
 
 import {
+  type DOMMotionComponents,
+  type HTMLMotionProps,
+  type MotionProps,
+  motion,
+  useInView,
+} from 'motion/react';
+import {
   Children,
+  type ComponentType,
   createContext,
+  type RefAttributes,
   useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type ComponentType,
-  type RefAttributes,
 } from 'react';
-import {
-  motion,
-  useInView,
-  type DOMMotionComponents,
-  type HTMLMotionProps,
-  type MotionProps,
-} from 'motion/react';
 
 import { cn } from '@/lib/utils';
 
@@ -49,10 +49,7 @@ const motionElements = {
   span: motion.span,
 } as const;
 
-type MotionElementType = Extract<
-  keyof DOMMotionComponents,
-  keyof typeof motionElements
->;
+type MotionElementType = Extract<keyof DOMMotionComponents, keyof typeof motionElements>;
 type TerminalTypingMotionComponent = ComponentType<
   Omit<HTMLMotionProps<'span'>, 'ref'> & RefAttributes<HTMLElement>
 >;
@@ -132,9 +129,7 @@ export const TypingAnimation = ({
     throw new Error('TypingAnimation: children must be a string. Received:');
   }
 
-  const MotionComponent = motionElements[
-    Component
-  ] as TerminalTypingMotionComponent;
+  const MotionComponent = motionElements[Component] as TerminalTypingMotionComponent;
 
   const [displayedText, setDisplayedText] = useState<string>('');
   const [started, setStarted] = useState(false);
@@ -149,9 +144,7 @@ export const TypingAnimation = ({
   const hasSequence = sequence !== null;
   const sequenceStarted = sequence?.sequenceStarted ?? false;
   const sequenceActiveIndex = sequence?.activeIndex ?? null;
-  const sequenceCompleteItemRef = useRef<
-    SequenceContextValue['completeItem'] | null
-  >(null);
+  const sequenceCompleteItemRef = useRef<SequenceContextValue['completeItem'] | null>(null);
   const sequenceItemIndexRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -252,9 +245,7 @@ export const Terminal = ({
     if (!sequence) return null;
     return {
       completeItem: (index: number) => {
-        setActiveIndex((current) =>
-          index === current ? current + 1 : current,
-        );
+        setActiveIndex((current) => (index === current ? current + 1 : current));
       },
       activeIndex,
       sequenceStarted: sequenceHasStarted,
@@ -287,18 +278,12 @@ export const Terminal = ({
         </div>
       </div>
       <pre className="bg-transparent p-4 text-inherit whitespace-pre-wrap break-words overflow-y-auto max-h-[600px] sm:max-h-none">
-        <code className="grid gap-y-1 bg-transparent text-inherit">
-          {wrappedChildren}
-        </code>
+        <code className="grid gap-y-1 bg-transparent text-inherit">{wrappedChildren}</code>
       </pre>
     </div>
   );
 
   if (!sequence) return content;
 
-  return (
-    <SequenceContext.Provider value={contextValue}>
-      {content}
-    </SequenceContext.Provider>
-  );
+  return <SequenceContext.Provider value={contextValue}>{content}</SequenceContext.Provider>;
 };

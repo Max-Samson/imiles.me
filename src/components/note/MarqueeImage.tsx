@@ -1,9 +1,10 @@
 'use client';
 
-import { useTranslations, type Locale } from '@/lib/i18n';
+import { MapPin } from 'lucide-react';
+import { type Locale, useTranslations } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { Marquee } from '@/registry/magicui/marquee';
-import { MapPin } from 'lucide-react';
+
 interface MarqueeImageItem {
   src: string;
   alt: string;
@@ -40,9 +41,7 @@ export default function MarqueeImage({ images, lang }: MarqueeImageProps) {
                 className="w-full rounded-lg object-cover"
                 loading="lazy"
               />
-              <div className="text-sm font-medium dark:text-white">
-                {img.alt}
-              </div>
+              <div className="text-sm font-medium dark:text-white">{img.alt}</div>
               <div className="text-xs font-medium mt-2 md:mt-1 dark:text-white/40 flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
                 {img.caption}

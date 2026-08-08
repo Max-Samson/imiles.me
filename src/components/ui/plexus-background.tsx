@@ -8,9 +8,7 @@ const PlexusSceneLazy = lazy(() =>
   })),
 );
 
-export function PlexusBackground(
-  props: ComponentProps<typeof PlexusBackgroundType>,
-) {
+export function PlexusBackground(props: ComponentProps<typeof PlexusBackgroundType>) {
   return (
     <Suspense fallback={null}>
       <PlexusSceneLazy {...props} />

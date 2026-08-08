@@ -154,9 +154,7 @@ function sampleMultiPath3D(paths: Point3D[][], n: number): Point3D[] {
   let remaining = n;
   for (let i = 0; i < paths.length; i++) {
     const count =
-      i === paths.length - 1
-        ? remaining
-        : Math.max(2, Math.round((n * lens[i]) / total));
+      i === paths.length - 1 ? remaining : Math.max(2, Math.round((n * lens[i]) / total));
     const actual = Math.min(count, remaining);
     if (actual > 0) {
       pts.push(...sampleAlongPath3D(paths[i], actual));
@@ -547,8 +545,7 @@ export const CODEX: CodexEntry[] = [
   },
   {
     shape: galaxyShape,
-    quote:
-      '/\u028A\u0259r\u02C8mu\u02D0zd m\u028A\u02CChɑ\u02D0m\u0251d\u02C8na\u026Am/',
+    quote: '/\u028A\u0259r\u02C8mu\u02D0zd m\u028A\u02CChɑ\u02D0m\u0251d\u02C8na\u026Am/',
     holdMs: 15_000,
   },
 ];

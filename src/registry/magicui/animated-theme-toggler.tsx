@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 import { cn } from '@/lib/utils';
@@ -16,9 +16,7 @@ export const AnimatedThemeToggler = ({
   ...props
 }: AnimatedThemeTogglerProps) => {
   const [isDark, setIsDark] = useState(
-    () =>
-      typeof document !== 'undefined' &&
-      document.documentElement.classList.contains('dark'),
+    () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
   );
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -51,10 +49,7 @@ export const AnimatedThemeToggler = ({
     const y = viewportHeight / 2;
 
     // 计算覆盖全屏的最大扩散半径
-    const maxRadius = Math.hypot(
-      Math.max(x, viewportWidth - x),
-      Math.max(y, viewportHeight - y),
-    );
+    const maxRadius = Math.hypot(Math.max(x, viewportWidth - x), Math.max(y, viewportHeight - y));
 
     const applyTheme = () => {
       const newTheme = !isDark;
@@ -77,10 +72,7 @@ export const AnimatedThemeToggler = ({
       ready.then(() => {
         document.documentElement.animate(
           {
-            clipPath: [
-              `circle(0px at ${x}px ${y}px)`,
-              `circle(${maxRadius}px at ${x}px ${y}px)`,
-            ],
+            clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${maxRadius}px at ${x}px ${y}px)`],
           },
           {
             duration,

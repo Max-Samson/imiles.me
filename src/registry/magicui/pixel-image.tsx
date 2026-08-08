@@ -93,12 +93,7 @@ export const PixelImage = ({
   }, [rows, cols, maxAnimationDelay]);
 
   return (
-    <div
-      className={cn(
-        'relative aspect-square w-full select-none overflow-hidden',
-        className,
-      )}
-    >
+    <div className={cn('relative aspect-square w-full select-none overflow-hidden', className)}>
       {pieces.map((piece, index) => (
         <div
           key={index}

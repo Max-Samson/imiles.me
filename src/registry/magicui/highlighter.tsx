@@ -1,10 +1,10 @@
 'use client';
 
-import { useLayoutEffect, useRef } from 'react';
-import type React from 'react';
 import { useInView } from 'motion/react';
+import type React from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { annotate } from 'rough-notation';
-import { type RoughAnnotation } from 'rough-notation/lib/model';
+import type { RoughAnnotation } from 'rough-notation/lib/model';
 
 type AnnotationAction =
   | 'highlight'
@@ -83,16 +83,7 @@ export function Highlighter({
         resizeObserver.disconnect();
       }
     };
-  }, [
-    shouldShow,
-    action,
-    color,
-    strokeWidth,
-    animationDuration,
-    iterations,
-    padding,
-    multiline,
-  ]);
+  }, [shouldShow, action, color, strokeWidth, animationDuration, iterations, padding, multiline]);
 
   return (
     <span ref={elementRef} className="relative inline-block bg-transparent">

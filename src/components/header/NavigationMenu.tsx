@@ -9,10 +9,10 @@ import {
 } from '@/components/ui/navigation-menu';
 import {
   getLocaleFromPathname,
+  type Locale,
   localizePathname,
   stripLocaleFromPathname,
   useTranslations,
-  type Locale,
 } from '@/lib/i18n';
 
 export type NavItem = {
@@ -35,7 +35,7 @@ export function getNavItems(lang: Locale): NavItem[] {
   const { t } = useTranslations(lang);
 
   // 从配置自动 map 生成
-  let items = NAV_CONFIG.map((item) => ({
+  const items = NAV_CONFIG.map((item) => ({
     href: localizePathname(item.path, lang),
     matchPath: item.path,
     label: t(item.key),
@@ -52,8 +52,7 @@ export function isNavItemActive(pathname: string, matchPath: string) {
   const normalizedPath = stripLocaleFromPathname(pathname);
   return matchPath === '/'
     ? normalizedPath === '/'
-    : normalizedPath === matchPath ||
-        normalizedPath.startsWith(`${matchPath}/`);
+    : normalizedPath === matchPath || normalizedPath.startsWith(`${matchPath}/`);
 }
 
 type Props = {
@@ -63,8 +62,7 @@ type Props = {
 
 export default function NavigationMenuDemo({ lang, pathname }: Props) {
   const resolvedPathname =
-    pathname ??
-    (typeof window === 'undefined' ? '/' : window.location.pathname);
+    pathname ?? (typeof window === 'undefined' ? '/' : window.location.pathname);
   const resolvedLang = lang ?? getLocaleFromPathname(resolvedPathname);
   const navItems = getNavItems(resolvedLang);
 
@@ -76,11 +74,7 @@ export default function NavigationMenuDemo({ lang, pathname }: Props) {
             <NavigationMenuLink
               href={item.href}
               className={navigationMenuTriggerStyle()}
-              aria-current={
-                isNavItemActive(resolvedPathname, item.matchPath)
-                  ? 'page'
-                  : undefined
-              }
+              aria-current={isNavItemActive(resolvedPathname, item.matchPath) ? 'page' : undefined}
             >
               {item.label}
             </NavigationMenuLink>

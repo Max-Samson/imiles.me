@@ -40,10 +40,7 @@ const LIGHT_THEME: PlexusTheme = {
 };
 
 function checkDarkMode(): boolean {
-  return (
-    typeof document !== 'undefined' &&
-    document.documentElement.classList.contains('dark')
-  );
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 }
 
 export function usePlexusTheme(): PlexusTheme {
