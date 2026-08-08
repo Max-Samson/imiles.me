@@ -33,32 +33,33 @@ public/
 - **Components:** React components use `.tsx`. Astro components use `.astro`. React islands are hydrated via `client:load` or `client:visible`.
 - **Content:** Blog posts go in `src/blog/` as `.mdx`. Stories go in `src/stories/` as `.md`. Both must include valid frontmatter matching their schema in `content.config.ts`.
 - **Images:** Place in `public/` under the appropriate subdirectory. Third-party photos require a credit entry in `src/data/imageCredits.ts`.
-- **Linting:** Biome handles lint and format. Run `npm run lint` and `npm run format:check` before committing.
+- **Linting:** Biome handles lint and format. Run `pnpm lint` and `pnpm format:check` before committing.
 - **Pre-commit:** Husky + lint-staged runs Biome on staged files.
 
 ## Commands
 
-Use npm scripts directly. This repository does not use an extra command runner.
+Use pnpm scripts directly. This repository does not use an extra command runner.
 
 | Task | Command |
 |------|---------|
-| Install dependencies | `npm install` |
-| Start dev server | `npm run dev` |
-| Build production output | `npm run build` |
-| Preview production build | `npm run preview` |
-| Run lint/checks | `npm run lint` |
-| Format files | `npm run format` |
+| Install dependencies | `pnpm install` |
+| Start dev server | `pnpm dev` |
+| Build production output | `pnpm build` |
+| Preview production build | `pnpm preview` |
+| Run lint/checks | `pnpm lint` |
+| Format files | `pnpm format` |
 
-Additional npm-only scripts:
+Additional scripts:
 
-- `npm run format:check` checks formatting without writing changes.
-- `npm run lint:fix` runs Biome with autofix.
-- `npm run check` runs Astro's type/content check, but it requires `@astrojs/check` to be installed.
-- `npm run generate-icons` regenerates PWA icons.
-- `npm run generate:llms` regenerates LLM-facing text output.
-- `npm run perf:budget` runs the homepage performance budget script.
+- `pnpm format:check` checks formatting without writing changes.
+- `pnpm lint:fix` runs Biome with autofix.
+- `pnpm check` runs Astro's type/content check, but it requires `@astrojs/check` to be installed.
+- `pnpm generate-icons` regenerates PWA icons.
+- `pnpm generate:llms` regenerates LLM-facing text output.
+- `pnpm perf:budget` runs the homepage performance budget script.
+- `pnpm deploy` builds and deploys to Cloudflare Workers.
 
-When changing code, prefer targeted checks first, such as `npx biome check <file>`, then run broader checks or `npm run build` when the change affects routing, content collections, Astro pages, or build-time behavior.
+When changing code, prefer targeted checks first, such as `pnpm exec biome check <file>`, then run broader checks or `pnpm build` when the change affects routing, content collections, Astro pages, or build-time behavior.
 
 ## Available components
 

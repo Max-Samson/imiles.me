@@ -2,6 +2,7 @@
   "name": "miles",
   "type": "module",
   "version": "0.0.1",
+  "packageManager": "pnpm@11.13.1",
   "scripts": {
     "dev": "astro dev",
     "generate:llms": "node scripts/generate-llms-txt.mjs",
@@ -11,7 +12,7 @@
     "astro": "astro",
     "check": "astro check",
     "lint": "biome check .",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "pnpm build && wrangler deploy",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "format:check": "biome format .",
