@@ -30,3 +30,6 @@ pnpm-debug.log*
 
 #create 
 create-docs/
+
+# local development files
+temp/
