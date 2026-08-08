@@ -5,7 +5,8 @@
   "description": "Personal website and bilingual (EN/中文) digital garden of Miles — built with Astro, React, and Three.js.",
   "license": "Apache-2.0",
   "author": {
-    "name": "Miles"
+    "name": "Miles",
+    "email": "maxshuai355@gmail.com"
   },
   "repository": {
     "type": "git",

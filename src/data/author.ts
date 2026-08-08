@@ -4,12 +4,12 @@ export const author = {
 
   // Public contact email. Update this once, and components that need author contact
   // information can reuse the same source of truth.
-  email: 'your-email@example.com',
+  email: 'maxshuai355@gmail.com',
 
   // General location used in profile/resume-style examples. This is not used for
   // routing or localization.
   location: {
-    city: 'Shenzhen',
+    city: 'Wuhan',
     country: 'China',
   },
 

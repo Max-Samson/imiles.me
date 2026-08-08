@@ -1,0 +1,14 @@
+imiles.me
+Copyright 2026 Miles (明申帅)
+
+This product includes code derived from urmzd.com
+  https://github.com/urmzd/urmzd.com
+  Copyright 2026 urmzd (Urmzd Mukhammadnaim)
+  Licensed under the Apache License, Version 2.0.
+
+Major modifications made in this derivative:
+  - Replaced all original content (blog posts, stories, research, timeline,
+    images) with original work by Miles
+  - Added bilingual (English / 中文) localization
+  - Rebuilt the UI and visual design (Tailwind CSS v4, Magic UI, custom components)
+  - Added PWA support, CI/CD pipelines, performance budgets, and LLM-friendly outputs
