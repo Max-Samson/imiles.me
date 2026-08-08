@@ -13,7 +13,7 @@
 - **双语国际化（i18n）** —— 英文在根路径，中文位于 `/zh/` 下，UI 文案按语言拆分（`src/locales/`）。
 - **MDX 博客** —— 支持 KaTeX 数学公式（`remark-math` + `rehype-katex`）、标题锚点、代码块复制按钮、动态双向链接的 `Cite`/`References` 引用，以及跨领域的 *Snippet of the Week*（每周片段）写作惯例。
 - **Stories（故事）** —— 纯文本、第一人称的 Markdown 叙事，配以专门的阅读布局（`story-prose`）。
-- **Notes / Projects / Research** —— 由类型化数据文件驱动的结构化内容页面。
+- **Notes / Projects** —— 由类型化数据文件驱动的结构化内容页面。
 - **交互式视觉** —— 基于 React Three Fiber 的 Three.js plexus 主页背景、滚动/动画岛屿、模糊搜索的博客搜索。
 - **PWA** —— Web 清单（manifest）、Service Worker、离线回退页与自动生成的图标。
 - **自动生成的产物** —— RSS 订阅、XML 站点地图、基于 [Satori](https://github.com/vercel/satori) 的逐页 OG 图片，以及面向 LLM 索引的 `llms.txt`。
@@ -63,7 +63,7 @@ npx shadcn@latest add @magicui/<组件名> --path src/registry/magicui
 imiles.me/
 ├── src/
 │   ├── pages/           # 路由：/, /blog, /stories, /notes, /projects,
-│   │                    #   /research, /about, /zh/*, RSS, sitemap, OG 图片
+│   │                    #   /about, /zh/*, RSS, sitemap, OG 图片
 │   ├── components/      # React (.tsx) 与 Astro (.astro) 组件
 │   │   └── ui/          # UI 基础组件（shadcn 风格、Radix、自定义）
 │   ├── registry/        # 收纳的 Magic UI 组件（magicui/）
@@ -177,7 +177,7 @@ pnpm deploy          # pnpm build && wrangler deploy
 
 本项目采用双许可证：
 
-- **代码**（源码、配置、工具）—— [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+- **代码**（源码、配置、工具）—— [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)（见 [`LICENSE`](./LICENSE)）
 - **内容**（博客文章、故事、图片、品牌素材）—— [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 
-欢迎以 Apache-2.0 条款贡献代码；贡献的图片必须是原创作品或与 CC BY-NC-ND 4.0 兼容。
+本项目衍生自 [`urmzd/urmzd.com`](https://github.com/urmzd/urmzd.com)；来源声明与修改记录见 [`NOTICE`](./NOTICE)。欢迎以 Apache-2.0 条款贡献代码；贡献的图片必须是原创作品或与 CC BY-NC-ND 4.0 兼容。

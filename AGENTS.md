@@ -10,7 +10,7 @@ Personal website and blog at [imiles.me](https://imiles.me). Built with Astro, R
 
 ```
 src/
-  pages/          # Astro routes (index, blog, stories, projects, research, about, rss, og)
+  pages/          # Astro routes (index, blog, stories, projects, notes, about, rss, og)
   components/     # React (.tsx) and Astro (.astro) components
   layouts/        # BaseLayout.astro — single layout wrapping all pages
   blog/           # MDX blog posts (schema: title, description, pubDate, tags, draft, heroImage)

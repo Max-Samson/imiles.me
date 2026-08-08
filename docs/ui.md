@@ -25,7 +25,7 @@
 - `home/`：首页首屏和 landing experience。
 - `layout/`：站点外壳和跨页面布局组件，包括 `SocialDock`、`NewsletterSignup`、`LanguageSwitcher`、`SEOMeta`、内容页背景。
 - `header/`、`footer/`：导航和页脚。
-- `project/`、`note/`、`research/`：对应内容域的卡片和详情 hero。
+- `project/`、`note/`：对应内容域的卡片和详情 hero。
 - `ui/`：shadcn/ui、本地 UI primitive、Three.js plexus 基础设施。
 
 这一层的特点是“按功能组合”。功能组件通常会引用 `src/components/ui/` 的基础组件，也会引用 `src/registry/magicui/` 的视觉组件，再结合项目自己的数据、hooks 和页面语义组成最终体验。
@@ -128,7 +128,7 @@ Magic UI 在项目中主要承担视觉增强和动效展示。
 
 当前应用包括：
 
-- `LightRays`：用于 about、blog、projects、research、stories、notes 等页面的背景光线效果，也用于 `LandingExperience`。
+- `LightRays`：用于 about、blog、projects、stories、notes 等页面的背景光线效果，也用于 `LandingExperience`。
 - `ShineBorder`：用于博客列表和项目/笔记卡片的发光边框。
 - `PixelImage`：用于笔记卡片的像素化图像展示。
 - `Marquee`：用于笔记相关图片横向滚动展示。

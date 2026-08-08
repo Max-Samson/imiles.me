@@ -62,7 +62,7 @@ See [`docs/ui.md`](./docs/ui.md) for the full UI architecture and placement conv
 imiles.me/
 ├── src/
 │   ├── pages/           # Routes: /, /blog, /stories, /notes, /projects,
-│   │                    #   /research, /about, /zh/*, RSS, sitemap, OG images
+│   │                    #   /about, /zh/*, RSS, sitemap, OG images
 │   ├── components/      # React (.tsx) & Astro (.astro) components
 │   │   └── ui/          # UI primitives (shadcn-style, Radix, custom)
 │   ├── registry/        # Vendored Magic UI components (magicui/)
@@ -123,7 +123,7 @@ The dev server runs at `http://localhost:4321`.
 | Script | Purpose |
 | --- | --- |
 | `generate-icons.mjs` | Renders standard + maskable PWA icons (192/512/180) from the logo with a circular mask |
-| `generate-llms-txt.mjs` | Generates `public/llms.txt` — an LLM-readable index of blog posts, stories, projects, research, and notes, grouped by language |
+| `generate-llms-txt.mjs` | Generates `public/llms.txt` — an LLM-readable index of blog posts, stories, projects, and notes, grouped by language |
 | `check-homepage-performance.mjs` | Validates bundle budgets (CSS, Hero/PlexusScene/SocialDock chunks, blocking stylesheets, KaTeX/Google Fonts on home) |
 | `prepare-wrangler-assets.mjs` | Writes `dist/.assetsignore` so the Worker script isn't served as a static asset |
 
@@ -178,4 +178,4 @@ Dual-licensed:
 - **Code** (source files, config, tooling) — [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) (see [`LICENSE`](./LICENSE))
 - **Content** (blog posts, stories, images, branding) — [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 
-This project is derived from [`urmzd/urmzd.com`](https://github.com/urmzd/urmzd.com); see [`NOTICE`](./NOTICE) for the source attribution and modification record, and [`THIRD-PARTY-NOTICES.md`](./THIRD-PARTY-NOTICES.md) for bundled third-party components and icon data. Contributions of code are welcome under the Apache-2.0 terms; contributed images must be original or compatible with CC BY-NC-ND 4.0.
+This project is derived from [`urmzd/urmzd.com`](https://github.com/urmzd/urmzd.com); see [`NOTICE`](./NOTICE) for the source attribution and modification record. Contributions of code are welcome under the Apache-2.0 terms; contributed images must be original or compatible with CC BY-NC-ND 4.0.
