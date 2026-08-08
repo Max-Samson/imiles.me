@@ -31,7 +31,7 @@ export default function ResearchCard({ item, index, lang }: ResearchCardProps) {
         </a>
       )}
       <ShineBorder
-        className="opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        className="rounded-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         shineColor={['#A07CFE', '#FE8FB5', '#FFBE7B']}
       />
       <div className="pointer-events-none relative z-10 mb-3 flex items-center justify-between">

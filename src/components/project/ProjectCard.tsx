@@ -25,7 +25,7 @@ export default function ProjectCard({ project, index }: ProjectCardProps) {
       whileHover={{ y: -4 }}
     >
       <ShineBorder
-        className="opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        className="rounded-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         shineColor={['#A07CFE', '#FE8FB5', '#FFBE7B']}
       />
       <div className="mb-4 flex items-center justify-between">

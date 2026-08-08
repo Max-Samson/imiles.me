@@ -50,11 +50,15 @@ export function ShineBorder({
           WebkitMaskComposite: 'xor',
           maskComposite: 'exclude',
           padding: 'var(--border-width)',
+          // NOTE: no border-radius here — this client component is wrapped in an
+          // `<astro-island>` by Astro, so `border-radius: inherit` would inherit the
+          // island's (0px) radius, not the card's. Pass the matching radius class
+          // (e.g. `rounded-lg`) at each usage site instead.
           ...style,
         } as React.CSSProperties
       }
       className={cn(
-        'motion-safe:animate-shine pointer-events-none absolute inset-0 size-full rounded-[inherit] will-change-[background-position]',
+        'motion-safe:animate-shine pointer-events-none absolute inset-0 size-full will-change-[background-position]',
         className,
       )}
       {...props}
