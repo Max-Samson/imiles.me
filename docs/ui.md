@@ -215,16 +215,40 @@ npx shadcn@latest add @magicui/<component-name> --path src/registry/magicui
 不推荐直接使用：
 
 ```bash
-pnpm dlx shadcn@latest add @magicui/<component-name>
+pnpm dlx shadcn@latest add @magicui/<component-name> --path src/registry/magicui
 ```
 
-原因是 `pnpm dlx` 会创建一棵临时依赖树。实际遇到的问题是：临时环境里的 `@modelcontextprotocol/sdk` 代码导入了 `zod/v4`，但旁边解析到的 `zod` 版本不导出这个路径，于是 CLI 在启动阶段报错：
+### 原因
+
+这是 shadcn CLI 当前依赖组合与 `pnpm dlx` 临时链接方式的兼容性问题，不是项目源码、Node.js 版本或 Magic UI 组件的问题。
+
+`shadcn@4.16.2` 允许解析到 `zod@3.24.1`，而其依赖的 `@modelcontextprotocol/sdk@1.30.0` 要求 `zod@^3.25 || ^4`，并会导入 `zod/v4`。在 `pnpm dlx` 创建的临时虚拟仓库中，SDK 可能被错误链接到 `zod@3.24.1`；该版本没有导出 `./v4`，所以 CLI 会在启动阶段报错：
 
 ```text
 Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './v4' is not defined by "exports"
 ```
 
-这个错误不是项目源码问题，也不是 Magic UI 组件本身的问题，而是 shadcn CLI 临时依赖解析时出现的版本组合问题。`npx shadcn@latest` 已验证可以正常运行。
+### 推荐命令
+
+用 `npx` 仅启动一次 CLI，不会改变项目仍以 pnpm 管理依赖的事实：
+
+```bash
+npx shadcn@latest add @magicui/<component-name> --path src/registry/magicui
+```
+
+该命令已验证可用。例如：
+
+```bash
+npx shadcn@latest add @magicui/morphing-text --path src/registry/magicui
+```
+
+如必须使用 `pnpm dlx`，显式将兼容的 Zod 版本加入临时依赖集：
+
+```bash
+pnpm --package zod@3.25.76 --package shadcn@latest dlx shadcn add @magicui/<component-name> --path src/registry/magicui
+```
+
+这个 pnpm 命令已验证可以正常启动 shadcn，但日常添加组件优先使用更短、更稳定的 `npx shadcn@latest add`。
 
 ## 维护约定
 
