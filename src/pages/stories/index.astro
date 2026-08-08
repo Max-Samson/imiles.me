@@ -3,6 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 import { calculateReadTime } from '@/lib/readTime';
 import { LightRays } from '@/registry/magicui/light-rays';
+import { ShineBorder } from '@/registry/magicui/shine-border';
 import {
   useTranslations,
   getLocaleFromPathname,
@@ -12,7 +13,7 @@ import {
 
 const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
-const stories = await getCollection('stories');
+const stories = await getCollection('stories', ({ data }) => data.draft !== true && data.lang === lang);
 const sortedStories = stories.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 ---
 
@@ -46,30 +47,44 @@ const sortedStories = stories.sort((a, b) => b.data.pubDate.valueOf() - a.data.p
       <div class="flex flex-col gap-6">
         {
           sortedStories.map((story) => (
-            <article class="group">
-              <a
-                href={localizePathname(`/stories/${story.id}`, lang)}
-                class="block rounded-lg border border-border p-6 transition-all duration-300 ease-out hover:border-primary hover:scale-[0.98]"
-              >
-                <h2 class="text-xl font-semibold text-foreground group-hover:underline">
-                  {story.data.title}
-                </h2>
-                <p class="mt-2 text-muted-foreground">{story.data.description}</p>
-                <div class="mt-2 flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
-                  <time>{formatDate(story.data.pubDate, lang)}</time>
-                  <span class="hidden sm:inline">|</span>
-                  <span>{calculateReadTime(story.body || '').text}</span>
-                </div>
-                {story.data.tags.length > 0 && (
-                  <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    {story.data.tags.map((tag) => (
-                      <span class="text-sm text-muted-foreground">
-                        #{tag}
-                      </span>
-                    ))}
+            <article class="group relative overflow-hidden rounded-lg border border-border p-6 transition-all duration-300 ease-out hover:scale-[0.98]">
+              <ShineBorder
+                client:load
+                className="opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                shineColor={['#A07CFE', '#FE8FB5', '#FFBE7B']}
+              />
+              <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <a
+                  href={localizePathname(`/stories/${story.id}`, lang)}
+                  class="block min-w-0 flex-1"
+                >
+                  <h2 class="text-xl font-semibold text-foreground group-hover:underline">
+                    {story.data.title}
+                  </h2>
+                  <p class="mt-2 text-muted-foreground">{story.data.description}</p>
+                  <div class="mt-2 flex flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
+                    <time>{formatDate(story.data.pubDate, lang)}</time>
+                    <span class="hidden sm:inline">|</span>
+                    <span>{calculateReadTime(story.body || '').text}</span>
                   </div>
-                )}
-              </a>
+                  {
+                    story.data.updatedDate && (
+                      <div class="mt-1 text-xs text-muted-foreground/70">
+                        {t('Labelupdated')}: <time>{formatDate(story.data.updatedDate, lang)}</time>
+                      </div>
+                    )
+                  }
+                  {story.data.tags.length > 0 && (
+                    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      {story.data.tags.map((tag) => (
+                        <span class="text-sm text-muted-foreground">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </a>
+              </div>
             </article>
           ))
         }

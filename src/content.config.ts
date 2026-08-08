@@ -26,6 +26,7 @@ const stories = defineCollection({
     updatedDate: z.coerce.date().optional(),
     tags: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
+    lang: z.enum(['en', 'zh']).default('en'),
     llms: z.boolean().optional(),
   }),
 });

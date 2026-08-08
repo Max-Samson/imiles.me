@@ -61,16 +61,10 @@ export async function GET() {
       path: post.data.lang === 'zh' ? `/zh/blog/${post.id}` : `/blog/${post.id}`,
       lastmod: post.data.updatedDate ?? post.data.pubDate,
     })),
-    ...stories.flatMap((story) => [
-      {
-        path: `/stories/${story.id}`,
-        lastmod: story.data.updatedDate ?? story.data.pubDate,
-      },
-      {
-        path: `/zh/stories/${story.id}`,
-        lastmod: story.data.updatedDate ?? story.data.pubDate,
-      },
-    ]),
+    ...stories.map((story) => ({
+      path: story.data.lang === 'zh' ? `/zh/stories/${story.id}` : `/stories/${story.id}`,
+      lastmod: story.data.updatedDate ?? story.data.pubDate,
+    })),
     ...projects
       .filter((project) => project.hasDetailPage)
       .flatMap((project) => [
