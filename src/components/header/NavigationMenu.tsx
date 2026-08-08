@@ -14,6 +14,7 @@ import {
   stripLocaleFromPathname,
   useTranslations,
 } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 export type NavItem = {
   href: string;
@@ -68,17 +69,24 @@ export default function NavigationMenuDemo({ lang, pathname }: Props) {
   return (
     <NavigationMenu viewport={false}>
       <NavigationMenuList className="gap-2">
-        {navItems.map((item) => (
-          <NavigationMenuItem key={item.href}>
-            <NavigationMenuLink
-              href={item.href}
-              className={navigationMenuTriggerStyle()}
-              aria-current={isNavItemActive(resolvedPathname, item.matchPath) ? 'page' : undefined}
-            >
-              {item.label}
-            </NavigationMenuLink>
-          </NavigationMenuItem>
-        ))}
+        {navItems.map((item) => {
+          const isActive = isNavItemActive(resolvedPathname, item.matchPath);
+
+          return (
+            <NavigationMenuItem key={item.href}>
+              <NavigationMenuLink
+                href={item.href}
+                className={cn(
+                  navigationMenuTriggerStyle(),
+                  isActive && 'bg-accent text-accent-foreground hover:bg-accent focus:bg-accent',
+                )}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                {item.label}
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+          );
+        })}
       </NavigationMenuList>
     </NavigationMenu>
   );
