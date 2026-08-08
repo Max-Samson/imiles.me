@@ -175,7 +175,7 @@ Inspired by and adapted from [`urmzd/urmzd.com`](https://github.com/urmzd/urmzd.
 
 Dual-licensed:
 
-- **Code** (source files, config, tooling) — [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+- **Code** (source files, config, tooling) — [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) (see [`LICENSE`](./LICENSE))
 - **Content** (blog posts, stories, images, branding) — [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 
-Contributions of code are welcome under the Apache-2.0 terms; contributed images must be original or compatible with CC BY-NC-ND 4.0.
+This project is derived from [`urmzd/urmzd.com`](https://github.com/urmzd/urmzd.com); see [`NOTICE`](./NOTICE) for the source attribution and modification record, and [`THIRD-PARTY-NOTICES.md`](./THIRD-PARTY-NOTICES.md) for bundled third-party components and icon data. Contributions of code are welcome under the Apache-2.0 terms; contributed images must be original or compatible with CC BY-NC-ND 4.0.

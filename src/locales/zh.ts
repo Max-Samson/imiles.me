@@ -3,7 +3,6 @@ export const zh = {
   Headerabout: '关于',
   Headerblog: '博客',
   Headerstories: '故事',
-  Headerresearch: '研究',
   Headerprojects: '项目',
   Headernotes: '随记',
   Headerdescription: 'Miles 的双语技术博客与数字花园',
@@ -15,7 +14,6 @@ export const zh = {
   PageDailyTitle: '随记 - {site}',
   PageAboutTitle: '关于 - {site}',
   PageProjectsTitle: '项目 - {site}',
-  PageResearchTitle: '研究 - {site}',
   PageHomeDescription:
     'Miles 的技术博客与数字花园，记录前端工程、AI、全栈实践、项目复盘、实践随笔与长期思考。',
   PageBlogDescription:
@@ -23,7 +21,6 @@ export const zh = {
   PageAboutDescription: '了解 Miles 的技术背景、当前关注方向，以及博客背后的写作与创作方式。',
   PageProjectsDescription:
     '查看 Miles 构建的软件项目，了解产品思路、实现细节、功能亮点与技术栈选择。',
-  PageResearchDescription: '整理 Miles 的研究项目、方法笔记，连接工程实践与系统性思考。',
   PageNotesDescription: '浏览 Miles 的日常记录、碎片想法与轻量更新，作为博客之外的个人数字花园。',
   Labelupdated: '更新于',
   NoteSectionOneTitle: '概览',

@@ -26,7 +26,6 @@ const NAV_CONFIG = [
   { key: 'Headerhome', path: '/' },
   { key: 'Headerblog', path: '/blog' },
   { key: 'Headerstories', path: '/stories' },
-  // { key: 'Headerresearch', path: '/research' },
   { key: 'Headerprojects', path: '/projects' },
   { key: 'Headernotes', path: '/notes' },
   { key: 'Headerabout', path: '/about' },

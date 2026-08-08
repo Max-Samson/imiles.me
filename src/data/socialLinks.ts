@@ -1,5 +1,12 @@
 import { author } from './author';
 
+/**
+ * 社交链接条目(驱动页脚 / 关于页的社交图标)。
+ * - title: 显示名
+ * - href: 链接地址
+ * - icon: 图标名,取值见下方枚举(github / linkedin / x / email / behance / arxiv / rss)
+ * - target: 打开方式(如 '_blank' 新窗口,可选)
+ */
 export interface SocialLink {
   title: string;
   href: string;
@@ -14,28 +21,11 @@ export const socialLinks: SocialLink[] = [
     target: '_blank',
     icon: 'github',
   },
-  // {
-  //   title: 'LinkedIn',
-  //   href: 'https://linkedin.com/in/urmzd',
-  //   icon: 'linkedin',
-  // },
   {
     title: 'X',
     href: author.social.x.url,
     target: '_blank',
     icon: 'x',
   },
-  // {
-  //   title: 'Email',
-  //   href: `mailto:${author.email}`,
-  //   target: '_blank',
-  //   icon: 'email',
-  // },
-  // { title: 'Behance', href: 'https://www.behance.net/urmzd', icon: 'behance' },
-  // {
-  //   title: 'arXiv',
-  //   href: 'https://arxiv.org/search/cs?searchtype=author&query=Mukhammadnaim,+U',
-  //   icon: 'arxiv',
-  // },
   { title: 'RSS', href: '/rss.xml', target: '_blank', icon: 'rss' },
 ];

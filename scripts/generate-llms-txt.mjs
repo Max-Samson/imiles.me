@@ -211,9 +211,8 @@ async function importDataModule(relativePath) {
 }
 
 async function loadStructuredEntries() {
-  const [{ projects }, { research }, { research: notes }] = await Promise.all([
+  const [{ projects }, { research: notes }] = await Promise.all([
     importDataModule('src/data/projects.ts'),
-    importDataModule('src/data/research.ts'),
     importDataModule('src/data/notes.ts'),
   ]);
 
@@ -247,31 +246,6 @@ async function loadStructuredEntries() {
       ];
     });
 
-  const researchEntries = research
-    .filter((item) => shouldIncludeInLlms(item.llms))
-    .flatMap((item) => [
-      {
-        kind: 'research',
-        lang: 'en',
-        title: item.title,
-        description: item.description || item.tagline,
-        tags: Array.isArray(item.tags) ? item.tags : [],
-        url: item.hasDetailPage
-          ? toLocalizedUrl('research', item.slug, 'en')
-          : item.paperUrl || item.githubUrl,
-      },
-      {
-        kind: 'research',
-        lang: 'zh',
-        title: item.title,
-        description: item.description || item.tagline,
-        tags: Array.isArray(item.tags) ? item.tags : [],
-        url: item.hasDetailPage
-          ? toLocalizedUrl('research', item.slug, 'zh')
-          : item.paperUrl || item.githubUrl,
-      },
-    ]);
-
   const noteEntries = notes
     .filter((item) => shouldIncludeInLlms(item.llms))
     .flatMap((item) => [
@@ -299,7 +273,6 @@ async function loadStructuredEntries() {
 
   return {
     projectEntries,
-    researchEntries,
     noteEntries,
   };
 }
@@ -316,8 +289,6 @@ const englishStoryEntries = storyEntries.filter((entry) => entry.lang === 'en');
 const chineseStoryEntries = storyEntries.filter((entry) => entry.lang === 'zh');
 const englishProjectEntries = structuredEntries.projectEntries.filter((entry) => entry.lang === 'en');
 const chineseProjectEntries = structuredEntries.projectEntries.filter((entry) => entry.lang === 'zh');
-const englishResearchEntries = structuredEntries.researchEntries.filter((entry) => entry.lang === 'en');
-const chineseResearchEntries = structuredEntries.researchEntries.filter((entry) => entry.lang === 'zh');
 const englishNoteEntries = structuredEntries.noteEntries.filter((entry) => entry.lang === 'en');
 const chineseNoteEntries = structuredEntries.noteEntries.filter((entry) => entry.lang === 'zh');
 
@@ -344,7 +315,6 @@ Official links:
 - Blog: ${siteUrl}/blog
 - Chinese blog: ${siteUrl}/zh/blog
 - Projects index: ${siteUrl}/projects
-- Research index: ${siteUrl}/research
 - Notes index: ${siteUrl}/notes
 - Stories index: ${siteUrl}/stories
 - GitHub: ${socialLinks.github}
@@ -358,12 +328,11 @@ This site is organized into several content areas that map to the project source
 - Blog (\`src/blog/\`): Markdown and MDX posts. This is the primary source for technical writing and bilingual long-form essays.
 - Stories (\`src/stories/\`): Text-first fiction and narrative experiments published as Markdown.
 - Projects (\`src/data/projects.ts\`): Structured project entries rendered as index and detail pages.
-- Research (\`src/data/research.ts\`): Structured research entries and paper summaries.
 - Notes (\`src/data/notes.ts\`): Lighter notebook-style entries and daily updates.
 
 ## Inclusion Rules
 
-- Blog, stories, projects, research, and notes are included by default.
+- Blog, stories, projects, and notes are included by default.
 - Any content item with \`llms: false\` is excluded from this file.
 - Draft Markdown content is always excluded.
 - Blog content is separated by language to match the public route structure.
@@ -379,11 +348,7 @@ ${buildSection('Chinese Stories', chineseStoryEntries, 'No story entries availab
 
 ${buildSection('English Projects', englishProjectEntries, 'No project entries available.')}
 
-${buildSection('Chinese Projects', chineseProjectEntries, 'No project entries available.')}
-
-${buildSection('English Research', englishResearchEntries, 'No research entries available.')}
-
-${buildSection('Chinese Research', chineseResearchEntries, 'No research entries available.')}
+${buildSection('English Projects', englishProjectEntries, 'No project entries available.')}
 
 ${buildSection('English Notes', englishNoteEntries, 'No note entries available.')}
 
@@ -404,7 +369,6 @@ const totalEntries =
   blogEntries.length +
   storyEntries.length +
   structuredEntries.projectEntries.length +
-  structuredEntries.researchEntries.length +
   structuredEntries.noteEntries.length;
 
 console.log(`Generated ${relative(rootDir, outputPath)} from ${totalEntries} llms-visible entries.`);

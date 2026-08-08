@@ -1,7 +1,6 @@
 import { getCollection } from 'astro:content';
 import { research as notes } from '@/data/notes';
 import { projects } from '@/data/projects';
-import { research } from '@/data/research';
 
 export const prerender = true;
 
@@ -54,7 +53,6 @@ export async function GET() {
     { path: '/zh/stories' },
     { path: '/projects' },
     { path: '/zh/projects' },
-    { path: '/research' },
     { path: '/about' },
     { path: '/zh/about' },
     { path: '/notes' },
@@ -79,9 +77,6 @@ export async function GET() {
         { path: `/projects/${project.slug}` },
         { path: `/zh/projects/${project.slug}` },
       ]),
-    ...research
-      .filter((item) => item.hasDetailPage)
-      .map((item) => ({ path: `/research/${item.slug}` })),
     ...notes
       .filter((item) => item.hasDetailPage)
       .flatMap((item) => [{ path: `/notes/${item.slug}` }, { path: `/zh/notes/${item.slug}` }]),

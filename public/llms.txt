@@ -21,7 +21,6 @@ Official links:
 - Blog: https://imiles.me/blog
 - Chinese blog: https://imiles.me/zh/blog
 - Projects index: https://imiles.me/projects
-- Research index: https://imiles.me/research
 - Notes index: https://imiles.me/notes
 - Stories index: https://imiles.me/stories
 - GitHub: https://github.com/Max-Samson
@@ -35,12 +34,11 @@ This site is organized into several content areas that map to the project source
 - Blog (`src/blog/`): Markdown and MDX posts. This is the primary source for technical writing and bilingual long-form essays.
 - Stories (`src/stories/`): Text-first fiction and narrative experiments published as Markdown.
 - Projects (`src/data/projects.ts`): Structured project entries rendered as index and detail pages.
-- Research (`src/data/research.ts`): Structured research entries and paper summaries.
 - Notes (`src/data/notes.ts`): Lighter notebook-style entries and daily updates.
 
 ## Inclusion Rules
 
-- Blog, stories, projects, research, and notes are included by default.
+- Blog, stories, projects, and notes are included by default.
 - Any content item with `llms: false` is excluded from this file.
 - Draft Markdown content is always excluded.
 - Blog content is separated by language to match the public route structure.
@@ -51,6 +49,11 @@ This site is organized into several content areas that map to the project source
 - No published entries yet.
 
 ## Chinese Blog Posts
+
+### AI 初稿生成系统设计：从同步超时到 Queue、SSE 与阶段化任务编排
+- URL: https://imiles.me/zh/blog/ai-draft-generation-queue-sse-guide
+- Description: 面向真实 CMS 场景的 AI 初稿生成设计、优化和排查指南：如何从同步请求超时，演进到 Cloudflare Queue 异步执行、任务事件表、SSE 实时渲染、D1 事件序列修复、长 JSON 排查和阶段化生成。
+- Keywords: nuxt, cloudflare, sse, queue, ai, fullstack, debugging
 
 ### 从 Astro 到 Nuxt：入门 Nuxt 生态和全栈开发
 - URL: https://imiles.me/zh/blog/astro-to-nuxt-ecosystem-fullstack
@@ -67,27 +70,31 @@ This site is organized into several content areas that map to the project source
 
 ## English Projects
 
-- No project entries available.
+### MTimer
+- URL: https://imiles.me/projects/mtimer
+- Description: MTimer is a cross-platform desktop focus app built around the Pomodoro Technique. It packages a Go backend and Vue 3 frontend into a native desktop experience with Wails, combining standard Pomodoro and custom focus modes, task management, focus session history, white noise and background music, analytics dashboards, and an AI planning assistant that can connect to DeepSeek or any OpenAI-compatible API. SQLite stores tasks, sessions, daily stats, and event stats, while Pinia coordinates timer, task, and settings state on the frontend and ECharts powers the visual reports.
+- Keywords: Go, Wails, Vue 3, TypeScript, SQLite, ECharts, Tailwind CSS, Vite
 
-## Chinese Projects
+## English Projects
 
-- No project entries available.
-
-## English Research
-
-- No research entries available.
-
-## Chinese Research
-
-- No research entries available.
+### MTimer
+- URL: https://imiles.me/projects/mtimer
+- Description: MTimer is a cross-platform desktop focus app built around the Pomodoro Technique. It packages a Go backend and Vue 3 frontend into a native desktop experience with Wails, combining standard Pomodoro and custom focus modes, task management, focus session history, white noise and background music, analytics dashboards, and an AI planning assistant that can connect to DeepSeek or any OpenAI-compatible API. SQLite stores tasks, sessions, daily stats, and event stats, while Pinia coordinates timer, task, and settings state on the frontend and ECharts powers the visual reports.
+- Keywords: Go, Wails, Vue 3, TypeScript, SQLite, ECharts, Tailwind CSS, Vite
 
 ## English Notes
 
-- No note entries available.
+### Bun、pnpm、npm、Yarn 全面对比学习笔记
+- URL: https://imiles.me/notes/javascript-package-managers-comparison
+- Description: 这篇笔记梳理 npm、Yarn、pnpm 与 Bun 的演进脉络：npm 作为 Node.js 官方标准解决基础依赖安装；Yarn 推动锁文件、并行下载和缓存能力；pnpm 通过内容寻址存储、硬链接、符号链接与严格依赖管理，解决磁盘浪费和幽灵依赖；Bun 则把运行时、包管理、构建和测试整合成一体化工具链。结论是：小项目优先 npm，现代企业项目和 Monorepo 优先 pnpm + Node.js，老项目继续沿用 Yarn，新工具、脚本和 Serverless 场景可渐进尝试 Bun。
+- Keywords: javascript, package-manager, nodejs, pnpm, bun, monorepo
 
 ## Chinese Notes
 
-- No note entries available.
+### Bun、pnpm、npm、Yarn 全面对比学习笔记
+- URL: https://imiles.me/zh/notes/javascript-package-managers-comparison
+- Description: 这篇笔记梳理 npm、Yarn、pnpm 与 Bun 的演进脉络：npm 作为 Node.js 官方标准解决基础依赖安装；Yarn 推动锁文件、并行下载和缓存能力；pnpm 通过内容寻址存储、硬链接、符号链接与严格依赖管理，解决磁盘浪费和幽灵依赖；Bun 则把运行时、包管理、构建和测试整合成一体化工具链。结论是：小项目优先 npm，现代企业项目和 Monorepo 优先 pnpm + Node.js，老项目继续沿用 Yarn，新工具、脚本和 Serverless 场景可渐进尝试 Bun。
+- Keywords: javascript, package-manager, nodejs, pnpm, bun, monorepo
 
 ## Guidance for Language Models
 
