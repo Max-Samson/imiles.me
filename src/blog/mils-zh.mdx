@@ -1,0 +1,87 @@
+---
+title: "你好，我是 Miles"
+description: "Miles 的简短自我介绍：一位专注于 AI 产品、开发者体验与长文写作的全栈 Web 工程师——以及这个网站背后的技能、工作、项目与教育经历。"
+pubDate: 2026-06-28
+updatedDate: 2026-08-08
+tags: ["introduction", "fullstack", "engineering", "ai"]
+shareText: "认识 Miles：一位用 Vue、Nuxt 与 Astro 构建 AI 产品的全栈 Web 工程师。这里是他和这个网站的故事——技能、工作、项目与教育。"
+lang: "zh"
+llms: false
+---
+
+import PreviewLink from '../components/article/PreviewLink';
+import TechSkillsCloud from '../components/article/TechSkillsCloud';
+import { Highlighter } from '../registry/magicui/highlighter';
+
+[English version](/blog/mils)
+
+你好，我是 <Highlighter client:load action="highlight" color="#87cefa">Miles</Highlighter>，一位常驻武汉的 22 岁<Highlighter client:load action="underline" color="#fbbf24">全栈 Web 工程师</Highlighter>**。**
+
+我的座右铭：*勇气不是喊口号，而是每一步脚踏实地的行动。*
+
+我做产品时坚持前端优先的思路，同时也非常关注界面背后的系统：API、AI 工作流、流式数据与开发者体验。目前我在深圳网旭科技担任全栈开发工程师（Nuxt 方向），参与 <Highlighter client:load action="box" color="#93c5fd"><PreviewLink client:load href="https://asksoul.me">AskSoul.me</PreviewLink></Highlighter> 多语言 AI 平台与 <Highlighter client:load action="box" color="#93c5fd"><PreviewLink client:load href="https://www.gitmind.cn">GitMind</PreviewLink></Highlighter> AI 工具套件的开发。
+
+这个网站是我的公开工作区：项目、笔记、技术文章，以及与 AI 时代软件相关的各种实验。
+
+## 我是谁
+
+- **学生时期** 武汉东湖学院计算机科学与技术专业（2022–2026），GPA 3.8/4.0，专业前 3%。
+- **工程师** 在网旭科技有两年前端经验，如今转向全栈——从 Astro 营销站到 Nuxt 4 业务平台。
+- **建造者** 喜欢端到端地做出小产品：两个学生项目在中国大学生计算机设计大赛中获得国家级奖项。
+- **写作者** 我用写作把零散的学习沉淀成持久的东西——这正是这个博客存在的意义。
+
+## 技术能力
+
+<TechSkillsCloud client:load headingId="技术能力" />
+
+```ts
+const miles = {
+  role: '全栈 Web 工程师',
+  frontend: ['Vue 3', 'React', 'TypeScript', 'Astro', 'Nuxt', 'Tailwind CSS', 'UnoCSS'],
+  backend: ['Node.js', 'Nitro', 'Go', 'Java', 'Cloudflare Workers', 'D1/SQLite', 'Drizzle ORM'],
+  ai: ['LLM 接口', 'SSE 流式响应', 'WebSocket', 'Cloudflare Queue'],
+  integrations: ['Stripe Checkout', 'Google OAuth', '国际化（11 种语言）'],
+  tools: ['Git', 'Vite', 'Webpack', 'Wails', 'Docker'],
+  status: '欢迎合作',
+};
+```
+
+- **前端。** 深耕 Vue 3 生态（Composition API、Pinia、Vue Router），同时掌握 React/Next.js；熟练使用 Astro 岛屿架构（部分水合、SSR/SSG 混合渲染）；熟悉 SCSS/Less 与原子化 CSS（Tailwind、UnoCSS）。
+- **全栈。** 基于 Node.js/Nitro 用 TypeScript 开发 RESTful API；使用 Cloudflare D1 + Drizzle ORM 做数据建模——打通从页面、接口到数据持久化的完整闭环。
+- **AI 与业务集成。** LLM 接口与 SSE 流式响应、WebSocket 实时更新、Cloudflare Queue 异步任务；认证（邮箱验证码、Google OAuth）与支付（Stripe Checkout、Webhook 验签）。
+- **性能与国际化。** 关注 Lighthouse 指标（LCP/FID/CLS）与图片优化；做过 11 种语言的站点，并搭建了自动化翻译流水线。
+
+## 工作经历
+
+**AskSoul.me —— 多语言 AI 心理测试平台** · 网旭科技 · *全栈开发（Nuxt 方向）* · 2026.04 至今
+
+- 将平台从 Astro 迁移到 Nuxt 4 全栈架构，基于 Nitro、Drizzle ORM 与 Cloudflare D1 完成心理测试、AI 报告与用户中心等模块。
+- 使用 Cloudflare Queue 异步生成 AI 报告，通过 SSE 实时推送进度，支持失败重试与历史报告查询。
+- 打通支付闭环：Stripe Checkout、Webhook 签名校验与订单状态同步，结合邮箱验证码与 Google OAuth，将匿名购买与登录账号关联。
+
+**GitMind AI 工具平台官网** · 网旭科技 · *前端开发* · 2024.06 – 2025.02
+
+- 基于 Astro 岛屿架构实现部分水合（`client:load/visible/idle`）：首屏 JS 从 350KB 降至 50KB（−85%），TTI 从 3.2s 降至 1.5s，Lighthouse 分数从 70 提升至 95+。
+- 开发 10+ 个 AI 工具功能页（AI 流程图、PDF 翻译、文档转思维导图、播客/视频摘要等），支持 SSE 流式渲染；WebSocket 实时推送进度并支持断线重连与心跳检测。
+- 11 种语言的国际化方案与 ExcelJS 翻译流水线——自动生成 484 个静态页面，SEO 分数 100，Google 收录率提升 300%；UnoCSS 将 CSS 从 450KB 降至 90KB（−80%）。
+
+**GitMind 思维导图编辑器** · 网旭科技 · *前端开发* · 2024.06 – 2025.02
+
+- 重构 mxGraph 流程图编辑器 UI，设计"Vue 组件层 → API 封装层 → 原生编辑器"三层结构，统一封装 30+ 项功能。
+- 多格式导出系统（PNG/SVG/PDF/Word/Excel/Markdown），导出成功率达 99%，支持水印与画布渲染。
+- 一套代码覆盖 PC Web、移动端 H5 与 APP WebView，代码复用率从 30% 提升至 70%。
+
+## 个人项目
+
+- **番茄工作法时间管理助手** —— Vue 3 + TypeScript + Pinia + Wails (Go) + ECharts。跨平台专注计时器，集成 DeepSeek AI 助手、本地加密存储与可视化统计。*第 18 届全国大学生计算机设计大赛中南赛区二等奖。*
+- **v2Note** —— Next.js + React + TypeScript + Wails (Go) + Tailwind CSS。注重隐私的跨平台笔记应用，支持双向链接、思维导图、AI Copilot 问答与本地/SQLite 存储。*第 17 届全国大学生计算机设计大赛全国三等奖。*
+
+## 教育经历
+
+- **武汉东湖学院** —— 计算机科学与技术学士，2022–2026。GPA 3.8/4.0，专业前 3%。
+- 主修课程：Python、Java、Go、Web 前端开发、数据库原理、软件工程、计算机网络。
+- 荣誉：校级甲等奖学金（专业前 1%）、三好学生标兵，以及国家级三等奖、省级二等奖等竞赛奖项。
+
+---
+
+以上是简短版的我。更长的故事，藏在这个网站的文章、项目与实验里——这是一份持续更新的文档，会随着我的成长不断被修订。

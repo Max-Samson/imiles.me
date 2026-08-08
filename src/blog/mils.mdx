@@ -1,33 +1,87 @@
 ---
 title: "Hi, I'm Miles"
-description: "A concise introduction to Miles: a frontend engineer focused on AI, full-stack products, developer experience, and long-form writing."
+description: "A short introduction to Miles: a full-stack web engineer focused on AI products, developer experience, and long-form writing — plus the skills, work, projects, and education behind this site."
 pubDate: 2026-06-28
-tags: ["introduction", "engineering", "frontend", "ai"]
-shareText: "Meet Miles: a frontend engineer focused on AI, full-stack products, developer experience, and thoughtful writing."
+updatedDate: 2026-08-08
+tags: ["introduction", "fullstack", "engineering", "ai"]
+shareText: "Meet Miles: a full-stack web engineer building AI products with Vue, Nuxt, and Astro. Here's the story behind the site — skills, work, projects, and education."
 lang: "en"
 llms: false
 ---
 
-import ExploreCard from '../components/article/ExploreCard';
-import Phonetic from '../components/article/Phonetic';
+import PreviewLink from '../components/article/PreviewLink';
+import TechSkillsCloud from '../components/article/TechSkillsCloud';
+import { Highlighter } from '../registry/magicui/highlighter';
 
-Hey, I'm **Miles** <Phonetic client:load ipa="Frontend engineer focused on AI, full-stack products, developer experience, and long-form writing." />.
+[中文版](/zh/blog/mils-zh)
 
-I build modern web products with a frontend-first mindset and a strong interest in the systems around the interface: APIs, product flows, AI workflows, developer experience, and cross-platform tooling.
+Hey, I'm <Highlighter client:load action="highlight" color="#87cefa">Miles</Highlighter>, a 22-year-old <Highlighter client:load action="underline" color="#fbbf24">full-stack web engineer</Highlighter> based in Wuhan, China.
 
-My current stack includes **TypeScript**, **Vue 3**, **React**, **Nuxt**, **Astro**, **Tailwind CSS**, **Figma**, **Node.js**, **Go**, **Java**, and **Wails**.
+My motto: *courage isn't shouting slogans — it's steady, grounded action, one step at a time.* (勇气不是喊口号，而是每一步脚踏实地的行动。)
+
+I build web products with a frontend-first mindset and a strong interest in the systems around the interface: APIs, AI workflows, streaming data, and developer experience. Right now I'm working as a full-stack developer (Nuxt direction) at Shenzhen Wangxu Technology on <Highlighter client:load action="box" color="#93c5fd"><PreviewLink client:load href="https://asksoul.me/en">AskSoul.me</PreviewLink></Highlighter>, a multilingual AI-powered platform, alongside <Highlighter client:load action="box" color="#93c5fd"><PreviewLink client:load href="https://www.gitmind.com">GitMind</PreviewLink></Highlighter>'s AI tool suite.
+
+This site is my public workspace: a place for projects, notes, technical essays, and experiments with AI-era software.
+
+## Who I Am
+
+- **Student.** B.E. in Computer Science & Technology at Wuhan Donghu University (2022–2026), GPA 3.8/4.0, top 3% of my major.
+- **Engineer.** Two years of frontend experience at Wangxu Technology, now full-stack — from Astro marketing sites to Nuxt 4 business platforms.
+- **Builder.** I enjoy shipping small products end to end: two of my student projects won national awards in the College Computer Design Competition.
+- **Writer.** I write to turn scattered learning into something durable — which is what this blog is for.
+
+## Technical Skills
+
+<TechSkillsCloud client:load headingId="technical-skills" />
 
 ```ts
 const miles = {
-  role: 'Frontend Engineer',
-  focus: ['AI', 'Full-stack Products', 'Developer Experience', 'Writing'],
-  frontend: ['Vue 3', 'React', 'TypeScript', 'Astro', 'Nuxt'],
-  plus: ['Node.js', 'Go', 'Java', 'Wails'],
+  role: 'Full-stack Web Engineer',
+  frontend: ['Vue 3', 'React', 'TypeScript', 'Astro', 'Nuxt', 'Tailwind CSS', 'UnoCSS'],
+  backend: ['Node.js', 'Nitro', 'Go', 'Java', 'Cloudflare Workers', 'D1/SQLite', 'Drizzle ORM'],
+  ai: ['LLM APIs', 'SSE streaming', 'WebSocket', 'Cloudflare Queue'],
+  integrations: ['Stripe Checkout', 'Google OAuth', 'i18n (11 languages)'],
+  tools: ['Git', 'Vite', 'Webpack', 'Wails', 'Docker'],
   status: 'Open to Collaborate',
 };
 ```
 
-I care about clear interfaces, maintainable code, thoughtful product details, and writing that turns scattered learning into something durable.
+- **Frontend.** Deep in the Vue 3 ecosystem (Composition API, Pinia, Vue Router) plus React/Next.js; Astro islands with partial hydration and SSR/SSG mixing; SCSS/Less and atomic CSS (Tailwind, UnoCSS).
+- **Full-stack.** TypeScript REST APIs on Node.js/Nitro; data modeling with Cloudflare D1 + Drizzle ORM — the full loop from page to API to persistence.
+- **AI & integrations.** LLM APIs with SSE streaming, WebSocket real-time updates, and Cloudflare Queue async jobs; auth (email OTP, Google OAuth) and payments (Stripe Checkout, Webhook verification).
+- **Performance & i18n.** Lighthouse budgets (LCP/FID/CLS), image optimization, and multilingual sites — I've shipped 11-language versions with automated translation pipelines.
 
-This site is my public workspace: a place for projects, notes, technical essays, and experiments with AI-era software.
+## Work Experience
 
+**AskSoul.me — Multilingual AI Testing Platform** · Wangxu Technology · *Full-stack (Nuxt)* · 2026.04 – present
+
+- Migrated the platform from Astro to a Nuxt 4 full-stack architecture; built the quiz, AI report, and user-center modules with Nitro, Drizzle ORM, and Cloudflare D1.
+- Async AI report generation via Cloudflare Queue, with progress pushed over SSE, failure retries, and historical report queries.
+- Completed the payment loop: Stripe Checkout, Webhook signature verification, and order status sync — linking anonymous purchases to logged-in accounts via email OTP and Google OAuth.
+
+**GitMind AI Tools Platform** · Wangxu Technology · *Frontend* · 2024.06 – 2025.02
+
+- Astro islands with `client:load/visible/idle` hydration: first-screen JS from 350KB to 50KB (−85%), TTI 3.2s → 1.5s, Lighthouse 70 → 95+.
+- Built 10+ AI tool pages (flowchart generation, PDF translation, document-to-mind-map, podcast/video summaries) with SSE streaming; WebSocket progress with reconnection and heartbeat.
+- 11-language i18n with an ExcelJS translation pipeline — 484 static pages, SEO score 100, Google indexing +300%; UnoCSS cut CSS from 450KB to 90KB (−80%).
+
+**GitMind Mind Map Editor** · Wangxu Technology · *Frontend* · 2024.06 – 2025.02
+
+- Refactored the mxGraph/Drawio editor UI into a clean three-layer architecture (Vue components → API bridge → native editor), unifying 30+ features behind one interface.
+- Multi-format export (PNG/SVG/PDF/Word/Excel/Markdown) with a 99% success rate, including watermarking and canvas rendering.
+- One codebase across PC Web, mobile H5, and APP WebView — code reuse up from 30% to 70%.
+
+## Personal Projects
+
+- **Pomodoro Time Assistant** — Vue 3 + TypeScript + Pinia + Wails (Go) + ECharts. Cross-platform focus timer with a DeepSeek AI assistant, local encrypted storage, and statistics. *2nd prize, Central-South China, 18th National College Computer Design Competition.*
+- **v2Note** — Next.js + React + TypeScript + Wails (Go) + Tailwind CSS. A privacy-first cross-platform notes app with bidirectional links, mind maps, AI Copilot Q&A, and local/SQLite storage. *3rd prize, 17th National College Computer Design Competition.*
+
+## Education
+
+- **Wuhan Donghu University** — B.E., Computer Science & Technology, 2022–2026. GPA 3.8/4.0, top 3% of the major.
+- Key coursework: Python, Java, Go, web frontend development, databases, software engineering, computer networks.
+- Honors: top scholarship (Top 1%), "Top Student" honor, and competition awards including a national 3rd prize and a provincial 2nd prize.
+
+---
+
+That's the short version of me. The longer one lives on in the posts, projects, and experiments on this site — and since this is a living document, expect it to be refined as I grow.
