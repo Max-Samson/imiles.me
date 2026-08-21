@@ -42,9 +42,9 @@ The UI is layered rather than a single library — Astro pages hydrate React isl
 | [Magic UI](https://magicui.design) | Animated & decorative components: aurora text, marquee, terminal, shine border, light rays… | `src/registry/magicui/` |
 | Project-custom | Floating dock, link preview, timeline, navbar menu, search input, WebGL plexus background | `src/components/ui/` |
 
-**Magic UI** components are vendored under `src/registry/magicui/` (registered in `components.json` → `https://magicui.design/r/{name}`) to keep the external-registry boundary clear. Currently vendored: `AnimatedThemeToggler`, `AuroraText`, `FlickeringGrid`, `Highlighter`, `InteractiveHoverButton`, `LightRays`, `Marquee`, `PixelImage`, `ShineBorder`, and `Terminal` (with `TypingAnimation` / `AnimatedSpan`).
+**Magic UI** components are vendored under `src/registry/magicui/` (registered in `components.json` → `https://magicui.design/r/{name}`) to keep the external-registry boundary clear. Currently vendored: `AnimatedThemeToggler`, `AuroraText`, `FlickeringGrid`, `Highlighter`, `InteractiveHoverButton`, `LightRays`, `Marquee`, `NoiseTexture`, `PixelImage`, `ShineBorder`, and `Terminal` (with `TypingAnimation` / `AnimatedSpan`).
 
-In-use examples: `LightRays` on content page backgrounds, `ShineBorder` on blog/project/note cards, `PixelImage` + `Marquee` on note cards, `AuroraText` + `Terminal` in the About hero, `AnimatedThemeToggler` in the header, and the custom `PlexusBackground` (Three.js / R3F) on the landing page.
+In-use examples: `FlickeringGrid` on route listing backgrounds, `LightRays` on landing and article/detail backgrounds, `ShineBorder` on blog/story/project/note cards, `PixelImage` + `Marquee` on note cards, `AuroraText` + `Terminal` in the About hero, `AnimatedThemeToggler` in the header, and the custom `PlexusBackground` (Three.js / R3F) on the landing page.
 
 Adding a Magic UI component:
 

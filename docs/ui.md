@@ -34,7 +34,7 @@
 
 - `AboutHero` 使用 `AuroraText` 和 `Terminal` 做个人介绍的视觉表达。
 - `LandingExperience` 使用本地 `PlexusBackground` 加 Magic UI 的 `LightRays` 组成首页首屏。
-- `NoteCard` 使用 `PixelImage` 和 `ShineBorder` 做笔记卡片的图像和边框效果。
+- `NoteCard` 使用 `PixelImage` 和 `ShineBorder` 做笔记卡片的图像与边框发光效果。
 
 ### `src/components/ui/`
 
@@ -128,14 +128,14 @@ Magic UI 在项目中主要承担视觉增强和动效展示。
 
 当前应用包括：
 
-- `LightRays`：用于 about、blog、projects、stories、notes 等页面的背景光线效果，也用于 `LandingExperience`。
-- `ShineBorder`：用于博客列表和项目/笔记卡片的发光边框。
+- `LightRays`：用于首页首屏及文章/详情页（`ArticleLayout`、笔记/项目详情）光线背景。
+- `ShineBorder`：用于博客列表和故事/项目/笔记卡片的发光边框。
 - `PixelImage`：用于笔记卡片的像素化图像展示。
 - `Marquee`：用于笔记相关图片横向滚动展示。
 - `AuroraText`：用于 About hero 中的强调文本。
 - `Terminal`、`TypingAnimation`、`AnimatedSpan`：用于 About hero 的终端式介绍。
 - `AnimatedThemeToggler`：用于 header 中的主题切换按钮。
-- `FlickeringGrid`：新下载的闪烁网格组件，应放在 `src/registry/magicui/`，后续可用于背景、分割区域或轻量氛围层。
+- `FlickeringGrid`：用于 about、blog、projects、stories、notes 等一级路由列表页背景闪烁网格效果。
 
 Magic UI 组件通常更适合放在页面视觉层、卡片装饰层和 hero 区域，不建议用它替代基础表单、菜单、导航等核心交互。
 

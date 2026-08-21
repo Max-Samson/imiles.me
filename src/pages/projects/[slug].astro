@@ -1,7 +1,7 @@
 ---
 export const prerender = true;
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import ContentFlickeringBackground from '@/components/layout/ContentFlickeringBackground';
+import ContentLightRaysBackground from '@/components/layout/ContentLightRaysBackground';
 import ProjectHero from '@/components/project/ProjectHero';
 import TerminalDemo from '@/components/common/TerminalDemo';
 import ImageShowcase from '@/components/common/ImageShowcase';
@@ -29,7 +29,7 @@ if (!project) {
 
 <BaseLayout title={`${project.title} | Miles`} description={project.tagline}>
   <main class="relative isolate min-h-screen overflow-x-clip pb-16">
-    <ContentFlickeringBackground client:only="react" />
+    <ContentLightRaysBackground client:only="react" />
 
     <ProjectHero project={project} lang={lang} client:load />
 

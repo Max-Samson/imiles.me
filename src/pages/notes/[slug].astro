@@ -1,7 +1,7 @@
 ---
 export const prerender = true;
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import ContentFlickeringBackground from '@/components/layout/ContentFlickeringBackground';
+import ContentLightRaysBackground from '@/components/layout/ContentLightRaysBackground';
 import NoteHero from '@/components/note/NoteHero';
 import MarqueeImage from '@/components/note/MarqueeImage';
 import FeatureGrid from '@/components/common/FeatureGrid';
@@ -23,7 +23,7 @@ if (!item) {
 
 <BaseLayout title={`${item.title} | Miles`} description={item.tagline}>
   <main class="relative isolate min-h-screen overflow-hidden pb-16">
-    <ContentFlickeringBackground client:only="react" />
+    <ContentLightRaysBackground client:only="react" />
 
     <NoteHero item={item} client:load />
 

@@ -43,9 +43,9 @@
 | [Magic UI](https://magicui.design) | 动效与装饰型组件：aurora 文本、marquee 跑马灯、terminal 终端、shine border 发光边框、light rays 光线… | `src/registry/magicui/` |
 | 项目自研 | 悬浮 dock、链接预览、时间线、导航菜单、搜索输入框、WebGL plexus 背景 | `src/components/ui/` |
 
-**Magic UI** 组件统一放置在 `src/registry/magicui/`（已在 `components.json` 中注册，指向 `https://magicui.design/r/{name}`），以此保留外部 registry 的来源边界。当前收录：`AnimatedThemeToggler`、`AuroraText`、`FlickeringGrid`、`Highlighter`、`InteractiveHoverButton`、`LightRays`、`Marquee`、`PixelImage`、`ShineBorder`，以及 `Terminal`（内含 `TypingAnimation` / `AnimatedSpan`）。
+**Magic UI** 组件统一放置在 `src/registry/magicui/`（已在 `components.json` 中注册，指向 `https://magicui.design/r/{name}`），以此保留外部 registry 的来源边界。当前收录：`AnimatedThemeToggler`、`AuroraText`、`FlickeringGrid`、`Highlighter`、`InteractiveHoverButton`、`LightRays`、`Marquee`、`NoiseTexture`、`PixelImage`、`ShineBorder`，以及 `Terminal`（内含 `TypingAnimation` / `AnimatedSpan`）。
 
-实际应用示例：`LightRays` 用于内容页背景光线，`ShineBorder` 用于博客/项目/笔记卡片发光边框，`PixelImage` + `Marquee` 用于笔记卡片图像，`AuroraText` + `Terminal` 用于 About hero，`AnimatedThemeToggler` 用于页头主题切换，自研的 `PlexusBackground`（Three.js / R3F）用于首页首屏。
+实际应用示例：`FlickeringGrid` 用于路由列表页背景网格，`LightRays` 用于首页及文章/详情页背景光线，`ShineBorder` 用于博客/故事/项目/笔记卡片发光边框，`PixelImage` + `Marquee` 用于笔记卡片图像，`AuroraText` + `Terminal` 用于 About hero，`AnimatedThemeToggler` 用于页头主题切换，自研的 `PlexusBackground`（Three.js / R3F）用于首页首屏。
 
 添加 Magic UI 组件：
 
