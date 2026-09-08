@@ -1,4 +1,5 @@
 'use client';
+import { IconExternalLink, IconFileTypePdf } from '@tabler/icons-react';
 import Phonetic from '@/components/article/Phonetic';
 import SocialLinksGrid from '@/components/layout/SocialLinksGrid';
 import { type Locale, useTranslations } from '@/lib/i18n';
@@ -21,7 +22,20 @@ export default function AboutHero({ lang }: AboutHeroProps) {
         <h1 className="text-4xl font-bold" style={{ fontFamily: 'Rock Salt, cursive' }}>
           <AuroraText>Miles</AuroraText>
         </h1>
-        <Phonetic ipa={role} className="mt-1 block text-base md:text-lg" />
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <Phonetic ipa={role} className="text-base md:text-lg" />
+          {/* <a
+            href="/pdf?src=/docs/full-stack-web-engineer.pdf&title=Full-Stack%20Web%20Engineer"
+            target="_blank"
+            rel="noopener noreferrer"
+            title={lang === 'zh' ? '在线查看简历 PDF' : 'View Full-Stack Web Engineer Resume'}
+            className="inline-flex items-center gap-1.5 rounded-md border border-red-500/20 bg-red-500/10 px-2 py-0.5 font-mono text-xs font-medium text-red-600 transition-all hover:bg-red-500/20 hover:border-red-500/40 hover:text-red-500 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-400"
+          >
+            <IconFileTypePdf size={15} stroke={1.75} />
+            <span>full-stack-web-engineer.pdf</span>
+            <IconExternalLink size={12} className="opacity-70" />
+          </a> */}
+        </div>
       </div>
 
       <div className="prose prose-neutral dark:prose-invert max-w-none">

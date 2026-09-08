@@ -41,5 +41,8 @@ export { default as LandingExperience } from './home/LandingExperience';
 export { default as NavbarMenuEnhanced } from './layout/NavbarMenuEnhanced';
 export { default as SocialDock } from './layout/SocialDock';
 export { default as SocialLinksGrid } from './layout/SocialLinksGrid';
+export { default as PDFCard } from './pdf/PDFCard';
+export { default as PDFLink } from './pdf/PDFLink';
+export { default as StandalonePDFReader } from './pdf/StandalonePDFReader';
 export { default as ProjectCard } from './project/ProjectCard';
 export { default as ProjectHero } from './project/ProjectHero';

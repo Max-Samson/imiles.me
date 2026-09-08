@@ -88,6 +88,8 @@ Import individually or via barrel export from `../components`:
 | `SearchLandscapeVisual` | Search/optimization landscape visual | `client:visible` |
 | `Cite` | Inline superscript citation linking to reference list | none |
 | `References` | Rendered reference list with back-links to inline citations | none |
+| `PDFCard` | Document download and standalone reader card | none |
+| `PDFLink` | Inline PDF badge link opening reader in new tab | none |
 
 ### Page/layout components (not for MDX)
 
@@ -116,6 +118,7 @@ Import individually or via barrel export from `../components`:
 | `NewsletterSignup` | Newsletter subscription form |
 | `ArchitectureFlow` | Architecture diagram component |
 | `NavigationMenuDemo` | Navigation menu showcase |
+| `StandalonePDFReader` | Full-screen desktop PDF reader (/pdf route) |
 
 ### UI primitives (`src/components/ui/`)
 

@@ -1,0 +1,14 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import StandalonePDFReader from '@/components/pdf/StandalonePDFReader';
+---
+
+<BaseLayout
+  title="PDF Reader"
+  description="Dedicated full-screen PDF Reader"
+  fullScreen={true}
+  hideHeader={true}
+  hideFooter={true}
+>
+  <StandalonePDFReader client:only="react" />
+</BaseLayout>

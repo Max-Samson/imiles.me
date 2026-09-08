@@ -30,7 +30,7 @@ export default defineConfig({
       dedupe: ['react', 'react-dom'],
     },
     optimizeDeps: {
-      include: ['motion', 'motion/react'],
+      include: ['motion', 'motion/react', 'pdfjs-dist'],
     },
     ssr: {
       noExternal: ['motion'],

@@ -13,6 +13,8 @@ interface Props {
   description?: string;
   showSocialDock?: boolean;
   fullScreen?: boolean;
+  hideHeader?: boolean;
+  hideFooter?: boolean;
   ogImage?: string;
   ogType?: 'website' | 'article';
   publishedTime?: Date;
@@ -20,12 +22,13 @@ interface Props {
   articleSection?: string;
   loadKatex?: boolean;
 }
-
 const {
   title,
   description = 'Personal website of Miles',
   showSocialDock = false,
   fullScreen = false,
+  hideHeader = false,
+  hideFooter = false,
   ogImage,
   ogType = 'website',
   publishedTime,
@@ -33,7 +36,6 @@ const {
   articleSection,
   loadKatex = false,
 } = Astro.props;
-
 const lang = resolveLocale(Astro.currentLocale as Locale | undefined);
 const pathname = Astro.url.pathname;
 ---
@@ -123,13 +125,15 @@ const pathname = Astro.url.pathname;
   </head>
   <body class:list={["min-h-screen bg-background text-foreground antialiased", fullScreen && "h-dvh overflow-hidden"]}>
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-lg focus:ring-2 focus:ring-ring">Skip to main content</a>
-    <AutoHideHeader client:load lang={lang} pathname={pathname}>
-      <LanguageSwitcher />
-    </AutoHideHeader>
-    <main id="main-content">
+    {!hideHeader && (
+      <AutoHideHeader client:load lang={lang} pathname={pathname}>
+        <LanguageSwitcher />
+      </AutoHideHeader>
+    )}
+    <main id="main-content" class={fullScreen ? "h-dvh overflow-hidden" : undefined}>
       <slot />
     </main>
-    <Footer class={fullScreen ? "fixed bottom-0 inset-x-0 z-30" : undefined} />
+    {!hideFooter && <Footer class={fullScreen ? "fixed bottom-0 inset-x-0 z-30" : undefined} />}
     {showSocialDock && <SocialDock client:visible />}
     {/* <NewsletterSignup client:idle /> */}
     <script is:inline>
