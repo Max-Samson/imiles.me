@@ -6,14 +6,13 @@ updatedDate: 2026-08-08
 tags: ["introduction", "fullstack", "engineering", "ai"]
 shareText: "Meet Miles: a full-stack web engineer building AI products with Vue, Nuxt, and Astro. Here's the story behind the site — skills, work, projects, and education."
 lang: "en"
-llms: false
+llms: true
 ---
 
+import TechStackTerminal from '../components/about/TechStackTerminal';
 import PreviewLink from '../components/article/PreviewLink';
 import TechSkillsCloud from '../components/article/TechSkillsCloud';
 import { Highlighter } from '../registry/magicui/highlighter';
-
-[中文版](/zh/blog/mils-zh)
 
 Hey, I'm <Highlighter client:load action="highlight" color="#87cefa">Miles</Highlighter>, a 22-year-old <Highlighter client:load action="underline" color="#fbbf24">full-stack web engineer</Highlighter> based in Wuhan, China.
 
@@ -34,8 +33,9 @@ This site is my public workspace: a place for projects, notes, technical essays,
 
 <TechSkillsCloud client:load headingId="technical-skills" />
 
-```ts
-const miles = {
+<TechStackTerminal
+  client:visible
+  profile={{
   role: 'Full-stack Web Engineer',
   frontend: ['Vue 3', 'React', 'TypeScript', 'Astro', 'Nuxt', 'Tailwind CSS', 'UnoCSS'],
   backend: ['Node.js', 'Nitro', 'Go', 'Java', 'Cloudflare Workers', 'D1/SQLite', 'Drizzle ORM'],
@@ -43,8 +43,9 @@ const miles = {
   integrations: ['Stripe Checkout', 'Google OAuth', 'i18n (11 languages)'],
   tools: ['Git', 'Vite', 'Webpack', 'Wails', 'Docker'],
   status: 'Open to Collaborate',
-};
-```
+}}
+  successMessage="✔ Type-check complete. Profile exported."
+/>
 
 - **Frontend.** Deep in the Vue 3 ecosystem (Composition API, Pinia, Vue Router) plus React/Next.js; Astro islands with partial hydration and SSR/SSG mixing; SCSS/Less and atomic CSS (Tailwind, UnoCSS).
 - **Full-stack.** TypeScript REST APIs on Node.js/Nitro; data modeling with Cloudflare D1 + Drizzle ORM — the full loop from page to API to persistence.

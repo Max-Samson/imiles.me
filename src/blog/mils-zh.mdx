@@ -6,14 +6,14 @@ updatedDate: 2026-08-08
 tags: ["introduction", "fullstack", "engineering", "ai"]
 shareText: "认识 Miles：一位用 Vue、Nuxt 与 Astro 构建 AI 产品的全栈 Web 工程师。这里是他和这个网站的故事——技能、工作、项目与教育。"
 lang: "zh"
-llms: false
+llms: true
 ---
 
+import TechStackTerminal from '../components/about/TechStackTerminal';
 import PreviewLink from '../components/article/PreviewLink';
 import TechSkillsCloud from '../components/article/TechSkillsCloud';
 import { Highlighter } from '../registry/magicui/highlighter';
 
-[English version](/blog/mils)
 
 你好，我是 <Highlighter client:load action="highlight" color="#87cefa">Miles</Highlighter>，一位常驻武汉的 22 岁<Highlighter client:load action="underline" color="#fbbf24">全栈 Web 工程师</Highlighter>**。**
 
@@ -34,8 +34,9 @@ import { Highlighter } from '../registry/magicui/highlighter';
 
 <TechSkillsCloud client:load headingId="技术能力" />
 
-```ts
-const miles = {
+<TechStackTerminal
+  client:visible
+  profile={{
   role: '全栈 Web 工程师',
   frontend: ['Vue 3', 'React', 'TypeScript', 'Astro', 'Nuxt', 'Tailwind CSS', 'UnoCSS'],
   backend: ['Node.js', 'Nitro', 'Go', 'Java', 'Cloudflare Workers', 'D1/SQLite', 'Drizzle ORM'],
@@ -43,8 +44,9 @@ const miles = {
   integrations: ['Stripe Checkout', 'Google OAuth', '国际化（11 种语言）'],
   tools: ['Git', 'Vite', 'Webpack', 'Wails', 'Docker'],
   status: '欢迎合作',
-};
-```
+}}
+  successMessage="✔ 类型检查完成，个人资料已导出。"
+/>
 
 - **前端。** 深耕 Vue 3 生态（Composition API、Pinia、Vue Router），同时掌握 React/Next.js；熟练使用 Astro 岛屿架构（部分水合、SSR/SSG 混合渲染）；熟悉 SCSS/Less 与原子化 CSS（Tailwind、UnoCSS）。
 - **全栈。** 基于 Node.js/Nitro 用 TypeScript 开发 RESTful API；使用 Cloudflare D1 + Drizzle ORM 做数据建模——打通从页面、接口到数据持久化的完整闭环。

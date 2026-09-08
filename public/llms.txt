@@ -46,9 +46,17 @@ This site is organized into several content areas that map to the project source
 
 ## English Blog Posts
 
-- No published entries yet.
+### Hi, I'm Miles
+- URL: https://imiles.me/blog/mils
+- Description: A short introduction to Miles: a full-stack web engineer focused on AI products, developer experience, and long-form writing — plus the skills, work, projects, and education behind this site.
+- Keywords: introduction, fullstack, engineering, ai
 
 ## Chinese Blog Posts
+
+### 你好，我是 Miles
+- URL: https://imiles.me/zh/blog/mils-zh
+- Description: Miles 的简短自我介绍：一位专注于 AI 产品、开发者体验与长文写作的全栈 Web 工程师——以及这个网站背后的技能、工作、项目与教育经历。
+- Keywords: introduction, fullstack, engineering, ai
 
 ### AI 初稿生成系统设计：从同步超时到 Queue、SSE 与阶段化任务编排
 - URL: https://imiles.me/zh/blog/ai-draft-generation-queue-sse-guide

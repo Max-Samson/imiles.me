@@ -1,21 +1,21 @@
 'use client';
-import { IconExternalLink, IconFileTypePdf } from '@tabler/icons-react';
+import type { ReactNode } from 'react';
 import Phonetic from '@/components/article/Phonetic';
 import SocialLinksGrid from '@/components/layout/SocialLinksGrid';
 import { type Locale, useTranslations } from '@/lib/i18n';
 import { AuroraText } from '@/registry/magicui/aurora-text';
-import { AnimatedSpan, Terminal, TypingAnimation } from '@/registry/magicui/terminal';
 
 interface AboutHeroProps {
   lang: Locale;
+  children: ReactNode;
 }
 
-export default function AboutHero({ lang }: AboutHeroProps) {
+export default function AboutHero({ lang, children }: AboutHeroProps) {
   const { t } = useTranslations(lang);
   const role =
     lang === 'zh'
-      ? '前端工程师，关注 AI、全栈产品、工程体验与长期写作。'
-      : 'Frontend engineer focused on AI, full-stack products, developer experience, and long-form writing.';
+      ? '全栈 Web 工程师，关注 AI、全栈产品、工程体验与长期写作。'
+      : 'Full-stack web engineer focused on AI, full-stack products, developer experience, and long-form writing.';
   return (
     <main className="relative mx-auto max-w-3xl px-6 pt-24 pb-16">
       <div className="mb-5">
@@ -24,91 +24,11 @@ export default function AboutHero({ lang }: AboutHeroProps) {
         </h1>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <Phonetic ipa={role} className="text-base md:text-lg" />
-          {/* <a
-            href="/pdf?src=/docs/full-stack-web-engineer.pdf&title=Full-Stack%20Web%20Engineer"
-            target="_blank"
-            rel="noopener noreferrer"
-            title={lang === 'zh' ? '在线查看简历 PDF' : 'View Full-Stack Web Engineer Resume'}
-            className="inline-flex items-center gap-1.5 rounded-md border border-red-500/20 bg-red-500/10 px-2 py-0.5 font-mono text-xs font-medium text-red-600 transition-all hover:bg-red-500/20 hover:border-red-500/40 hover:text-red-500 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-400"
-          >
-            <IconFileTypePdf size={15} stroke={1.75} />
-            <span>full-stack-web-engineer.pdf</span>
-            <IconExternalLink size={12} className="opacity-70" />
-          </a> */}
         </div>
       </div>
 
       <div className="prose prose-neutral dark:prose-invert max-w-none">
-        <div className="flex justify-center px-0 py-3 sm:p-3 bg-transparent">
-          <Terminal className="w-full max-w-xl font-mono text-sm shadow-xl transition-all duration-300 border border-black/10 dark:border-white/10 bg-white dark:bg-black/90 min-h-[450px] sm:min-h-[480px]">
-            {/* 1. 输入初始化命令 - 使用中性灰色适配 */}
-            <TypingAnimation delay={200} className="text-slate-500 dark:text-gray-500">
-              &gt; init --stack engineer.miles.ts
-            </TypingAnimation>
-
-            {/* 2. 定义核心技术栈对象 - 颜色明度双向适配 */}
-            <AnimatedSpan className="text-slate-800 dark:text-white mt-2 block font-medium">
-              <span className="text-purple-600 dark:text-purple-400">const</span>{' '}
-              <span className="text-blue-600 dark:text-blue-400">techStack</span>:{' '}
-              <span className="text-emerald-600 dark:text-green-400">EngineerProfile</span> = {'{'}
-            </AnimatedSpan>
-
-            {/* 前端核心 - 注释颜色微调 */}
-            <AnimatedSpan className="text-slate-400 dark:text-gray-400 pl-6 block">
-              {'// Core Frontend Ecosystem'}
-            </AnimatedSpan>
-            <AnimatedSpan className="text-slate-700 dark:text-white pl-6 block">
-              frontend: [<span className="text-orange-600 dark:text-orange-400">'Vue3'</span>,{' '}
-              <span className="text-orange-600 dark:text-orange-400">'React'</span>,{' '}
-              <span className="text-orange-600 dark:text-orange-400">'TypeScript'</span>,{' '}
-              <span className="text-orange-600 dark:text-orange-400">'Astro'</span>
-              ],
-            </AnimatedSpan>
-
-            {/* UI & 样式 */}
-            <AnimatedSpan className="text-slate-400 dark:text-gray-400 pl-6 block mt-1">
-              {'// UI / DX'}
-            </AnimatedSpan>
-            <AnimatedSpan className="text-slate-700 dark:text-white pl-6 block">
-              styling: [<span className="text-orange-600 dark:text-orange-400">'TailwindCSS'</span>,{' '}
-              <span className="text-orange-600 dark:text-orange-400">'UnoCSS'</span>,{' '}
-              <span className="text-orange-600 dark:text-orange-400">'Figma'</span>
-              ],
-            </AnimatedSpan>
-
-            {/* 跨平台 & 后端 */}
-            <AnimatedSpan className="text-slate-400 dark:text-gray-400 pl-6 block mt-1">
-              {'// Cross-Platform & Backend (Plus)'}
-            </AnimatedSpan>
-            <AnimatedSpan className="text-slate-700 dark:text-white pl-6 block">
-              plus: [<span className="text-orange-600 dark:text-orange-400">'Go'</span>,{' '}
-              <span className="text-orange-600 dark:text-orange-400">'Wails'</span>,{' '}
-              <span className="text-orange-600 dark:text-orange-400">'Java'</span>
-              ],
-            </AnimatedSpan>
-
-            {/* 状态 */}
-            <AnimatedSpan className="text-slate-700 dark:text-white pl-6 block mt-2 font-semibold">
-              status:{' '}
-              <span className="text-orange-600 dark:text-orange-400">'Open to Collaborate'</span>,
-            </AnimatedSpan>
-
-            {/* 结尾括号 */}
-            <AnimatedSpan className="text-slate-800 dark:text-white block">{'};'}</AnimatedSpan>
-
-            {/* 3. 模拟编译成功 - 强化亮色模式下的可读性 */}
-            <div className="flex items-center gap-2 mt-3">
-              <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              <AnimatedSpan className="text-emerald-600 dark:text-green-500 font-bold block">
-                ✔ Type-check complete. Profile exported.
-              </AnimatedSpan>
-            </div>
-
-            <TypingAnimation delay={3000} className="text-slate-400 dark:text-gray-500 block">
-              &gt; _
-            </TypingAnimation>
-          </Terminal>
-        </div>
+        {children}
         <h2>{t('ContactTitle')}</h2>
         <SocialLinksGrid />
       </div>
