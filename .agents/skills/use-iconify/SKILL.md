@@ -103,7 +103,7 @@ addCollection(techIcons);
 
 ## 验证
 
-1. `pnpm dev` → 打开博客页(如 `/blog/mils`)→ 点击 **Technical Skills** 标题 → 全屏图标云出现
+1. `pnpm dev` → 打开博客页(如 `/blog/miles`)→ 点击 **Technical Skills** 标题 → 全屏图标云出现
 2. 无视觉模型时用 canvas 像素级检查(品牌色 RGB 命中数):
 ```js
 // 在浏览器 console 对 canvas 采样:

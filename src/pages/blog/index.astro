@@ -43,7 +43,7 @@ const sortedPosts = posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDa
               />
               <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <a
-                  href={localizePathname(`/blog/${post.id}`, lang)}
+                  href={localizePathname(`/blog/${post.id.replace(/-zh$/, '')}`, lang)}
                   class="block min-w-0 flex-1"
                 >
                   <h2 class="text-xl font-semibold text-foreground group-hover:underline">

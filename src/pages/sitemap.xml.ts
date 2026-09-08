@@ -58,7 +58,8 @@ export async function GET() {
     { path: '/notes' },
     { path: '/zh/notes' },
     ...blogPosts.map((post) => ({
-      path: post.data.lang === 'zh' ? `/zh/blog/${post.id}` : `/blog/${post.id}`,
+      path:
+        post.data.lang === 'zh' ? `/zh/blog/${post.id.replace(/-zh$/, '')}` : `/blog/${post.id}`,
       lastmod: post.data.updatedDate ?? post.data.pubDate,
     })),
     ...stories.map((story) => ({

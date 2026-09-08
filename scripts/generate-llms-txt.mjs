@@ -129,7 +129,7 @@ async function loadBlogEntries() {
         if (!shouldIncludeInLlms(frontmatter.llms)) return null;
 
         const lang = frontmatter.lang === 'zh' ? 'zh' : 'en';
-        const slug = slugFromFilePath(blogDir, filePath);
+        const slug = slugFromFilePath(blogDir, filePath).replace(/-zh$/, '');
 
         return {
           kind: 'blog',
