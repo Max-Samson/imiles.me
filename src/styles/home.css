@@ -282,6 +282,9 @@
     padding-block: 5rem 3rem;
     min-height: auto;
   }
+  .home-garden-content {
+    width: calc(100% - 2rem);
+  }
   .home-tech-layout,
   .home-essays {
     grid-template-columns: 1fr;
