@@ -1,0 +1,21 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { type Locale, useTranslations, localizePathname, formatDate } from '@/lib/i18n';
+import { calculateReadTime } from '@/lib/readTime';
+import { ShineBorder } from '@/registry/magicui/shine-border';
+interface Props { lang: Locale; posts: CollectionEntry<'blog'>[] }
+const { lang, posts } = Astro.props;
+const { t } = useTranslations(lang);
+---
+<section id="blog-section" class="home-section" aria-labelledby="home-blog-title">
+  <header class="home-section-heading"><p class="home-eyebrow">{t('HomeBlogEyebrow')}</p><h2 id="home-blog-title">{t('HomeBlogTitle')}</h2><p>{t('HomeBlogIntro')}</p></header>
+  <div class="home-essays">
+    {posts.map(post => <a class="home-card home-essay group" data-home-reveal data-home-tilt href={localizePathname(`/blog/${post.id.replace(/-zh$/, '')}`, lang)}>
+      <ShineBorder className="rounded-2xl opacity-0 transition-opacity group-hover:opacity-70 group-focus-visible:opacity-70" shineColor={['#d4a958', '#83a9b9']} />
+      <div class="home-essay-meta"><time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate, lang)}</time><span>{t('HomeReadTime', { minutes: calculateReadTime(post.body || '').minutes })}</span></div>
+      <h3>{post.data.title}</h3><p>{post.data.description}</p>
+      <div class="home-essay-bottom"><ul class="home-tags">{post.data.tags.slice(0, 3).map(tag => <li>{tag}</li>)}</ul><span aria-hidden="true">↗</span></div>
+    </a>)}
+  </div>
+  <a class="home-link home-section-more" href={localizePathname('/blog', lang)}>{t('HomeAllPosts')} →</a>
+</section>

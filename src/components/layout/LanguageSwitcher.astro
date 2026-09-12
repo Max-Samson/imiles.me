@@ -44,3 +44,13 @@ const localeLabels: Record<Locale, string> = {
     </nav>
   )
 }
+
+<script>
+  document.querySelectorAll<HTMLAnchorElement>('.language-switcher a').forEach((link) => {
+    link.addEventListener('click', () => {
+      const target = new URL(link.href);
+      target.hash = window.location.hash;
+      link.href = target.href;
+    });
+  });
+</script>

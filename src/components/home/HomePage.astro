@@ -1,0 +1,69 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Hero from './Hero';
+import HomeProjectsSection from './HomeProjectsSection.astro';
+import HomeBlogSection from './HomeBlogSection.astro';
+import HomeInteractions from './HomeInteractions';
+import ContentLightRaysBackground from '@/components/layout/ContentLightRaysBackground';
+import TechSkillsCloud from '@/components/article/TechSkillsCloud';
+import SocialDock from '@/components/layout/SocialDock';
+import { getProjects } from '@/data/projects';
+import { useTranslations, localizePathname, type Locale } from '@/lib/i18n';
+import '@/styles/home.css';
+interface Props { lang: Locale }
+const { lang } = Astro.props;
+const { t } = useTranslations(lang);
+const path = (url: string) => localizePathname(url, lang);
+const projects = getProjects(lang);
+const posts = (await getCollection('blog', ({ data }) => !data.draft && data.lang === lang))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const stories = await getCollection('stories', ({ data }) => !data.draft && data.lang === lang);
+const searchItems = [
+  ...stories.map(story => ({ title: story.data.title, description: story.data.description, href: path(`/stories/${story.id.replace(/-zh$/, '')}`) })),
+  ...(['about', 'notes', 'projects', 'blog', 'stories'] as const).map(page => ({ title: t(`Header${page}`), description: '', href: path(`/${page}`) })),
+  ...posts.map(post => ({ title: post.data.title, description: post.data.description, href: path(`/blog/${post.id.replace(/-zh$/, '')}`) })),
+  ...projects.map(project => ({ title: project.title, description: project.tagline, href: project.hasDetailPage ? path(`/projects/${project.slug}`) : project.githubUrl })),
+];
+const newsletter = import.meta.env.PUBLIC_BUTTONDOWN_USERNAME;
+---
+<BaseLayout title={t('PageHomeTitle', { site: 'Miles' })} description={t('PageHomeDescription')}>
+  <div class="home-page relative isolate [--ray-c:rgba(14,165,233,0.35)] dark:[--ray-c:rgba(251,191,36,0.15)]">
+    <section id="hero-section" aria-label={t('Headerhome')} class="home-opening relative isolate overflow-hidden">
+      <div class="pointer-events-none absolute inset-0 -z-10">
+        <div class="absolute inset-0 bg-linear-to-b from-background via-background/95 to-background opacity-90"></div>
+        <div class="absolute inset-0 opacity-40 mix-blend-soft-light dark:opacity-30 dark:mix-blend-normal">
+          <div class="animate-aurora absolute -inset-[20%] bg-[radial-gradient(circle_at_15%_15%,oklch(from_var(--brand)_l_c_h_/_25%)_0%,transparent_50%),radial-gradient(circle_at_85%_10%,oklch(from_var(--brand-secondary)_l_c_h_/_20%)_0%,transparent_50%),radial-gradient(circle_at_50%_80%,oklch(from_var(--brand)_l_c_h_/_15%)_0%,transparent_50%)] blur-3xl dark:bg-[radial-gradient(circle_at_15%_15%,rgba(251,191,36,0.15)_0%,transparent_50%),radial-gradient(circle_at_85%_10%,rgba(245,158,11,0.12)_0%,transparent_50%),radial-gradient(circle_at_50%_80%,rgba(217,119,6,0.1)_0%,transparent_50%)]"></div>
+        </div>
+      </div>
+      <Hero client:load lang={lang} />
+    </section>
+    <div class="home-exhibits relative isolate">
+      <div class="home-rays" aria-hidden="true"><ContentLightRaysBackground client:visible className="absolute!" /></div>
+      <HomeProjectsSection {lang} {projects} />
+      <HomeBlogSection {lang} posts={posts.slice(0, 4)} />
+      <section id="tech-section" class="home-section" aria-labelledby="home-tech-title">
+        <div class="home-tech-layout">
+          <div>
+            <header class="home-section-heading"><p class="home-eyebrow">{t('HomeTechEyebrow')}</p><h2 id="home-tech-title">{t('HomeTechTitle')}</h2><p>{t('HomeTechIntro')}</p></header>
+            <dl class="home-matrix">
+              <div data-home-reveal><dt>{t('HomeFrontend')}</dt><dd>TypeScript · React · Vue · Astro</dd></div>
+              <div data-home-reveal><dt>{t('HomeBackend')}</dt><dd>Go · Cloudflare Workers · SQLite · Docker</dd></div>
+              <div data-home-reveal><dt>{t('HomeAI')}</dt><dd>LLM APIs · MCP · AI Agents</dd></div>
+            </dl>
+          </div>
+          <div class="home-cloud"><TechSkillsCloud client:visible inline /><p>{t('HomeTechHint')}</p></div>
+        </div>
+      </section>
+      <section id="garden-section" class="home-section home-garden" aria-labelledby="home-garden-title">
+        <p class="home-eyebrow">{t('HomeGardenEyebrow')}</p><h2 id="home-garden-title">{t('HomeGardenTitle')}</h2><p>{t('HomeGardenIntro')}</p>
+        <div class="home-links"><a class="home-link" href="/rss.xml">{t('HomeRSS')} ↗</a><a class="home-link" href={path('/about')}>{t('HomeAbout')} →</a></div>
+        {newsletter && <form class="home-subscribe" action={`https://buttondown.com/api/emails/embed-subscribe/${encodeURIComponent(newsletter)}`} method="post" target="_blank">
+          <label for="home-email">{t('HomeEmail')}</label><div><input id="home-email" type="email" name="email" required autocomplete="email" placeholder="you@example.com" /><button type="submit">{t('HomeSubscribe')} ↗</button></div>
+        </form>}
+        <div class="home-garden-dock"><SocialDock client:visible desktopClassName="relative! bottom-auto! left-auto! translate-x-0!" mobileClassName="relative! bottom-auto! left-auto! translate-x-0!" /></div>
+      </section>
+    </div>
+    <HomeInteractions client:idle {lang} items={searchItems} />
+  </div>
+</BaseLayout>

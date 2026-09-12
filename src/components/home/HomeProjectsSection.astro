@@ -1,0 +1,20 @@
+---
+import type { Project } from '@/data/projects';
+import { type Locale, useTranslations, localizePathname } from '@/lib/i18n';
+import ExpandingCarousel from '@/components/ui/expanding-carousel';
+import { getProjectShowcaseItems } from './projectShowcase';
+interface Props { lang: Locale; projects: Project[] }
+const { lang, projects } = Astro.props;
+const { t } = useTranslations(lang);
+const items = getProjectShowcaseItems(projects, lang);
+---
+<section id="projects-section" class="home-section" aria-labelledby="home-projects-title">
+  <header class="home-section-heading"><p class="home-eyebrow">{t('HomeProjectsEyebrow')}</p><h2 id="home-projects-title">{t('HomeProjectsTitle')}</h2><p>{t('HomeProjectsIntro')}</p></header>
+  <ExpandingCarousel
+    client:visible
+    {items}
+    label={t('HomeProjectsTitle')}
+    labels={{ previous: t('CarouselPrevious'), next: t('CarouselNext'), pause: t('CarouselPause'), play: t('CarouselPlay'), slide: t('CarouselSlide') }}
+  />
+  <a class="home-link home-section-more" href={localizePathname('/projects', lang)}>{t('HomeAllProjects', { count: projects.length })} →</a>
+</section>

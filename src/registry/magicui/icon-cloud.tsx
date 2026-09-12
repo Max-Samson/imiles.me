@@ -27,6 +27,7 @@ function easeOutCubic(t: number): number {
 export function IconCloud({ icons, images, showControl = true }: IconCloudProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [iconPositions, setIconPositions] = useState<Icon[]>([]);
+  const [isVisible, setIsVisible] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
@@ -44,6 +45,23 @@ export function IconCloud({ icons, images, showControl = true }: IconCloudProps)
   const rotationRef = useRef({ x: 0, y: 0 });
   const iconCanvasesRef = useRef<HTMLCanvasElement[]>([]);
   const imagesLoadedRef = useRef<boolean[]>([]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let inView = true;
+    const update = () => setIsVisible(inView && !document.hidden);
+    const observer = new IntersectionObserver(([entry]) => {
+      inView = entry.isIntersecting;
+      update();
+    });
+    observer.observe(canvas);
+    document.addEventListener('visibilitychange', update);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', update);
+    };
+  }, []);
 
   // Pause animation if user prefers reduced motion
   useEffect(() => {
@@ -98,7 +116,7 @@ export function IconCloud({ icons, images, showControl = true }: IconCloudProps)
           offCtx.scale(0.64, 0.64);
           const svgString = renderToString(item as React.ReactElement);
           const img = new Image();
-          img.src = 'data:image/svg+xml;base64,' + btoa(svgString);
+          img.src = `data:image/svg+xml;base64,${btoa(svgString)}`;
           img.onload = () => {
             offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
             offCtx.drawImage(img, 0, 0);
@@ -143,12 +161,14 @@ export function IconCloud({ icons, images, showControl = true }: IconCloudProps)
   }, [icons, images]);
 
   // Handle mouse events
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMouseDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect || !canvasRef.current) return;
 
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const canvas = canvasRef.current;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const x = ((e.clientX - rect.left) * canvas.width) / rect.width;
+    const y = ((e.clientY - rect.top) * canvas.height) / rect.height;
 
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
@@ -163,8 +183,8 @@ export function IconCloud({ icons, images, showControl = true }: IconCloudProps)
       const rotatedZ = icon.x * sinY + icon.z * cosY;
       const rotatedY = icon.y * cosX + rotatedZ * sinX;
 
-      const screenX = canvasRef.current!.width / 2 + rotatedX;
-      const screenY = canvasRef.current!.height / 2 + rotatedY;
+      const screenX = canvas.width / 2 + rotatedX;
+      const screenY = canvas.height / 2 + rotatedY;
 
       const scale = (rotatedZ + 360) / 540;
       const radius = 32 * scale;
@@ -198,7 +218,7 @@ export function IconCloud({ icons, images, showControl = true }: IconCloudProps)
     setLastMousePos({ x: e.clientX, y: e.clientY });
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMouseMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (rect) {
       const x = e.clientX - rect.left;
@@ -303,7 +323,7 @@ export function IconCloud({ icons, images, showControl = true }: IconCloudProps)
         const shouldContinue =
           !isPaused || isDragging || targetRotation !== null || hasPendingAssets;
 
-        if (shouldContinue) {
+        if (shouldContinue && isVisible) {
           animationFrameRef.current = requestAnimationFrame(animate);
         }
       };
@@ -316,7 +336,7 @@ export function IconCloud({ icons, images, showControl = true }: IconCloudProps)
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [icons, images, iconPositions, isDragging, isPaused, mousePos, targetRotation]);
+  }, [icons, images, iconPositions, isDragging, isPaused, isVisible, mousePos, targetRotation]);
 
   return (
     <div className="relative inline-block">
@@ -324,11 +344,12 @@ export function IconCloud({ icons, images, showControl = true }: IconCloudProps)
         ref={canvasRef}
         width={600}
         height={600}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        className="h-auto max-w-[90vw] rounded-lg"
+        onPointerDown={handleMouseDown}
+        onPointerMove={handleMouseMove}
+        onPointerUp={handleMouseUp}
+        onPointerCancel={handleMouseUp}
+        onLostPointerCapture={handleMouseUp}
+        className="h-auto max-w-[90vw] rounded-lg touch-pan-y"
         aria-label="Interactive 3D Icon Cloud"
         role="img"
       />
