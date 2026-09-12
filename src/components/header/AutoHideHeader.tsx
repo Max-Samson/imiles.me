@@ -50,13 +50,9 @@ export default function AutoHideHeader({ lang, pathname, children }: Props) {
             Miles
           </a>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex md:items-center md:gap-2">
+          {/* Desktop nav + actions cluster */}
+          <div className="hidden md:flex md:items-center md:gap-2.5">
             <NavigationMenuDemo lang={lang} pathname={pathname} />
-          </div>
-
-          {/* Desktop language switcher + theme toggle */}
-          <div className="hidden md:flex md:items-center md:gap-2">
             {children}
             <ModeToggle />
           </div>

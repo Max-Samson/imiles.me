@@ -1,7 +1,7 @@
 'use client';
 
-import { motion } from 'motion/react';
-import { type CSSProperties, useEffect, useState } from 'react';
+import { motion, useInView, useReducedMotion } from 'motion/react';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -87,6 +87,16 @@ export function LightRays({
   ref,
   ...props
 }: LightRaysProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(containerRef);
+  const [pageVisible, setPageVisible] = useState(true);
+  useEffect(() => {
+    const update = () => setPageVisible(!document.hidden);
+    update();
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
+  }, []);
+  const reducedMotion = useReducedMotion();
   const [rays, setRays] = useState<LightRay[]>([]);
   const cycleDuration = Math.max(speed, 0.1);
 
@@ -96,7 +106,11 @@ export function LightRays({
 
   return (
     <div
-      ref={ref}
+      ref={(element) => {
+        containerRef.current = element;
+        if (typeof ref === 'function') return ref(element);
+        if (ref) ref.current = element;
+      }}
       className={cn(
         'pointer-events-none absolute inset-0 isolate overflow-hidden rounded-[inherit]',
         className,
@@ -132,9 +146,10 @@ export function LightRays({
             } as CSSProperties
           }
         />
-        {rays.map((ray) => (
-          <Ray key={ray.id} {...ray} />
-        ))}
+        {!reducedMotion &&
+          inView &&
+          pageVisible &&
+          rays.map((ray) => <Ray key={ray.id} {...ray} />)}
       </div>
     </div>
   );

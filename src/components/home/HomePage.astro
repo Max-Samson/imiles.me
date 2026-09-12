@@ -1,0 +1,107 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Hero from './Hero';
+import HomeProjectsSection from './HomeProjectsSection.astro';
+import HomeBlogSection from './HomeBlogSection.astro';
+import HomeInteractions from './HomeInteractions';
+import HomeGardenParticles from './HomeGardenParticles';
+import HomeGardenTitle from './HomeGardenTitle';
+import ContentLightRaysBackground from '@/components/layout/ContentLightRaysBackground';
+import TechSkillsCloud from '@/components/article/TechSkillsCloud';
+import SocialDock from '@/components/layout/SocialDock';
+import { getProjects } from '@/data/projects';
+import { useTranslations, localizePathname, type Locale } from '@/lib/i18n';
+import { rainbowButtonVariants } from '@/registry/magicui/rainbow-button';
+import { cn } from '@/lib/utils';
+import '@/styles/home.css';
+
+interface Props { lang: Locale }
+const { lang } = Astro.props;
+const { t } = useTranslations(lang);
+const path = (url: string) => localizePathname(url, lang);
+const projects = getProjects(lang);
+const posts = (await getCollection('blog', ({ data }) => !data.draft && data.lang === lang))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const stories = await getCollection('stories', ({ data }) => !data.draft && data.lang === lang);
+const searchItems = [
+  ...stories.map(story => ({ title: story.data.title, description: story.data.description, href: path(`/stories/${story.id.replace(/-zh$/, '')}`) })),
+  ...(['about', 'notes', 'projects', 'blog', 'stories'] as const).map(page => ({ title: t(`Header${page}`), description: '', href: path(`/${page}`) })),
+  ...posts.map(post => ({ title: post.data.title, description: post.data.description, href: path(`/blog/${post.id.replace(/-zh$/, '')}`) })),
+  ...projects.map(project => ({ title: project.title, description: project.tagline, href: project.hasDetailPage ? path(`/projects/${project.slug}`) : project.githubUrl })),
+];
+const newsletter = import.meta.env.PUBLIC_BUTTONDOWN_USERNAME;
+---
+<BaseLayout title={t('PageHomeTitle', { site: 'Miles' })} description={t('PageHomeDescription')}>
+  <div class="home-page relative isolate [--ray-c:rgba(14,165,233,0.35)] dark:[--ray-c:rgba(251,191,36,0.15)]">
+    <!-- Screens 1-4: 统一环境光界域（包含首屏至第四屏，单实例全局光芒，彻底消除实例重叠与横向割裂） -->
+    <div class="home-ambient-realm relative isolate">
+      <!-- 贯穿首屏至第四屏的唯一 LightRays 光芒与极光环境，天然连续零切线 -->
+      <div class="home-rays" aria-hidden="true">
+        <ContentLightRaysBackground client:idle className="absolute!" />
+      </div>
+
+      <!-- Screen 1: Hero Section (内部透明 WebGL Plexus，让统一光芒自然穿透) -->
+      <section id="hero-section" aria-label={t('Headerhome')} class="home-opening relative isolate">
+        <Hero client:load lang={lang} />
+      </section>
+
+      <!-- Screen 2: Projects Section -->
+      <HomeProjectsSection {lang} {projects} />
+
+      <!-- Screen 3: Blog Section -->
+      <HomeBlogSection {lang} posts={posts.slice(0, 4)} />
+
+      <!-- Screen 4: Tech Stack Section -->
+      <section id="tech-section" class="home-section" aria-labelledby="home-tech-title">
+        <div class="home-tech-layout">
+          <div>
+            <header class="home-section-heading"><p class="home-eyebrow">{t('HomeTechEyebrow')}</p><h2 id="home-tech-title">{t('HomeTechTitle')}</h2><p>{t('HomeTechIntro')}</p></header>
+            <dl class="home-matrix">
+              <div data-home-reveal><dt>{t('HomeFrontend')}</dt><dd>TypeScript · React · Vue · Astro</dd></div>
+              <div data-home-reveal><dt>{t('HomeBackend')}</dt><dd>Go · Cloudflare Workers · SQLite · Docker</dd></div>
+              <div data-home-reveal><dt>{t('HomeAI')}</dt><dd>LLM APIs · MCP · AI Agents</dd></div>
+            </dl>
+          </div>
+          <div class="home-cloud"><TechSkillsCloud client:visible={{ rootMargin: '300px' }} inline /><p>{t('HomeTechHint')}</p></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Screen 5: Garden Section (专属独立 3D 浮动粒子星海，全屏无界沉浸式展示) -->
+    <section id="garden-section" class="home-garden-screen w-full min-h-[calc(100dvh-4.5rem)] relative isolate overflow-hidden flex flex-col justify-center items-center pt-20 pb-12 sm:pb-16" aria-labelledby="home-garden-title">
+      <HomeGardenParticles client:visible={{ rootMargin: '300px' }} />
+      <div class="home-garden-content relative z-10 w-full max-w-[1120px] px-4 sm:px-8 mx-auto flex flex-col items-center text-center">
+        <p class="home-eyebrow">{t('HomeGardenEyebrow')}</p>
+        <HomeGardenTitle client:visible={{ rootMargin: '300px' }} text={t('HomeGardenTitle')} />
+        <p>{t('HomeGardenIntro')}</p>
+        <div class="home-links mt-6 flex justify-center">
+          <a
+            href={path('/about')}
+            class={cn(
+              rainbowButtonVariants({ size: 'default' }),
+              'rounded-xl font-medium shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]',
+            )}
+          >
+            <span>{t('HomeAbout')}</span>
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        {newsletter && (
+          <form class="home-subscribe" action={`https://buttondown.com/api/emails/embed-subscribe/${encodeURIComponent(newsletter)}`} method="post" target="_blank">
+            <label for="home-email">{t('HomeEmail')}</label>
+            <div>
+              <input id="home-email" type="email" name="email" required autocomplete="email" placeholder="you@example.com" />
+              <button type="submit">{t('HomeSubscribe')} ↗</button>
+            </div>
+          </form>
+        )}
+        <div class="home-garden-dock">
+          <SocialDock client:visible={{ rootMargin: '200px' }} desktopClassName="relative! bottom-auto! left-auto! translate-x-0!" mobileClassName="relative! bottom-auto! left-auto! translate-x-0!" />
+        </div>
+      </div>
+    </section>
+
+    <HomeInteractions client:idle {lang} items={searchItems} />
+  </div>
+</BaseLayout>

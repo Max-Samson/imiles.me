@@ -159,7 +159,28 @@ function SceneContent({
 // Main exported component
 // =============================================================================
 
-export function PlexusBackground({ className = '', onCodexChange }: PlexusBackgroundProps) {
+export function PlexusBackground({
+  className = '',
+  onCodexChange,
+  anchorRef,
+}: PlexusBackgroundProps) {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const anchor = anchorRef?.current;
+    if (!anchor) return;
+    let inView = true;
+    const update = () => setVisible(inView && !document.hidden);
+    const observer = new IntersectionObserver(([entry]) => {
+      inView = entry.isIntersecting;
+      update();
+    });
+    observer.observe(anchor);
+    document.addEventListener('visibilitychange', update);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', update);
+    };
+  }, [anchorRef]);
   const theme = usePlexusTheme();
   const reducedMotion = useReducedMotion();
   const positionsBufferRef = useRef<Float32Array | null>(null);
@@ -170,7 +191,7 @@ export function PlexusBackground({ className = '', onCodexChange }: PlexusBackgr
 
   return (
     <div
-      className={`fixed inset-0 w-full h-full ${className}`}
+      className={`${anchorRef ? 'absolute' : 'fixed'} inset-0 w-full h-full ${className}`}
       style={{ touchAction: 'manipulation' }}
     >
       <Canvas
@@ -178,7 +199,7 @@ export function PlexusBackground({ className = '', onCodexChange }: PlexusBackgr
         gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
         camera={{ position: [0, 0, 15], fov: 60, near: 0.1, far: 100 }}
         style={{ background: 'transparent' }}
-        frameloop="always"
+        frameloop={visible ? 'always' : 'never'}
       >
         <SceneContent
           theme={theme}

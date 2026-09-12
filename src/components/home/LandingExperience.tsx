@@ -14,8 +14,7 @@ import {
 import { PlexusBackground } from '@/components/ui/plexus-background';
 import { CODEX, CODEX_CN } from '@/components/ui/plexus-shapes';
 import { useTextScramble } from '@/hooks/useTextScramble';
-import { useTranslations } from '@/lib/i18n';
-import { LightRays } from '@/registry/magicui/light-rays';
+import { type Locale, useTranslations } from '@/lib/i18n';
 
 const NAME_CHARS = [
   { id: 'shenshuai-s', char: 'S' },
@@ -36,18 +35,14 @@ const NAME_CHARS = [
 const DOCK_PRELOAD_DELAY_MS = 1100;
 const SocialDock = lazy(() => import('@/components/layout/SocialDock'));
 
-export default function LandingExperience() {
-  const { t } = useTranslations();
+export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
+  const { t } = useTranslations(lang);
+  const heroRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLHeadingElement>(null);
   const [nameWidth, setNameWidth] = useState<number | undefined>(undefined);
   const [codexIndex, setCodexIndex] = useState(0);
-  const [isZh, setIsZh] = useState(false);
+  const isZh = lang === 'zh';
   const [shouldMountDock, setShouldMountDock] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    setIsZh(window.location.pathname.startsWith('/zh'));
-  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -84,15 +79,11 @@ export default function LandingExperience() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="landing-root">
-        <PlexusBackground className="pointer-events-auto z-0" onCodexChange={handleCodexChange} />
-        <LightRays
-          count={8}
-          speed={12}
-          color="var(--ray-c)"
-          length="120vh"
-          blur={40}
-          className="z-[1] opacity-100 dark:opacity-80"
+      <div className="landing-root" ref={heroRef}>
+        <PlexusBackground
+          anchorRef={heroRef}
+          className="pointer-events-auto z-0"
+          onCodexChange={handleCodexChange}
         />
 
         <motion.div
@@ -141,7 +132,6 @@ export default function LandingExperience() {
                 </motion.div>
               </div>
             </div>
-
             <motion.div
               className="pointer-events-auto flex flex-col items-center gap-3 mt-6"
               initial={{ opacity: 0 }}
@@ -151,8 +141,8 @@ export default function LandingExperience() {
               {shouldMountDock && (
                 <Suspense fallback={null}>
                   <SocialDock
-                    mobileClassName="z-40"
-                    desktopClassName="fixed bottom-16 left-1/2 -translate-x-1/2 z-40"
+                    mobileClassName="absolute bottom-4 left-1/2 -translate-x-1/2 z-40"
+                    desktopClassName="absolute bottom-16 left-1/2 -translate-x-1/2 z-40"
                   />
                 </Suspense>
               )}

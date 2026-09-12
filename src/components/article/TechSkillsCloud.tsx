@@ -44,7 +44,7 @@ const STACK: { name: string; slug?: string; icon?: string }[] = [
 
 const CLOUD_ICONS = STACK.map((item) => {
   const icon = item.icon ?? `simple-icons:${item.slug}`;
-  const color = item.slug ? techIcons.colors[item.slug] : undefined;
+  const color = item.slug ? (techIcons.colors as Record<string, string>)[item.slug] : undefined;
   return createElement(Icon, {
     icon,
     width: 100,
@@ -60,14 +60,16 @@ const CLOUD_ICONS = STACK.map((item) => {
 
 interface TechSkillsCloudProps {
   /** rehype-slug id of the "Technical Skills" heading to attach the click handler to */
-  headingId: string;
+  headingId?: string;
+  inline?: boolean;
 }
 
-export default function TechSkillsCloud({ headingId }: TechSkillsCloudProps) {
+export default function TechSkillsCloud({ headingId, inline = false }: TechSkillsCloudProps) {
   const [open, setOpen] = useState(false);
 
   // Attach a click handler + affordance to the section heading.
   useEffect(() => {
+    if (!headingId || inline) return;
     const heading = document.getElementById(headingId);
     if (!heading) return;
 
@@ -98,7 +100,7 @@ export default function TechSkillsCloud({ headingId }: TechSkillsCloudProps) {
       heading.classList.remove('cursor-pointer', 'group');
       hint.remove();
     };
-  }, [headingId]);
+  }, [headingId, inline]);
 
   // Esc to close + scroll lock while open.
   useEffect(() => {
@@ -113,6 +115,8 @@ export default function TechSkillsCloud({ headingId }: TechSkillsCloudProps) {
       document.body.style.overflow = '';
     };
   }, [open]);
+
+  if (inline) return <IconCloud icons={CLOUD_ICONS} />;
 
   if (!open) return null;
 
