@@ -35,8 +35,14 @@ export interface ImageShowcaseConfig {
   images: { src: string; alt: string; caption?: string; fit?: 'cover' | 'contain' }[];
 }
 
-/** 演示配置:终端模拟 或 图片展示,二选一 */
-export type DemoConfig = TerminalDemoConfig | ImageShowcaseConfig;
+/** 活体组件演示配置(kind: 'live') — componentSlug 对应 LiveComponentDemo 内部注册表 */
+export interface LiveDemoConfig {
+  kind: 'live';
+  componentSlug: string;
+}
+
+/** 演示配置:终端模拟 / 图片展示 / 活体组件,三选一 */
+export type DemoConfig = TerminalDemoConfig | ImageShowcaseConfig | LiveDemoConfig;
 
 /** 项目多语言覆盖(可选字段,缺省时回退到顶层字段) */
 export interface ProjectLocalization {
@@ -386,6 +392,124 @@ export const projects: Project[] = [
             description:
               '基于 Cordis 插件模型与 React 18 构建，通过 esbuild 分别打包为 Node ESM 宿主后端与匹配平台运行时规范的前端工厂包，无缝嵌入 DSH Web 生态。',
             icon: 'Cpu',
+          },
+        ],
+      },
+    },
+  },
+  {
+    slug: 'floating-3d-particles',
+    title: 'Floating 3D Particles',
+    tagline:
+      'Canvas-based pseudo-3D particle background contributed to Magic UI — from GitMind hero to open-source component',
+    description:
+      "Floating 3D Particles started as an observation: the particle field behind GitMind's hero section had a quality that most canvas backgrounds lack — genuine depth. Particles near the viewer appeared larger and brighter; those far away shrank and faded. The effect used no WebGL, no Three.js, just a Canvas 2D context and a single perspective-divide formula. I rebuilt it from scratch as a self-contained React component and opened PR #1002 against Magic UI on Aug 17, 2026.\n\nThe initial submission carried 22 configurable props — particle counts, color, size and opacity ranges, rotation and float speeds, raw perspective parameters (fov, perspectiveDistance, depthRange), mouse interaction, DPI scaling, and visibility hooks. Reviewer Yeom-JinHo ran it locally and found three bugs that did not surface in demos. First: with prefers-reduced-motion enabled, the component rendered a blank canvas on every frame. The reduced-motion branch drew one static frame and stopped re-queuing rAF; ResizeObserver then fired its mandatory initial callback, reassigned canvas.width — which clears the bitmap — and the canvas stayed empty for the lifetime of the component, with zero painted pixels against the ~37,000 in the normal path. Second: a negative drift value (particles falling instead of rising) drained the particle field entirely, because only the top boundary triggered a respawn. Third: color lived in the useEffect dependency array, so every theme switch tore down the animation loop and respawned all 400 particles.\n\nYeom-JinHo also flagged the prop surface: 22 props is the highest count in the Magic UI registry, and any prop published becomes a breaking-change boundary. Several could be collapsed — background and zIndex are reachable via the style prop; the three raw projection parameters had combinations that produced a near-zero denominator in the perspective divide. After I committed to revising, the reviewer pushed seven small follow-up commits directly to the branch: the reduced-motion fix using a staticDirty flag so the rAF loop keeps running without repainting on every frame; the bi-directional respawn so negative drift falls instead of draining; colorRef so theme switches repaint in place without rebuilding the field; and theme-aware default colors in the plain demo. The three projection parameters were collapsed into a single 0–1 depth knob backed by deriveProjection(), which maps the scalar to safe fov/perspectiveDistance/depthRange values with a guaranteed positive denominator. The final API is six props. The component merged on Sep 4, 2026.",
+    status: 'active',
+    githubUrl: 'https://github.com/magicuidesign/magicui/pull/1002',
+    pageUrl: 'https://magicui.design/docs/components/floating-3d-particles',
+    pageLabel: 'Magic UI Docs',
+    tech: [
+      { name: 'React', icon: 'react' },
+      { name: 'TypeScript', icon: 'typescript' },
+      { name: 'Canvas 2D', icon: 'html5' },
+    ],
+    tags: [
+      'canvas',
+      'animation',
+      'particles',
+      'open-source',
+      'magicui',
+      'background',
+      'react',
+      'zero-dependency',
+      'open-source-contribution',
+    ],
+    features: [
+      {
+        title: 'Perspective Projection via sin(θ)',
+        description:
+          'No matrix math, no WebGL. Each particle orbits in polar coordinates; scale = fov / (fov + pd + sin(angle) × depthRange) makes particles swell as they rotate toward the viewer and shrink as they rotate away — the entire 3D illusion from one formula.',
+        icon: 'Orbit',
+      },
+      {
+        title: 'Blank Canvas Bug — Fixed with staticDirty',
+        description:
+          'With prefers-reduced-motion on, the original code drew one static frame and killed the rAF loop. ResizeObserver then cleared the canvas and nothing repainted — 0 pixels. The fix keeps the loop alive and uses a staticDirty flag: only repaint when the frame is actually stale (after resize or a preference change).',
+        icon: 'Bug',
+      },
+      {
+        title: 'Field Drain Bug — Fixed with Two-Edge Respawn',
+        description:
+          'Negative drift (particles falling) silently drained the particle field: only the top boundary triggered a respawn, so downward-drifting particles exited the bottom and vanished. Both edges now check independently and respawn on the opposite side, keeping quantity stable for any drift sign.',
+        icon: 'ArrowUpDown',
+      },
+      {
+        title: 'Theme Flicker Bug — Fixed with colorRef',
+        description:
+          'color was in the useEffect dependency array. Every dark/light switch destroyed the loop and respawned 400 particles — a visible flash. Moving color into a ref and reading it per-frame lets theme changes take effect in the next painted circle with no rebuild.',
+        icon: 'Palette',
+      },
+      {
+        title: '22 Props Collapsed to 6 via deriveProjection()',
+        description:
+          'The initial submission had 22 props — the highest in the Magic UI registry. Raw projection parameters (fov, perspectiveDistance, depthRange) allowed combinations that divided by zero. A single depth knob (0–1) now drives deriveProjection(), which derives all three with a guaranteed positive denominator.',
+        icon: 'SlidersHorizontal',
+      },
+      {
+        title: 'Three-Layer Performance Guard',
+        description:
+          'IntersectionObserver idles the rAF loop when the canvas is off-screen. document visibilitychange pauses on tab switch. Mobile viewports (< 768 px) automatically scale particle count to 20% of the desktop value. DPR is capped at 2× so 4K screens do not quadruple the canvas pixel budget.',
+        icon: 'Zap',
+      },
+    ],
+    hasDetailPage: true,
+    llms: true,
+    demo: {
+      kind: 'live',
+      componentSlug: 'floating-3d-particles',
+    },
+    locales: {
+      zh: {
+        tagline:
+          '向 Magic UI 贡献的 Canvas 伪 3D 粒子背景组件——从 GitMind hero 到开源落地的完整开发记录',
+        description:
+          'Floating 3D Particles 的起点是一个观察：GitMind 官网 hero 区域的粒子场有一种大多数 canvas 背景所缺少的质感——真实的景深。靠近观察者的粒子更大更亮，远处的粒子缩小并褪色。这个效果不使用 WebGL，不依赖 Three.js，只有 Canvas 2D 和一个透视除法公式。我从零重写了这个效果，封装成独立的 React 组件，于 2026 年 8 月 17 日向 Magic UI 提交了 PR #1002。\n\n初版提交包含 22 个可配置 prop——粒子数量、颜色、大小和透明度范围、旋转与漂浮速度、原始透视参数（fov、perspectiveDistance、depthRange）、鼠标交互、DPI 缩放和可见性钩子。审查者 Yeom-JinHo 在本地运行后发现了三个在演示中没有暴露的 bug。第一：开启 prefers-reduced-motion 时，组件在每帧都渲染出空白 canvas——reduced-motion 分支绘制一帧静态画面后停止了 rAF 循环，ResizeObserver 随即触发初始回调，重新赋值 canvas.width 清空位图，此后 canvas 在组件生命周期内始终为空，绘制像素数为 0，而正常路径约有 37,000 个。第二：负值 drift（粒子向下漂落）会悄悄抽空整个粒子场，因为只有顶部边界触发了重生逻辑。第三：color 在 useEffect 依赖数组里，每次主题切换都会销毁动画循环并重新生成全部 400 个粒子。\n\nYeom-JinHo 还指出了 prop 数量问题：22 个 prop 是 Magic UI registry 中最多的，任何已发布的 prop 都构成破坏性变更边界；background 和 zIndex 可以通过 style 传入；三个原始透视参数存在使投影分母趋近于零的组合。在我承诺修订后，审查者直接向分支推送了 7 个小提交：用 staticDirty 标志修复 reduced-motion（rAF 循环继续运行，只在画面真正失效时重绘）；双向边界重生修复负 drift 下的粒子场流失；colorRef 让主题切换就地重绘而非重建粒子场；plain demo 加入主题感知默认色。三个透视参数被收敛为单一的 0–1 depth 旋钮，由 deriveProjection() 派生出保证分母为正的安全值。最终 API 只有六个 prop。组件于 2026 年 9 月 4 日合并。',
+        features: [
+          {
+            title: '用 sin(θ) 实现透视投影',
+            description:
+              '无矩阵运算，无 WebGL。粒子在极坐标中绕轴旋转，scale = fov / (fov + pd + sin(angle) × depthRange) 让粒子转向观察者时变大，背离时缩小——整个 3D 错觉来自一个公式。',
+            icon: 'Orbit',
+          },
+          {
+            title: '空白 canvas bug——用 staticDirty 修复',
+            description:
+              '开启 prefers-reduced-motion 时，原始代码绘制一帧后终止 rAF 循环，ResizeObserver 清空 canvas 后无人重绘——0 个像素。修复方案是保持循环运行，用 staticDirty 标志控制：只在画面真正失效（resize 或偏好变更）后才重新绘制静态帧。',
+            icon: 'Bug',
+          },
+          {
+            title: '粒子场流失 bug——用双向边界重生修复',
+            description:
+              '负 drift（粒子向下漂）会悄悄抽空粒子场：原来只有顶部边界触发重生，向下漂出底部的粒子直接消失。现在两侧边界独立检测，粒子从任意一侧离开就从另一侧重新进入，粒子数量在任何 drift 方向下都保持稳定。',
+            icon: 'ArrowUpDown',
+          },
+          {
+            title: '主题切换闪烁 bug——用 colorRef 修复',
+            description:
+              'color 在 useEffect 依赖数组里，每次深色/浅色切换都会销毁循环并重建 400 个粒子——肉眼可见的闪屏。将 color 移入 ref 并在每帧读取，主题切换仅影响下一个被绘制的圆，不触发任何重建。',
+            icon: 'Palette',
+          },
+          {
+            title: '22 个 prop 收敛为 6——deriveProjection() 的设计',
+            description:
+              '初版有 22 个 prop，是 Magic UI registry 中最多的。原始透视参数（fov、perspectiveDistance、depthRange）存在使分母为零的组合。单一的 depth 旋钮（0–1）现在驱动 deriveProjection()，派生出保证分母为正的三个安全值。',
+            icon: 'SlidersHorizontal',
+          },
+          {
+            title: '三层性能保障',
+            description:
+              'IntersectionObserver 在离屏时暂停 rAF 循环；document visibilitychange 在切换标签页时暂停；移动端（< 768px）自动将粒子数量降至桌面端的 20%；DPR 上限为 2×，4K 屏不会将 canvas 像素预算翻四倍。',
+            icon: 'Zap',
           },
         ],
       },

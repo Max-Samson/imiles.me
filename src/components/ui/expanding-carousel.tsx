@@ -33,6 +33,8 @@ export interface ExpandingCarouselProps {
   /** React callers may replace the default project/testimonial content. */
   renderContent?: (item: ExpandingCarouselItem, active: boolean) => ReactNode;
   renderPreview?: (item: ExpandingCarouselItem) => ReactNode;
+  /** Render a custom media node for a given item; return undefined to fall back to image/terminal. */
+  renderMedia?: (item: ExpandingCarouselItem) => ReactNode | undefined;
   initialIndex?: number;
   /** Set to 0 to disable automatic rotation. Pauses on hover, focus, or leaving the viewport. */
   interval?: number;
@@ -47,6 +49,7 @@ export default function ExpandingCarousel({
   style,
   renderContent,
   renderPreview,
+  renderMedia,
   initialIndex = 0,
   // 元素自动切换轮播时间为7s
   interval = 7000,
@@ -349,29 +352,33 @@ export default function ExpandingCarousel({
                           </div>
                         </div>
                         <div className="expanding-carousel-media">
-                          {item.image && (
-                            <img
-                              src={item.image.src}
-                              alt={item.image.alt}
-                              loading="lazy"
-                              decoding="async"
-                              draggable={false}
-                              data-fit={item.image.fit ?? 'cover'}
-                            />
-                          )}
-                          {item.terminal && (
-                            <div className="expanding-carousel-terminal">
-                              <p>{item.terminal.title}</p>
-                              <pre>
-                                {item.terminal.lines.map((line, lineIndex) => (
-                                  <span key={`${lineIndex}-${line.text}`} data-type={line.type}>
-                                    {line.type === 'command' ? '$ ' : ''}
-                                    {line.text}
-                                    {'\n'}
-                                  </span>
-                                ))}
-                              </pre>
-                            </div>
+                          {renderMedia?.(item) ?? (
+                            <>
+                              {item.image && (
+                                <img
+                                  src={item.image.src}
+                                  alt={item.image.alt}
+                                  loading="lazy"
+                                  decoding="async"
+                                  draggable={false}
+                                  data-fit={item.image.fit ?? 'cover'}
+                                />
+                              )}
+                              {item.terminal && (
+                                <div className="expanding-carousel-terminal">
+                                  <p>{item.terminal.title}</p>
+                                  <pre>
+                                    {item.terminal.lines.map((line, lineIndex) => (
+                                      <span key={`${lineIndex}-${line.text}`} data-type={line.type}>
+                                        {line.type === 'command' ? '$ ' : ''}
+                                        {line.text}
+                                        {'\n'}
+                                      </span>
+                                    ))}
+                                  </pre>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       </>

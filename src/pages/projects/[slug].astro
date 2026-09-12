@@ -5,6 +5,7 @@ import ContentLightRaysBackground from '@/components/layout/ContentLightRaysBack
 import ProjectHero from '@/components/project/ProjectHero';
 import TerminalDemo from '@/components/common/TerminalDemo';
 import ImageShowcase from '@/components/common/ImageShowcase';
+import LiveComponentDemo from '@/components/common/LiveComponentDemo';
 import FeatureGrid from '@/components/common/FeatureGrid';
 import TechStackGrid from '@/components/common/TechStackGrid';
 import { projects, getProject } from '@/data/projects';
@@ -42,6 +43,7 @@ if (!project) {
 
 {project.demo?.kind === 'terminal' && <TerminalDemo title={project.demo.title} lines={project.demo.lines} client:visible />}
     {project.demo?.kind === 'image' && <ImageShowcase images={project.demo.images} title={t('ProjectDetailsTitle')} client:visible />}
+    {project.demo?.kind === 'live' && <LiveComponentDemo componentSlug={project.demo.componentSlug} client:visible />}
 
     <FeatureGrid features={project.features} lang={lang} className={project.demo?.kind === 'image' ? 'pt-4 lg:pt-6' : undefined} client:visible />
     <TechStackGrid tech={project.tech} lang={lang} client:visible />
