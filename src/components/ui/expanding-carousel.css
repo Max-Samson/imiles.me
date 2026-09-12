@@ -1,9 +1,9 @@
 .expanding-carousel {
-  --carousel-surface: #fff;
-  --carousel-ink: #102a43;
-  --carousel-muted: #586572;
-  --carousel-badge: #f1f3f5;
-  --carousel-accent: #4890e3;
+  --carousel-surface: color-mix(in srgb, var(--card) 85%, transparent);
+  --carousel-ink: var(--foreground);
+  --carousel-muted: var(--muted-foreground);
+  --carousel-badge: color-mix(in srgb, var(--muted) 70%, transparent);
+  --carousel-accent: var(--brand);
   --carousel-move-duration: 1000ms;
   --carousel-move-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --carousel-fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -19,11 +19,11 @@
   color: var(--carousel-ink);
 }
 .dark .expanding-carousel {
-  --carousel-surface: #202321;
-  --carousel-ink: #f4f2ec;
-  --carousel-muted: #c4c6c0;
-  --carousel-badge: #343932;
-  --carousel-accent: #d4b776;
+  --carousel-surface: color-mix(in srgb, var(--background) 72%, transparent);
+  --carousel-ink: var(--foreground);
+  --carousel-muted: var(--muted-foreground);
+  --carousel-badge: color-mix(in srgb, var(--muted) 45%, transparent);
+  --carousel-accent: var(--brand);
 }
 .expanding-carousel-stage {
   position: relative;
@@ -42,8 +42,10 @@
   height: var(--card-height);
   transform: translate(calc(-50% + var(--card-offset)), -50%);
   border-radius: 32px;
+  border: 0;
   background: var(--carousel-surface);
-  box-shadow: 0 10px 30px #5f6d7714;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 36px -10px color-mix(in srgb, var(--foreground) 6%, transparent);
   transition:
     width var(--carousel-move-duration) var(--carousel-move-ease),
     height var(--carousel-move-duration) var(--carousel-move-ease),
@@ -192,9 +194,11 @@
   padding: 16px;
 }
 .expanding-carousel-eyebrow {
-  font-size: 12px;
-  color: var(--carousel-muted);
-  margin-bottom: 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin-bottom: 0.75rem;
 }
 .expanding-carousel-copy h3 {
   font-size: 32px;
@@ -202,6 +206,7 @@
   line-height: 1.16;
   letter-spacing: -0.04em;
   text-wrap: balance;
+  color: var(--foreground);
 }
 .expanding-carousel-details {
   display: flex;
@@ -209,15 +214,15 @@
   gap: 16px;
 }
 .expanding-carousel-description {
-  font-family: "Noto Serif", "Noto Serif TC", serif;
-  font-size: 23px;
-  line-height: 1.35;
-  letter-spacing: -0.025em;
+  font-size: 1.12rem;
+  line-height: 1.55;
+  letter-spacing: -0.02em;
   text-wrap: pretty;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 7;
   overflow: hidden;
+  color: var(--muted-foreground);
 }
 .expanding-carousel-badges {
   display: flex;
@@ -228,10 +233,12 @@
   margin: 0;
 }
 .expanding-carousel-badges li {
-  background: var(--carousel-badge);
-  border-radius: 5px;
-  padding: 4px 7px;
-  font-size: 11px;
+  font-size: 0.72rem;
+  padding: 0.25rem 0.6rem;
+  border: 0;
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--muted) 50%, transparent);
+  color: var(--muted-foreground);
   line-height: 1.4;
 }
 .expanding-carousel-links {
@@ -243,19 +250,23 @@
   display: inline-flex;
   gap: 5px;
   align-items: center;
-  font-size: 11px;
+  font-size: 0.8rem;
   min-height: 28px;
+  color: var(--muted-foreground);
   text-underline-offset: 4px;
+  transition: color 0.15s ease;
 }
 .expanding-carousel-links a:hover {
+  color: var(--foreground);
   text-decoration: underline;
 }
 .expanding-carousel-media {
   position: relative;
   min-width: 0;
   overflow: hidden;
-  border-radius: 28px;
-  background: var(--carousel-badge);
+  border-radius: 24px;
+  border: 0;
+  background: color-mix(in srgb, var(--muted) 35%, transparent);
   opacity: 0;
   transform: scale(1.025);
   transition:
@@ -287,8 +298,11 @@
   flex-direction: column;
   justify-content: center;
   gap: 20px;
-  background: #10151c;
-  color: #d5e1ed;
+  background: color-mix(in srgb, var(--background) 92%, black);
+  border: 0;
+  border-radius: 20px;
+  color: var(--foreground);
+  font-family: "IBM Plex Mono", monospace;
 }
 .expanding-carousel-terminal pre {
   white-space: pre-wrap;
@@ -296,7 +310,7 @@
   font-size: 13px;
 }
 .expanding-carousel-terminal [data-type="command"] {
-  color: #8cdab5;
+  color: var(--brand);
 }
 .expanding-carousel-connector {
   position: absolute;
@@ -325,8 +339,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-top: 42px;
+  gap: 8px;
+  margin-top: 28px;
 }
 .expanding-carousel-controls[hidden] {
   display: none;
@@ -334,30 +348,32 @@
 .expanding-carousel-tabs {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 .expanding-carousel-tabs > button {
-  width: 8px;
-  height: 44px;
+  width: 6px;
+  height: 20px;
   padding: 0;
   cursor: pointer;
   transition: width 550ms var(--carousel-fade-ease);
   position: relative;
+  display: flex;
+  align-items: center;
 }
 .expanding-carousel-tabs > button::before {
   content: "";
   position: absolute;
-  inset: 0 -3px;
+  inset: -6px -2px;
 }
 .expanding-carousel-tabs > button[aria-selected="true"] {
-  width: 80px;
+  width: 44px;
 }
 .expanding-carousel-tab-track {
   display: block;
   width: 100%;
-  height: 8px;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--carousel-ink) 12%, transparent);
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 70%, transparent);
   overflow: hidden;
 }
 .expanding-carousel-progress {
@@ -365,7 +381,7 @@
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: var(--carousel-accent);
+  background: var(--brand);
   transform-origin: left;
 }
 .expanding-carousel-progress[data-animate="true"] {
@@ -380,17 +396,26 @@
   }
 }
 .expanding-carousel-arrow {
-  width: 36px;
-  height: 44px;
+  width: 20px;
+  height: 20px;
   display: grid;
   place-items: center;
   color: var(--muted-foreground);
   cursor: pointer;
-  border-radius: 12px;
+  border-radius: 50%;
+  border: 0;
+  background: color-mix(in srgb, var(--muted) 45%, transparent);
+  transition: all 0.2s ease;
+  position: relative;
+}
+.expanding-carousel-arrow::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
 }
 .expanding-carousel-arrow:hover {
-  background: var(--carousel-badge);
-  color: var(--carousel-ink);
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--muted) 80%, transparent);
 }
 .expanding-carousel :is(button, a, article):focus-visible {
   outline: 2px solid var(--carousel-accent);
@@ -469,4 +494,85 @@
 
 .expanding-carousel-card[data-wrap="true"] {
   transition: opacity 0.3s;
+}
+
+/* Dark mode visual enhancements: completely borderless, subdued outlines, deep atmospheric depth */
+.dark .expanding-carousel-card {
+  border: 0;
+  background: color-mix(in srgb, var(--background) 75%, transparent);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.7);
+}
+
+.dark .expanding-carousel-card[data-slot="0"] {
+  border: 0;
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+  box-shadow: 0 25px 65px -15px rgba(0, 0, 0, 0.85);
+}
+
+.dark .expanding-carousel-connector svg {
+  fill: var(--carousel-surface);
+}
+
+.dark .expanding-carousel-eyebrow {
+  color: var(--brand);
+  opacity: 0.92;
+}
+
+.dark .expanding-carousel-description {
+  color: color-mix(in srgb, var(--foreground) 78%, var(--muted-foreground));
+}
+
+.dark .expanding-carousel-badges li {
+  border: 0;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--foreground);
+}
+
+.dark .expanding-carousel-links a {
+  color: var(--muted-foreground);
+}
+
+.dark .expanding-carousel-links a:hover {
+  color: var(--brand);
+}
+
+.dark .expanding-carousel-media {
+  border: 0;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.dark .expanding-carousel-terminal {
+  border: 0;
+  background: color-mix(in srgb, var(--background) 96%, black);
+  color: var(--foreground);
+}
+
+.dark .expanding-carousel-preview img {
+  opacity: 0.72;
+  transition: opacity 0.3s ease;
+}
+
+.dark .expanding-carousel-card:hover .expanding-carousel-preview img {
+  opacity: 0.95;
+}
+
+.dark .expanding-carousel-tab-track {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.dark .expanding-carousel-progress {
+  background: var(--foreground);
+}
+
+.dark .expanding-carousel-arrow {
+  border: 0;
+  color: var(--muted-foreground);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dark .expanding-carousel-arrow:hover {
+  border: 0;
+  color: var(--foreground);
+  background: rgba(255, 255, 255, 0.18);
 }

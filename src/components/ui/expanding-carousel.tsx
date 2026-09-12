@@ -277,7 +277,7 @@ export default function ExpandingCarousel({
           aria-label={labels.previous}
           onClick={() => select(active - 1)}
         >
-          <ChevronLeft size={16} aria-hidden="true" />
+          <ChevronLeft size={13} aria-hidden="true" />
         </button>
         <div className="expanding-carousel-tabs" role="tablist" aria-label={label}>
           {items.map((item, index) => (
@@ -331,7 +331,7 @@ export default function ExpandingCarousel({
           aria-label={labels.next}
           onClick={() => select(active + 1)}
         >
-          <ChevronRight size={16} aria-hidden="true" />
+          <ChevronRight size={13} aria-hidden="true" />
         </button>
         {canRotate && (
           <button
@@ -341,9 +341,9 @@ export default function ExpandingCarousel({
             onClick={() => setPaused((value) => !value)}
           >
             {paused ? (
-              <Play size={14} aria-hidden="true" />
+              <Play size={11} aria-hidden="true" />
             ) : (
-              <Pause size={14} aria-hidden="true" />
+              <Pause size={11} aria-hidden="true" />
             )}
           </button>
         )}
