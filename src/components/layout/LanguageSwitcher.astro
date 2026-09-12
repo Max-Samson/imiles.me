@@ -1,52 +1,45 @@
 ---
-/**
- * Language Switcher Component
- *
- * Currently disabled since only English is supported.
- * To enable when adding more languages:
- * 1. Add new locales to astro.config.mjs and src/lib/i18n.ts
- * 2. Remove the early return below
- * 3. Create locale-specific pages (e.g., src/pages/ar/about.astro)
- */
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import { locales, stripLocaleFromPathname, type Locale } from '@/lib/i18n';
+
 const currentLocale = (Astro.currentLocale ?? 'en') as Locale;
 const currentPath = stripLocaleFromPathname(Astro.url.pathname);
 
 // Hide when only one locale is available
 const showSwitcher = locales.length > 1;
 
-const localeLabels: Record<Locale, string> = {
-  en: 'English',
-  zh: '中文',
-};
+const alternateLocale: Locale = currentLocale === 'zh' ? 'en' : 'zh';
+const alternateLabel = alternateLocale === 'zh' ? '中文' : 'EN';
+const targetHref = getRelativeLocaleUrl(alternateLocale, currentPath);
 ---
 
 {
   showSwitcher && (
-    <nav aria-label="Language switcher" class="language-switcher">
-      <ul class="flex gap-2">
-        {locales.map((locale) => (
-          <li>
-            <a
-              href={getRelativeLocaleUrl(locale, currentPath)}
-              class:list={[
-                'px-2 py-1 text-sm rounded transition-colors',
-                locale === currentLocale ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
-              ]}
-              aria-current={locale === currentLocale ? 'page' : undefined}
-            >
-              {localeLabels[locale]}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <a
+      href={targetHref}
+      class="language-switcher inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      aria-label={`Switch language to ${alternateLocale === 'zh' ? 'Chinese' : 'English'}`}
+      title={`Switch language to ${alternateLocale === 'zh' ? 'Chinese' : 'English'}`}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+        class="text-muted-foreground transition-colors"
+      >
+        <path d="M0 0h24v24H0z" fill="none" />
+        <path d="M17.5 10h-1.7l-3.7 10.5h1.7l.9-2.6h3.9l.9 2.6h1.7zm-2.2 6.3l1.4-4l1.4 4zm-4.8-3.8c1.6-1.8 2.9-3.6 3.7-5.7H16V5.2h-5.8V3H8.8v2.2H3v1.5h9.6c-.7 1.6-1.8 3.1-3.1 4.6C8.6 10.2 7.8 9 7.2 8H5.6c.6 1.4 1.7 2.9 2.9 4.4l-2.4 2.4c-.3.4-.7.8-1.1 1.2l1 1l1.2-1.2c.8-.8 1.6-1.5 2.3-2.3c.8.9 1.7 1.7 2.5 2.5l.6-1.5c-.7-.6-1.4-1.3-2.1-2" />
+      </svg>
+      <span>{alternateLabel}</span>
+    </a>
   )
 }
 
 <script>
-  document.querySelectorAll<HTMLAnchorElement>('.language-switcher a').forEach((link) => {
+  document.querySelectorAll<HTMLAnchorElement>('.language-switcher').forEach((link) => {
     link.addEventListener('click', () => {
       const target = new URL(link.href);
       target.hash = window.location.hash;
