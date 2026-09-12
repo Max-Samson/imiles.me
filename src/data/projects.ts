@@ -32,7 +32,7 @@ export interface TerminalDemoConfig {
 /** 图片墙演示配置(kind: 'image') */
 export interface ImageShowcaseConfig {
   kind: 'image';
-  images: { src: string; alt: string; caption?: string }[];
+  images: { src: string; alt: string; caption?: string; fit?: 'cover' | 'contain' }[];
 }
 
 /** 演示配置:终端模拟 或 图片展示,二选一 */
@@ -47,6 +47,7 @@ export interface ProjectLocalization {
   demo?: DemoConfig;
   tags?: string[];
   pageLabel?: string;
+  coverImage?: string;
 }
 
 /**
@@ -57,6 +58,7 @@ export interface ProjectLocalization {
  * - tech / features: 技术栈与功能特性
  * - hasDetailPage: 是否生成独立详情页
  * - demo: 详情页演示(终端/图片)
+ * - coverImage: 项目专属展位封面大图(全屏轮播铺满)
  * - locales: 各语言覆盖内容(zh/en)
  * - llms: 是否纳入 llms.txt 索引
  * - tags: 功能/主题标签列表(支持前端 UI 呈现)
@@ -70,6 +72,7 @@ export interface Project {
   githubUrl: string;
   pageUrl?: string;
   pageLabel?: string;
+  coverImage?: string;
   tech: ProjectTech[];
   features: ProjectFeature[];
   hasDetailPage: boolean;
@@ -89,6 +92,7 @@ export const projects: Project[] = [
     status: 'active',
     githubUrl: 'https://github.com/Max-Samson/MTimer_v2.1.1.0',
     pageUrl: 'https://mtimerpage.pages.dev/',
+    coverImage: '/projects/mtimer/mtimer-cover.jpeg',
     tech: [
       { name: 'Go', icon: 'go' },
       { name: 'Wails', icon: 'wails' },
@@ -187,6 +191,7 @@ export const projects: Project[] = [
     },
     locales: {
       zh: {
+        coverImage: '/projects/mtimer/mtimer-cover-zh.jpeg',
         tagline: '基于 Wails 的番茄钟桌面应用，内置 AI 时间规划',
         description:
           'MTimer 是一个围绕番茄工作法构建的跨平台桌面专注工具。项目使用 Wails 将 Go 后端与 Vue 3 前端打包为原生桌面应用，提供番茄/自定义双专注模式、任务清单、专注会话记录、白噪音与背景音乐、统计可视化，以及可接入 DeepSeek 或自定义 OpenAI-compatible API 的 AI 时间规划助手。后端通过 SQLite 保存任务、会话、每日统计与事件统计，并在会话完成时用事务同步更新统计数据；前端用 Pinia 管理计时器、任务和设置状态，用 ECharts 展示每日汇总、番茄趋势、任务完成率与时段分布。',
@@ -276,6 +281,7 @@ export const projects: Project[] = [
     githubUrl: 'https://github.com/Max-Samson/dsh-usage-chart',
     pageUrl: 'https://www.npmjs.com/package/dsh-usage-chart',
     pageLabel: 'View on npm',
+    coverImage: '/projects/dsh-usage-chart/dsh-usage-chart-cover.jpeg',
     tech: [
       { name: 'TypeScript', icon: 'typescript' },
       { name: 'React 18', icon: 'react' },
@@ -337,28 +343,10 @@ export const projects: Project[] = [
     ],
     hasDetailPage: true,
     llms: true,
-    demo: {
-      kind: 'terminal',
-      title: 'dsh-usage-chart installation & live verification',
-      lines: [
-        { type: 'command', text: 'dsh plugin --profile web add dsh-usage-chart' },
-        { type: 'output', text: '+ dsh-usage-chart@1.1.5 added to profile web' },
-        { type: 'command', text: 'dsh web --profile web' },
-        { type: 'output', text: 'DSH Web listening on http://127.0.0.1:3080' },
-        {
-          type: 'command',
-          text: 'dsh --profile web --dump-config | grep -A2 "id: dsh-usage-chart"',
-        },
-        { type: 'output', text: '  - id: dsh-usage-chart\n    name: dsh-usage-chart' },
-        {
-          type: 'output',
-          text: '▸ Input 12.4M · Output 86.2K · Hit 72% · Cost ≈$0.042 / ≈¥0.284 · Balance $48.50',
-        },
-      ],
-    },
     locales: {
       zh: {
         pageLabel: '查看 npm',
+        coverImage: '/projects/dsh-usage-chart/dsh-usage-chart-cover-zh.jpeg',
         tagline: 'DeepSeek 用量 / 成本 / 余额仪表盘 · DSH Web 插件',
         description:
           'dsh-usage-chart 是专为 DeepSeek Harness (DSH) Web 设计的高性能用量、成本与账户余额监控插件。它在输入框下方嵌入紧凑的实时指标指示器，并支持展开零依赖手绘 SVG 用量可视化面板。插件直接消费官方 adapter 投影数据，精准展示未命中/命中输入 Token、输出 Token、缓存命中率与上下文占用；内置官方高峰/空闲双时段刊例价，支持 CNY/USD 双币种直接计费与 pricing.json 覆盖；提供逐轮耗时、TTFT、TPS、成本突增异常标记、输入来源归因（人工/Agent/续跑）以及上下文构成与折叠压缩诊断，余额查询直连官方接口并由宿主安全代理。',
@@ -400,25 +388,6 @@ export const projects: Project[] = [
             icon: 'Cpu',
           },
         ],
-        demo: {
-          kind: 'terminal',
-          title: '插件安装与终端验证',
-          lines: [
-            { type: 'command', text: 'dsh plugin --profile web add dsh-usage-chart' },
-            { type: 'output', text: '+ dsh-usage-chart@1.1.5 已成功安装到 profile web' },
-            { type: 'command', text: 'dsh web --profile web' },
-            { type: 'output', text: 'DSH Web 服务已就绪：http://127.0.0.1:3080' },
-            {
-              type: 'command',
-              text: 'dsh --profile web --dump-config | grep -A2 "id: dsh-usage-chart"',
-            },
-            { type: 'output', text: '  - id: dsh-usage-chart\n    name: dsh-usage-chart' },
-            {
-              type: 'output',
-              text: '▸ 输入 12.4M · 输出 86.2K · 缓存 72% · 成本 ≈¥0.284 / ≈$0.042 · 余额 ¥48.50',
-            },
-          ],
-        },
       },
     },
   },

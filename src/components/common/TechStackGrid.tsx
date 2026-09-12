@@ -68,15 +68,18 @@ export default function TechStackGrid({ tech, lang }: TechStackGridProps) {
     <section ref={ref} className="container mx-auto px-4 py-12">
       <h2 className="mb-8 text-2xl font-bold">{t('NoteSectionFourTitle')}</h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {tech.map((tItem, index) => (
+        {tech.map((tItem, i) => (
           <motion.div
             key={tItem.name}
+            className="tech-stack-card group"
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.4, delay: index * 0.05 }}
-            className="tech-stack-card"
+            transition={{ duration: 0.4, delay: i * 0.07 }}
+            whileHover={{ y: -4, scale: 1.02 }}
           >
-            <div className="tech-stack-icon">{iconMap[tItem.icon || '']}</div>
+            <div className="mb-2 text-muted-foreground transition-colors group-hover:text-foreground">
+              {iconMap[tItem.icon] ?? <span className="text-2xl font-bold">{tItem.name[0]}</span>}
+            </div>
             <span className="text-sm font-medium">{tItem.name}</span>
           </motion.div>
         ))}
