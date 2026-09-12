@@ -1,10 +1,11 @@
 .expanding-carousel {
-  --carousel-surface: color-mix(in srgb, var(--card) 85%, transparent);
+  --carousel-surface: var(--card);
+  --carousel-shadow: 0 10px 30px rgb(95 109 119 / 0.08);
   --carousel-ink: var(--foreground);
   --carousel-muted: var(--muted-foreground);
   --carousel-badge: color-mix(in srgb, var(--muted) 70%, transparent);
   --carousel-accent: var(--brand);
-  --carousel-move-duration: 1000ms;
+  --carousel-move-duration: 620ms;
   --carousel-move-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --carousel-fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --carousel-active-width: 762px;
@@ -19,23 +20,55 @@
   color: var(--carousel-ink);
 }
 .dark .expanding-carousel {
-  --carousel-surface: color-mix(in srgb, var(--background) 72%, transparent);
+  --carousel-surface: color-mix(in srgb, var(--background) 75%, var(--card));
+  --carousel-shadow: 0 16px 28px rgb(0 0 0 / 0.28);
   --carousel-ink: var(--foreground);
   --carousel-muted: var(--muted-foreground);
   --carousel-badge: color-mix(in srgb, var(--muted) 45%, transparent);
   --carousel-accent: var(--brand);
 }
+.expanding-carousel-section-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 680px;
+  margin-inline: auto;
+  padding-bottom: clamp(40px, 5cqw, 64px);
+  text-align: center;
+}
+.expanding-carousel-section-heading h2 {
+  font-size: clamp(2rem, 4cqw, 3.6rem);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  font-weight: 550;
+  text-wrap: balance;
+}
+.expanding-carousel-section-heading > p {
+  color: var(--carousel-muted);
+  line-height: 1.6;
+}
+.expanding-carousel-section-eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
 .expanding-carousel-stage {
   position: relative;
+  isolation: isolate;
   height: var(--carousel-active-height);
   overflow-anchor: none;
   touch-action: pan-y;
+  /* Composite one connected silhouette. Separate translucent shells and
+     shadows darken the joins even when their geometry overlaps correctly. */
+  filter: drop-shadow(var(--carousel-shadow));
 }
 .expanding-carousel-card {
   --card-width: var(--carousel-active-width);
   --card-height: var(--carousel-active-height);
   --card-offset: 0px;
   position: absolute;
+  z-index: 1;
   left: 50%;
   top: 50%;
   width: var(--card-width);
@@ -44,13 +77,11 @@
   border-radius: 32px;
   border: 0;
   background: var(--carousel-surface);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 16px 36px -10px color-mix(in srgb, var(--foreground) 6%, transparent);
   transition:
     width var(--carousel-move-duration) var(--carousel-move-ease),
     height var(--carousel-move-duration) var(--carousel-move-ease),
     transform var(--carousel-move-duration) var(--carousel-move-ease),
-    opacity 0.5s ease;
+    opacity 180ms cubic-bezier(0.4, 0, 1, 1);
 }
 @supports (corner-shape: squircle) {
   .expanding-carousel-card {
@@ -137,7 +168,7 @@
   cursor: pointer;
   border: 0;
   background: transparent;
-  transition: opacity 650ms var(--carousel-fade-ease);
+  transition: opacity 220ms var(--carousel-fade-ease);
 }
 .expanding-carousel-preview img {
   width: 100%;
@@ -164,6 +195,16 @@
   gap: 16px;
   padding: 16px;
 }
+.expanding-carousel-content[data-custom] {
+  display: block;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 90ms ease;
+}
+.expanding-carousel-card[data-slot="0"] .expanding-carousel-content[data-custom] {
+  opacity: 1;
+  transition: opacity 350ms var(--carousel-fade-ease);
+}
 /* Keep the full-size content anchored while the shell expands. Short, staggered
    fades avoid dragging text across the cropped card during a switch. */
 .expanding-carousel-heading,
@@ -171,19 +212,19 @@
   opacity: 0;
   transform: translateY(12px);
   transition:
-    opacity 220ms ease,
-    transform 400ms var(--carousel-fade-ease);
+    opacity 90ms ease,
+    transform 320ms var(--carousel-fade-ease);
 }
 .expanding-carousel-card[data-slot="0"] .expanding-carousel-heading,
 .expanding-carousel-card[data-slot="0"] .expanding-carousel-details {
   opacity: 1;
   transform: translateY(0);
   transition:
-    opacity 620ms var(--carousel-fade-ease) 220ms,
-    transform 750ms var(--carousel-fade-ease) 220ms;
+    opacity 320ms var(--carousel-fade-ease) 180ms,
+    transform 440ms var(--carousel-fade-ease) 180ms;
 }
 .expanding-carousel-card[data-slot="0"] .expanding-carousel-details {
-  transition-delay: 300ms;
+  transition-delay: 220ms;
 }
 .expanding-carousel-copy {
   display: flex;
@@ -270,15 +311,15 @@
   opacity: 0;
   transform: scale(1.025);
   transition:
-    opacity 300ms ease,
-    transform 800ms var(--carousel-fade-ease);
+    opacity 90ms ease,
+    transform var(--carousel-move-duration) var(--carousel-move-ease);
 }
 .expanding-carousel-card[data-slot="0"] .expanding-carousel-media {
   opacity: 1;
   transform: scale(1);
   transition:
-    opacity 750ms var(--carousel-fade-ease) 100ms,
-    transform 1000ms var(--carousel-fade-ease) 100ms;
+    opacity 350ms var(--carousel-fade-ease),
+    transform var(--carousel-move-duration) var(--carousel-move-ease);
 }
 .expanding-carousel-media > img {
   position: absolute;
@@ -314,26 +355,19 @@
 }
 .expanding-carousel-connector {
   position: absolute;
-  top: 50%;
+  z-index: 0;
   transform: translateY(-50%);
-  right: calc(100% - 1px);
-  width: calc(var(--carousel-gap) + 2px);
-  height: 42px;
+  opacity: 0;
   pointer-events: none;
+  color: var(--carousel-surface);
+  /* Geometry and alpha follow the cards each frame; a CSS transition here
+     would lag behind them and reopen the seam during direction changes. */
 }
-.expanding-carousel-connector svg {
+.expanding-carousel-connector > svg {
+  display: block;
   width: 100%;
   height: 100%;
-  fill: var(--carousel-surface);
-}
-.expanding-carousel-card[data-slot^="-"] .expanding-carousel-connector {
-  right: auto;
-  left: calc(100% - 1px);
-}
-.expanding-carousel-card[data-slot="-2"] .expanding-carousel-connector,
-.expanding-carousel-card[data-slot="2"] .expanding-carousel-connector {
-  width: 18px;
-  height: 28px;
+  overflow: visible;
 }
 .expanding-carousel-controls {
   display: flex;
@@ -348,14 +382,14 @@
 .expanding-carousel-tabs {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 .expanding-carousel-tabs > button {
-  width: 6px;
+  width: 8px;
   height: 20px;
   padding: 0;
   cursor: pointer;
-  transition: width 550ms var(--carousel-fade-ease);
+  transition: width 300ms var(--carousel-fade-ease);
   position: relative;
   display: flex;
   align-items: center;
@@ -366,13 +400,13 @@
   inset: -6px -2px;
 }
 .expanding-carousel-tabs > button[aria-selected="true"] {
-  width: 44px;
+  width: 80px;
 }
 .expanding-carousel-tab-track {
   display: block;
   width: 100%;
-  height: 3px;
-  border-radius: 999px;
+  height: 8px;
+  border-radius: 3px;
   background: color-mix(in srgb, var(--border) 70%, transparent);
   overflow: hidden;
 }
@@ -423,7 +457,7 @@
 }
 @container (max-width: 900px) and (min-width: 600px) {
   .expanding-carousel-stage {
-    --carousel-active-width: 620px;
+    --carousel-active-width: min(672px, calc(100cqw - 48px));
   }
   .expanding-carousel-copy h3 {
     font-size: 28px;
@@ -493,27 +527,10 @@
 }
 
 .expanding-carousel-card[data-wrap="true"] {
-  transition: opacity 0.3s;
+  transition: opacity 180ms ease;
 }
 
 /* Dark mode visual enhancements: completely borderless, subdued outlines, deep atmospheric depth */
-.dark .expanding-carousel-card {
-  border: 0;
-  background: color-mix(in srgb, var(--background) 75%, transparent);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.7);
-}
-
-.dark .expanding-carousel-card[data-slot="0"] {
-  border: 0;
-  background: color-mix(in srgb, var(--background) 88%, transparent);
-  box-shadow: 0 25px 65px -15px rgba(0, 0, 0, 0.85);
-}
-
-.dark .expanding-carousel-connector svg {
-  fill: var(--carousel-surface);
-}
-
 .dark .expanding-carousel-eyebrow {
   color: var(--brand);
   opacity: 0.92;
