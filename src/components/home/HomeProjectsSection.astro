@@ -12,11 +12,14 @@ const { t } = useTranslations(lang);
 const items = getProjectShowcaseItems(projects, lang);
 ---
 <section id="projects-section" class="home-section" aria-labelledby="home-projects-title">
-  <header class="home-section-heading"><p class="home-eyebrow">{t('HomeProjectsEyebrow')}</p><h2 id="home-projects-title">{t('HomeProjectsTitle')}</h2><p>{t('HomeProjectsIntro')}</p></header>
   <ExpandingCarousel
     client:visible={{ rootMargin: '300px' }}
     {items}
     label={t('HomeProjectsTitle')}
+    heading={t('HomeProjectsTitle')}
+    headingId="home-projects-title"
+    eyebrow={t('HomeProjectsEyebrow')}
+    description={t('HomeProjectsIntro')}
     labels={{ previous: t('CarouselPrevious'), next: t('CarouselNext'), pause: t('CarouselPause'), play: t('CarouselPlay'), slide: t('CarouselSlide') }}
   />
   <a
