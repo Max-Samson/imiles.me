@@ -12,6 +12,8 @@ import TechSkillsCloud from '@/components/article/TechSkillsCloud';
 import SocialDock from '@/components/layout/SocialDock';
 import { getProjects } from '@/data/projects';
 import { useTranslations, localizePathname, type Locale } from '@/lib/i18n';
+import { rainbowButtonVariants } from '@/registry/magicui/rainbow-button';
+import { cn } from '@/lib/utils';
 import '@/styles/home.css';
 
 interface Props { lang: Locale }
@@ -73,8 +75,17 @@ const newsletter = import.meta.env.PUBLIC_BUTTONDOWN_USERNAME;
         <p class="home-eyebrow">{t('HomeGardenEyebrow')}</p>
         <HomeGardenTitle client:visible text={t('HomeGardenTitle')} />
         <p>{t('HomeGardenIntro')}</p>
-        <div class="home-links">
-          <a class="home-link" href={path('/about')}>{t('HomeAbout')} →</a>
+        <div class="home-links mt-6 flex justify-center">
+          <a
+            href={path('/about')}
+            class={cn(
+              rainbowButtonVariants({ size: 'default' }),
+              'rounded-xl font-medium shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]',
+            )}
+          >
+            <span>{t('HomeAbout')}</span>
+            <span aria-hidden="true">→</span>
+          </a>
         </div>
         {newsletter && (
           <form class="home-subscribe" action={`https://buttondown.com/api/emails/embed-subscribe/${encodeURIComponent(newsletter)}`} method="post" target="_blank">

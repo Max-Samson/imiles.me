@@ -3,6 +3,9 @@ import type { CollectionEntry } from 'astro:content';
 import { type Locale, useTranslations, localizePathname, formatDate } from '@/lib/i18n';
 import { calculateReadTime } from '@/lib/readTime';
 import { ShineBorder } from '@/registry/magicui/shine-border';
+import { rainbowButtonVariants } from '@/registry/magicui/rainbow-button';
+import { cn } from '@/lib/utils';
+
 interface Props { lang: Locale; posts: CollectionEntry<'blog'>[] }
 const { lang, posts } = Astro.props;
 const { t } = useTranslations(lang);
@@ -17,5 +20,14 @@ const { t } = useTranslations(lang);
       <div class="home-essay-bottom"><ul class="home-tags">{post.data.tags.slice(0, 3).map(tag => <li>{tag}</li>)}</ul><span aria-hidden="true">↗</span></div>
     </a>)}
   </div>
-  <a class="home-link home-section-more" href={localizePathname('/blog', lang)}>{t('HomeAllPosts')} →</a>
+  <a
+    href={localizePathname('/blog', lang)}
+    class={cn(
+      rainbowButtonVariants({ size: 'default' }),
+      'home-section-more rounded-xl font-medium shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]',
+    )}
+  >
+    <span>{t('HomeAllPosts')}</span>
+    <span aria-hidden="true">→</span>
+  </a>
 </section>

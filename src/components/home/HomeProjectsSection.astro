@@ -3,6 +3,9 @@ import type { Project } from '@/data/projects';
 import { type Locale, useTranslations, localizePathname } from '@/lib/i18n';
 import ExpandingCarousel from '@/components/ui/expanding-carousel';
 import { getProjectShowcaseItems } from './projectShowcase';
+import { rainbowButtonVariants } from '@/registry/magicui/rainbow-button';
+import { cn } from '@/lib/utils';
+
 interface Props { lang: Locale; projects: Project[] }
 const { lang, projects } = Astro.props;
 const { t } = useTranslations(lang);
@@ -16,5 +19,14 @@ const items = getProjectShowcaseItems(projects, lang);
     label={t('HomeProjectsTitle')}
     labels={{ previous: t('CarouselPrevious'), next: t('CarouselNext'), pause: t('CarouselPause'), play: t('CarouselPlay'), slide: t('CarouselSlide') }}
   />
-  <a class="home-link home-section-more" href={localizePathname('/projects', lang)}>{t('HomeAllProjects', { count: projects.length })} →</a>
+  <a
+    href={localizePathname('/projects', lang)}
+    class={cn(
+      rainbowButtonVariants({ size: 'default' }),
+      'home-section-more rounded-xl font-medium shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]',
+    )}
+  >
+    <span>{t('HomeAllProjects', { count: projects.length })}</span>
+    <span aria-hidden="true">→</span>
+  </a>
 </section>

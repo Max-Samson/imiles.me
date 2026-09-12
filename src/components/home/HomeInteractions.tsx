@@ -28,7 +28,7 @@ export default function HomeInteractions({ lang, items }: { lang: Locale; items:
   const isZh = lang === 'zh';
   const sections = useMemo(
     () => [
-      ['hero-section', isZh ? '首屏总览' : 'Overview'],
+      ['hero-section', isZh ? 'Ming' : 'Miles'],
       ['projects-section', isZh ? '工程作品' : 'Projects'],
       ['blog-section', isZh ? '深度长文' : 'Essays'],
       ['tech-section', isZh ? '技术矩阵' : 'Tech Stack'],
