@@ -45,6 +45,8 @@ export interface ProjectLocalization {
   description?: string;
   features?: ProjectFeature[];
   demo?: DemoConfig;
+  tags?: string[];
+  pageLabel?: string;
 }
 
 /**
@@ -57,6 +59,7 @@ export interface ProjectLocalization {
  * - demo: 详情页演示(终端/图片)
  * - locales: 各语言覆盖内容(zh/en)
  * - llms: 是否纳入 llms.txt 索引
+ * - tags: 功能/主题标签列表(支持前端 UI 呈现)
  */
 export interface Project {
   slug: string;
@@ -66,12 +69,14 @@ export interface Project {
   status: ProjectStatus;
   githubUrl: string;
   pageUrl?: string;
+  pageLabel?: string;
   tech: ProjectTech[];
   features: ProjectFeature[];
   hasDetailPage: boolean;
   demo?: DemoConfig;
   locales?: Partial<Record<Locale, ProjectLocalization>>;
   llms?: boolean;
+  tags?: string[];
 }
 
 export const projects: Project[] = [
@@ -93,6 +98,17 @@ export const projects: Project[] = [
       { name: 'ECharts', icon: 'echarts' },
       { name: 'Tailwind CSS', icon: 'tailwindcss' },
       { name: 'Vite', icon: 'vite' },
+    ],
+    tags: [
+      'pomodoro',
+      'focus-timer',
+      'wails',
+      'desktop-app',
+      'ai-planning',
+      'vue3',
+      'sqlite',
+      'echarts',
+      'productivity',
     ],
     features: [
       {
@@ -244,6 +260,162 @@ export const projects: Project[] = [
               src: '/projects/mtimer/ai-helper.png',
               alt: 'MTimer AI 时间规划助手界面',
               caption: 'AI 时间规划助手',
+            },
+          ],
+        },
+      },
+    },
+  },
+  {
+    slug: 'dsh-usage-chart',
+    title: 'dsh-usage-chart',
+    tagline: 'Real-time token usage, cost, and balance dashboard plugin for DeepSeek Harness Web',
+    description:
+      'dsh-usage-chart is an open-source usage, cost, and account-balance dashboard plugin engineered for DeepSeek Harness (DSH) Web. It mounts an active metric indicator directly below the conversation composer and unfolds into an interactive, zero-dependency SVG chart dashboard. The plugin tracks input (uncached and cache-hit) and output tokens, context pressure, and DeepSeek account balance in real time. It calculates costs using official dual-currency (CNY / USD) list prices across peak and off-peak billing tiers without inaccurate FX conversions, supports custom pricing.json overrides, and provides detailed per-round attribution for duration, TTFT, TPS, cost anomalies, and compaction diagnostics.',
+    status: 'active',
+    githubUrl: 'https://github.com/Max-Samson/dsh-usage-chart',
+    pageUrl: 'https://www.npmjs.com/package/dsh-usage-chart',
+    pageLabel: 'View on npm',
+    tech: [
+      { name: 'TypeScript', icon: 'typescript' },
+      { name: 'React 18', icon: 'react' },
+      { name: 'Cordis', icon: 'cordis' },
+      { name: 'Node.js', icon: 'nodedotjs' },
+      { name: 'esbuild', icon: 'esbuild' },
+      { name: 'SVG', icon: 'svg' },
+    ],
+    tags: [
+      'ai-cost',
+      'awesome',
+      'awesome-dsh-plugin',
+      'data-visualization',
+      'deepseek',
+      'deepseek-api',
+      'deepseek-harness',
+      'developer-tools',
+      'dsh',
+      'dsh-plugin',
+      'token-usage',
+    ],
+    features: [
+      {
+        title: 'Live Indicator & Zero-Dependency SVG',
+        description:
+          'Mounts a compact live token, cost, and balance indicator below the conversation composer, expanding into a responsive, zero-dependency SVG visualization dashboard without heavy third-party chart libraries.',
+        icon: 'BarChart3',
+      },
+      {
+        title: 'Peak / Off-Peak & Dual-Currency Billing',
+        description:
+          'Calculates expenses using official CNY and USD list prices across weekday peak (2x rate) and off-peak tiers without currency conversion distortion, with support for user-defined pricing.json overrides and unpriced model warnings.',
+        icon: 'Tag',
+      },
+      {
+        title: 'Per-Round Cost & Source Attribution',
+        description:
+          'Provides total, composition, and cost views with per-bar monetary values, duration overlays, cost spike anomaly markers, and explainer tooltips attributing inputs to human prompt, agent tool, or continuation.',
+        icon: 'Layers',
+      },
+      {
+        title: 'Context Breakdown & Compaction Diagnostics',
+        description:
+          'Deconstructs context occupancy into system prompts, tool definitions, and message history with segmented color bars, folding compaction events to reveal freed tokens and proactively warn against context overflow.',
+        icon: 'Activity',
+      },
+      {
+        title: 'Secure Account Balance Tracking',
+        description:
+          'Queries official DeepSeek account balance in real time via host-side proxy, ensuring API keys are securely resolved from DSH credentials or environment variables without browser exposure.',
+        icon: 'Shield',
+      },
+      {
+        title: 'Dual-Environment Bundle Architecture',
+        description:
+          'Engineered on the Cordis plugin framework and compiled with esbuild into a dual-target architecture: Node ESM on the host side and zero-overhead browser bundles matching DSH Web platform modules.',
+        icon: 'Cpu',
+      },
+    ],
+    hasDetailPage: true,
+    llms: true,
+    demo: {
+      kind: 'terminal',
+      title: 'dsh-usage-chart installation & live verification',
+      lines: [
+        { type: 'command', text: 'dsh plugin --profile web add dsh-usage-chart' },
+        { type: 'output', text: '+ dsh-usage-chart@1.1.5 added to profile web' },
+        { type: 'command', text: 'dsh web --profile web' },
+        { type: 'output', text: 'DSH Web listening on http://127.0.0.1:3080' },
+        {
+          type: 'command',
+          text: 'dsh --profile web --dump-config | grep -A2 "id: dsh-usage-chart"',
+        },
+        { type: 'output', text: '  - id: dsh-usage-chart\n    name: dsh-usage-chart' },
+        {
+          type: 'output',
+          text: '▸ Input 12.4M · Output 86.2K · Hit 72% · Cost ≈$0.042 / ≈¥0.284 · Balance $48.50',
+        },
+      ],
+    },
+    locales: {
+      zh: {
+        pageLabel: '查看 npm',
+        tagline: 'DeepSeek 用量 / 成本 / 余额仪表盘 · DSH Web 插件',
+        description:
+          'dsh-usage-chart 是专为 DeepSeek Harness (DSH) Web 设计的高性能用量、成本与账户余额监控插件。它在输入框下方嵌入紧凑的实时指标指示器，并支持展开零依赖手绘 SVG 用量可视化面板。插件直接消费官方 adapter 投影数据，精准展示未命中/命中输入 Token、输出 Token、缓存命中率与上下文占用；内置官方高峰/空闲双时段刊例价，支持 CNY/USD 双币种直接计费与 pricing.json 覆盖；提供逐轮耗时、TTFT、TPS、成本突增异常标记、输入来源归因（人工/Agent/续跑）以及上下文构成与折叠压缩诊断，余额查询直连官方接口并由宿主安全代理。',
+        features: [
+          {
+            title: '输入框指示器与零依赖 SVG 图表',
+            description:
+              '在输入框下方常驻展示实时 Token、成本、模型与账户余额，展开后呈现精细的零依赖 SVG 自绘图表，不引入任何冗余第三方图表库，保持体积最小与轻量稳定。',
+            icon: 'BarChart3',
+          },
+          {
+            title: '高峰/空闲时段与官方双币种计费',
+            description:
+              '内置官方周一至周五高峰时段（2倍费率）与空闲时段计费规则，支持 CNY 与 USD 双币种官方刊例价直接核算与一键切换，并支持 pricing.json 覆盖与未定价模型明确告警。',
+            icon: 'Tag',
+          },
+          {
+            title: '逐轮成本分析与输入来源归因',
+            description:
+              '支持总量、构成、成本三视角分析，每根柱状图直显对应轮次费用，叠加总耗时点线与异常突增标记，悬浮卡片完整解析 TTFT、TPS 以及人工/Agent/续跑输入来源归因。',
+            icon: 'Layers',
+          },
+          {
+            title: '上下文拆解与压缩折叠诊断',
+            description:
+              '将上下文分解为系统提示词、工具定义与历史消息三段细分占比，结合宿主 compaction 压缩事件流展示释放 Token 数与摘要成本，在容量超标时给出前置优化建议。',
+            icon: 'Activity',
+          },
+          {
+            title: '安全可靠的官方余额实时查询',
+            description:
+              '通过宿主侧安全代理直连 DeepSeek 官方 /user/balance 接口查询余额，API Key 优先从 DSH 凭据服务或环境变量动态解析，杜绝浏览器前端密钥泄露风险。',
+            icon: 'Shield',
+          },
+          {
+            title: '宿主与客户端双半区架构',
+            description:
+              '基于 Cordis 插件模型与 React 18 构建，通过 esbuild 分别打包为 Node ESM 宿主后端与匹配平台运行时规范的前端工厂包，无缝嵌入 DSH Web 生态。',
+            icon: 'Cpu',
+          },
+        ],
+        demo: {
+          kind: 'terminal',
+          title: '插件安装与终端验证',
+          lines: [
+            { type: 'command', text: 'dsh plugin --profile web add dsh-usage-chart' },
+            { type: 'output', text: '+ dsh-usage-chart@1.1.5 已成功安装到 profile web' },
+            { type: 'command', text: 'dsh web --profile web' },
+            { type: 'output', text: 'DSH Web 服务已就绪：http://127.0.0.1:3080' },
+            {
+              type: 'command',
+              text: 'dsh --profile web --dump-config | grep -A2 "id: dsh-usage-chart"',
+            },
+            { type: 'output', text: '  - id: dsh-usage-chart\n    name: dsh-usage-chart' },
+            {
+              type: 'output',
+              text: '▸ 输入 12.4M · 输出 86.2K · 缓存 72% · 成本 ≈¥0.284 / ≈$0.042 · 余额 ¥48.50',
             },
           ],
         },

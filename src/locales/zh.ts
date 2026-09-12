@@ -70,6 +70,7 @@ export const zh = {
   ProjectDetailsTitle: '详情',
   ProjectGithubButton: '查看 GitHub',
   ProjectPageButton: '产品介绍',
+  ProjectNpmButton: '查看 npm',
   NoteTitle: '随记',
   NoteDescription: '短想法、日常记录，以及尚在生长中的轻量笔记。',
   NoteLink: '小红书',

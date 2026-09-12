@@ -2,6 +2,7 @@
 
 import {
   SiDocker,
+  SiEsbuild,
   SiGithubactions,
   SiGo,
   SiGooglechrome,
@@ -14,6 +15,7 @@ import {
   SiReact,
   SiRust,
   SiSqlite,
+  SiSvg,
   SiTailwindcss,
   SiTypescript,
   SiVite,
@@ -46,6 +48,9 @@ const iconMap: Record<string, React.ReactNode> = {
   postgresql: <SiPostgresql className="h-8 w-8" />,
   echarts: <BarChart3 className="h-8 w-8" />,
   wails: <SiWails className="h-8 w-8" />,
+  esbuild: <SiEsbuild className="h-8 w-8" />,
+  svg: <SiSvg className="h-8 w-8" />,
+  cordis: <span className="text-xl font-bold tracking-tight">Cordis</span>,
   nltk: <span className="text-2xl font-bold">N</span>,
 };
 
@@ -63,19 +68,16 @@ export default function TechStackGrid({ tech, lang }: TechStackGridProps) {
     <section ref={ref} className="container mx-auto px-4 py-12">
       <h2 className="mb-8 text-2xl font-bold">{t('NoteSectionFourTitle')}</h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {tech.map((t, i) => (
+        {tech.map((tItem, index) => (
           <motion.div
-            key={t.name}
-            className="tech-stack-card group"
+            key={tItem.name}
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.4, delay: i * 0.07 }}
-            whileHover={{ y: -4, scale: 1.02 }}
+            transition={{ duration: 0.4, delay: index * 0.05 }}
+            className="tech-stack-card"
           >
-            <div className="mb-2 text-muted-foreground transition-colors group-hover:text-foreground">
-              {iconMap[t.icon] ?? <span className="text-2xl font-bold">{t.name[0]}</span>}
-            </div>
-            <span className="text-sm font-medium">{t.name}</span>
+            <div className="tech-stack-icon">{iconMap[tItem.icon || '']}</div>
+            <span className="text-sm font-medium">{tItem.name}</span>
           </motion.div>
         ))}
       </div>

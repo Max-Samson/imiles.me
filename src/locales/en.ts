@@ -73,6 +73,7 @@ export const en = {
   ProjectDetailsTitle: 'Details',
   ProjectGithubButton: 'View on GitHub',
   ProjectPageButton: 'Product Page',
+  ProjectNpmButton: 'View on npm',
   NoteTitle: 'Notes',
   NoteDescription: 'Short notes, daily logs, and lightweight thoughts in progress.',
   NoteLink: 'Xiaohongshu',

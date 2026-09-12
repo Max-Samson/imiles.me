@@ -31,8 +31,11 @@ export function getProjectShowcaseItems(
         label: t('HomeProjectDetail'),
         href: localizePathname(`/projects/${project.slug}`, lang),
       });
-    if (project.pageUrl)
-      links.push({ label: t('HomeVisit'), href: project.pageUrl, external: true });
+    if (project.pageUrl) {
+      const pageLabel =
+        project.pageLabel ?? (project.pageUrl.includes('npmjs.com') ? 'npm' : t('HomeVisit'));
+      links.push({ label: pageLabel, href: project.pageUrl, external: true });
+    }
     links.push({ label: 'GitHub', href: project.githubUrl, external: true });
     const base = {
       eyebrow: `${project.title} · ${status}`,

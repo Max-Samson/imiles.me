@@ -19,7 +19,7 @@ export default function ProjectHero({ project, lang }: ProjectHeroProps) {
   const actionButtonClass =
     'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto';
   const interactiveButtonSizeClass =
-    'col-span-2 min-h-11 w-full px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto';
+    'col-span-2 min-h-11 w-full px-7 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto sm:min-w-44';
 
   return (
     <section className="container mx-auto px-4 pt-28 pb-12">
@@ -49,6 +49,25 @@ export default function ProjectHero({ project, lang }: ProjectHeroProps) {
           </motion.span>
         ))}
       </h1>
+
+      {project.tags && project.tags.length > 0 && (
+        <motion.div
+          className="mb-4 flex max-w-2xl flex-wrap items-center gap-1.5"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.35 }}
+        >
+          {project.tags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center rounded-md border border-border/70 bg-muted/40 px-2 py-0.5 text-xs font-medium text-muted-foreground select-none"
+            >
+              <span className="mr-0.5 font-normal text-muted-foreground/60">#</span>
+              {tag}
+            </span>
+          ))}
+        </motion.div>
+      )}
 
       <motion.p
         className="mb-6 max-w-2xl text-lg text-muted-foreground"
@@ -86,7 +105,10 @@ export default function ProjectHero({ project, lang }: ProjectHeroProps) {
             onClick={() => window.open(project.pageUrl, '_blank', 'noopener,noreferrer')}
             className={interactiveButtonSizeClass}
           >
-            {t('ProjectPageButton')}
+            {project.pageLabel ??
+              (project.pageUrl.includes('npmjs.com')
+                ? t('ProjectNpmButton')
+                : t('ProjectPageButton'))}
           </InteractiveHoverButton>
         )}
       </motion.div>
