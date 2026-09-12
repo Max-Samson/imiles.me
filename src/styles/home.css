@@ -61,6 +61,7 @@
   text-wrap: balance;
 }
 .home-section-heading > p:last-child,
+.home-garden-content > p:not(.home-eyebrow),
 .home-garden > p:not(.home-eyebrow) {
   margin-top: 1.2rem;
   color: var(--muted-foreground);
@@ -179,8 +180,20 @@
   color: var(--muted-foreground);
   margin-top: 1rem;
 }
-.home-garden {
-  min-height: 78dvh;
+.home-garden-screen {
+  width: 100%;
+  min-height: 100dvh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.home-garden-content {
+  width: min(1120px, calc(100% - 4rem));
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   text-align: center;
 }
@@ -287,6 +300,7 @@
   .home-essay {
     padding: 1.5rem;
   }
+  .home-garden-screen,
   .home-garden {
     padding-bottom: 7rem;
   }

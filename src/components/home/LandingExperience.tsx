@@ -15,7 +15,6 @@ import { PlexusBackground } from '@/components/ui/plexus-background';
 import { CODEX, CODEX_CN } from '@/components/ui/plexus-shapes';
 import { useTextScramble } from '@/hooks/useTextScramble';
 import { type Locale, useTranslations } from '@/lib/i18n';
-import { LightRays } from '@/registry/magicui/light-rays';
 
 const NAME_CHARS = [
   { id: 'shenshuai-s', char: 'S' },
@@ -85,14 +84,6 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
           anchorRef={heroRef}
           className="pointer-events-auto z-0"
           onCodexChange={handleCodexChange}
-        />
-        <LightRays
-          count={8}
-          speed={12}
-          color="var(--ray-c)"
-          length="120vh"
-          blur={40}
-          className="z-[1] opacity-100 dark:opacity-80"
         />
 
         <motion.div

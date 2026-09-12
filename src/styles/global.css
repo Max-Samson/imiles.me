@@ -394,7 +394,7 @@
     letter-spacing: 0.05em;
   }
   .landing-root {
-    @apply relative isolate overflow-hidden;
+    @apply relative isolate;
     min-height: 100dvh;
   }
 
