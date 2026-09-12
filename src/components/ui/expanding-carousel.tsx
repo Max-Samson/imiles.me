@@ -29,11 +29,6 @@ export interface ExpandingCarouselProps {
   label: string;
   labels: { previous: string; next: string; pause: string; play: string; slide: string };
   className?: string;
-  /** Optional section heading; omit when the surrounding page already provides one. */
-  heading?: string;
-  headingId?: string;
-  eyebrow?: string;
-  description?: string;
   style?: CSSProperties & { [key: `--carousel-${string}`]: string | number };
   /** React callers may replace the default project/testimonial content. */
   renderContent?: (item: ExpandingCarouselItem, active: boolean) => ReactNode;
@@ -49,10 +44,6 @@ export default function ExpandingCarousel({
   label,
   labels,
   className,
-  heading,
-  headingId,
-  eyebrow,
-  description,
   style,
   renderContent,
   renderPreview,
@@ -221,13 +212,6 @@ export default function ExpandingCarousel({
         if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
       }}
     >
-      {heading && (
-        <header className="expanding-carousel-section-heading">
-          {eyebrow && <p className="expanding-carousel-section-eyebrow">{eyebrow}</p>}
-          <h2 id={headingId ?? `${id}-heading`}>{heading}</h2>
-          {description && <p>{description}</p>}
-        </header>
-      )}
       <div
         ref={stage}
         className="expanding-carousel-stage"

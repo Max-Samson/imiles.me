@@ -22,9 +22,6 @@ import ExpandingCarousel from '@/components/ui/expanding-carousel';
 
 <ExpandingCarousel
   label="Selected projects"
-  heading="Selected projects"
-  eyebrow="Selected work"
-  description="Tools for everyday work."
   items={[
     {
       id: 'project-overview',

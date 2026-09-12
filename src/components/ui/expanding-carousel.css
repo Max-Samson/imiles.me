@@ -27,32 +27,6 @@
   --carousel-badge: color-mix(in srgb, var(--muted) 45%, transparent);
   --carousel-accent: var(--brand);
 }
-.expanding-carousel-section-heading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  max-width: 680px;
-  margin-inline: auto;
-  padding-bottom: clamp(40px, 5cqw, 64px);
-  text-align: center;
-}
-.expanding-carousel-section-heading h2 {
-  font-size: clamp(2rem, 4cqw, 3.6rem);
-  line-height: 1.15;
-  letter-spacing: -0.04em;
-  font-weight: 550;
-  text-wrap: balance;
-}
-.expanding-carousel-section-heading > p {
-  color: var(--carousel-muted);
-  line-height: 1.6;
-}
-.expanding-carousel-section-eyebrow {
-  font-size: 0.7rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
 .expanding-carousel-stage {
   position: relative;
   isolation: isolate;
