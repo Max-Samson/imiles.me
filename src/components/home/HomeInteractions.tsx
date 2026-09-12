@@ -1,6 +1,5 @@
 'use client';
 
-import { Search } from 'lucide-react';
 import { type AnimationPlaybackControls, animate } from 'motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type Locale, useTranslations } from '@/lib/i18n';
@@ -19,11 +18,6 @@ export default function HomeInteractions({ lang, items }: { lang: Locale; items:
 
   const dialog = useRef<HTMLDialogElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
-  const openSearch = () => {
-    dialog.current?.showModal();
-    searchInput.current?.focus();
-  };
-  const trigger = useRef<HTMLButtonElement>(null);
 
   const isZh = lang === 'zh';
   const sections = useMemo(
@@ -181,24 +175,7 @@ export default function HomeInteractions({ lang, items }: { lang: Locale; items:
           defaultActive={0}
         />
       </aside>
-      <button
-        ref={trigger}
-        className="home-search-trigger"
-        aria-label={t('HomeSearch')}
-        type="button"
-        onClick={openSearch}
-      >
-        <Search size={16} aria-hidden="true" />
-        <span className="hidden sm:inline">
-          {t('HomeSearch')} <kbd>⌘/Ctrl K</kbd>
-        </span>
-      </button>
-      <dialog
-        ref={dialog}
-        className="home-search-dialog"
-        aria-labelledby="home-search-title"
-        onClose={() => trigger.current?.focus()}
-      >
+      <dialog ref={dialog} className="home-search-dialog" aria-labelledby="home-search-title">
         <div className="home-search-heading">
           <h2 id="home-search-title">{t('HomeSearch')}</h2>
           <button type="button" onClick={() => dialog.current?.close()}>

@@ -38,7 +38,7 @@ const newsletter = import.meta.env.PUBLIC_BUTTONDOWN_USERNAME;
     <div class="home-ambient-realm relative isolate">
       <!-- 贯穿首屏至第四屏的唯一 LightRays 光芒与极光环境，天然连续零切线 -->
       <div class="home-rays" aria-hidden="true">
-        <ContentLightRaysBackground client:visible className="absolute!" />
+        <ContentLightRaysBackground client:idle className="absolute!" />
       </div>
 
       <!-- Screen 1: Hero Section (内部透明 WebGL Plexus，让统一光芒自然穿透) -->
@@ -63,17 +63,17 @@ const newsletter = import.meta.env.PUBLIC_BUTTONDOWN_USERNAME;
               <div data-home-reveal><dt>{t('HomeAI')}</dt><dd>LLM APIs · MCP · AI Agents</dd></div>
             </dl>
           </div>
-          <div class="home-cloud"><TechSkillsCloud client:visible inline /><p>{t('HomeTechHint')}</p></div>
+          <div class="home-cloud"><TechSkillsCloud client:visible={{ rootMargin: '300px' }} inline /><p>{t('HomeTechHint')}</p></div>
         </div>
       </section>
     </div>
 
     <!-- Screen 5: Garden Section (专属独立 3D 浮动粒子星海，全屏无界沉浸式展示) -->
-    <section id="garden-section" class="home-garden-screen w-full min-h-dvh relative isolate overflow-hidden flex flex-col justify-center items-center py-24" aria-labelledby="home-garden-title">
-      <HomeGardenParticles client:visible />
+    <section id="garden-section" class="home-garden-screen w-full min-h-[calc(100dvh-4.5rem)] relative isolate overflow-hidden flex flex-col justify-center items-center pt-20 pb-12 sm:pb-16" aria-labelledby="home-garden-title">
+      <HomeGardenParticles client:visible={{ rootMargin: '300px' }} />
       <div class="home-garden-content relative z-10 w-full max-w-[1120px] px-4 sm:px-8 mx-auto flex flex-col items-center text-center">
         <p class="home-eyebrow">{t('HomeGardenEyebrow')}</p>
-        <HomeGardenTitle client:visible text={t('HomeGardenTitle')} />
+        <HomeGardenTitle client:visible={{ rootMargin: '300px' }} text={t('HomeGardenTitle')} />
         <p>{t('HomeGardenIntro')}</p>
         <div class="home-links mt-6 flex justify-center">
           <a
@@ -97,7 +97,7 @@ const newsletter = import.meta.env.PUBLIC_BUTTONDOWN_USERNAME;
           </form>
         )}
         <div class="home-garden-dock">
-          <SocialDock client:visible desktopClassName="relative! bottom-auto! left-auto! translate-x-0!" mobileClassName="relative! bottom-auto! left-auto! translate-x-0!" />
+          <SocialDock client:visible={{ rootMargin: '200px' }} desktopClassName="relative! bottom-auto! left-auto! translate-x-0!" mobileClassName="relative! bottom-auto! left-auto! translate-x-0!" />
         </div>
       </div>
     </section>

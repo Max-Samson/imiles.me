@@ -182,7 +182,7 @@
 }
 .home-garden-screen {
   width: 100%;
-  min-height: 100dvh;
+  min-height: calc(100dvh - 4.5rem);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -198,7 +198,7 @@
   text-align: center;
 }
 .home-garden-dock {
-  margin-top: 3rem;
+  margin-top: 2rem;
 }
 .home-subscribe {
   margin-top: 2rem;
@@ -220,17 +220,6 @@
   padding: 0.75rem;
   min-width: 0;
   background: var(--background);
-}
-.home-search-trigger {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 35;
-  border: 1px solid var(--border);
-  background: var(--background);
-  border-radius: 999px;
-  padding: 0.7rem 1rem;
-  font-size: 0.75rem;
 }
 .home-search-dialog {
   position: fixed;
@@ -300,7 +289,6 @@
   .home-essay {
     padding: 1.5rem;
   }
-  .home-garden-screen,
   .home-garden {
     padding-bottom: 7rem;
   }
@@ -321,19 +309,19 @@
     animation: none;
   }
 }
-
-.home-search-trigger {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-height: 44px;
+/* 优化首页 Footer 视觉效果与无缝过渡，消除与第五屏之间的断层空白 */
+main:has(.home-page) + footer,
+body:has(.home-page) footer {
+  border-top: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+  background: color-mix(in srgb, var(--background) 80%, transparent);
+  backdrop-filter: blur(12px);
+  padding-block: 1.1rem 1.35rem;
 }
-@media (max-width: 639px) {
-  .home-search-trigger {
-    width: 44px;
-    padding: 0;
-    justify-content: center;
-  }
+main:has(.home-page) + footer p,
+body:has(.home-page) footer p {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  opacity: 0.85;
 }
 
 .home-essay:only-child {
