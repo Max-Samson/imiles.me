@@ -1,5 +1,14 @@
 .home-page {
   overflow-x: clip;
+  --line-sidebar-accent: #0284c7;
+  --line-sidebar-text: #0f172a;
+  --line-sidebar-marker: rgba(14, 165, 233, 0.45);
+}
+
+.dark .home-page {
+  --line-sidebar-accent: #fbbf24;
+  --line-sidebar-text: #e2e8f0;
+  --line-sidebar-marker: rgba(251, 191, 36, 0.4);
 }
 .home-opening {
   min-height: 100dvh;
@@ -199,53 +208,6 @@
   min-width: 0;
   background: var(--background);
 }
-.home-scroll-nav {
-  position: fixed;
-  right: 1.2rem;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  z-index: 35;
-}
-.home-scroll-nav a {
-  width: 2rem;
-  height: 2rem;
-  display: grid;
-  place-items: center;
-  position: relative;
-}
-.home-scroll-nav a::after {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--muted-foreground);
-  opacity: 0.4;
-  transition:
-    transform 0.2s,
-    opacity 0.2s;
-}
-.home-scroll-nav a[aria-current="location"]::after {
-  opacity: 1;
-  transform: scale(1.6);
-  box-shadow: 0 0 12px var(--primary);
-}
-.home-scroll-nav span {
-  position: absolute;
-  right: 2.4rem;
-  white-space: nowrap;
-  opacity: 0;
-  font-size: 0.75rem;
-  pointer-events: none;
-  background: var(--background);
-  padding: 0.35rem 0.6rem;
-  border-radius: 0.4rem;
-}
-.home-scroll-nav a:hover span,
-.home-scroll-nav a:focus-visible span {
-  opacity: 1;
-}
 .home-search-trigger {
   position: fixed;
   right: 1rem;
@@ -310,11 +272,6 @@
 @media (prefers-reduced-motion: no-preference) {
   html:has(.home-page) {
     scroll-behavior: smooth;
-  }
-}
-@media (max-width: 1100px) {
-  .home-scroll-nav {
-    display: none;
   }
 }
 @media (max-width: 767px) {

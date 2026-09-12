@@ -1,9 +1,10 @@
 'use client';
 
 import { Search } from 'lucide-react';
-import { animate } from 'motion';
-import { useEffect, useRef, useState } from 'react';
+import { type AnimationPlaybackControls, animate } from 'motion';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type Locale, useTranslations } from '@/lib/i18n';
+import LineSidebar from '@/registry/react-bits/line-sidebar';
 
 interface SearchItem {
   title: string;
@@ -15,6 +16,7 @@ export default function HomeInteractions({ lang, items }: { lang: Locale; items:
   const { t } = useTranslations(lang);
   const [active, setActive] = useState('hero-section');
   const [query, setQuery] = useState('');
+
   const dialog = useRef<HTMLDialogElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   const openSearch = () => {
@@ -22,13 +24,19 @@ export default function HomeInteractions({ lang, items }: { lang: Locale; items:
     searchInput.current?.focus();
   };
   const trigger = useRef<HTMLButtonElement>(null);
-  const sections = [
-    ['hero-section', t('Headerhome')],
-    ['projects-section', t('HomeProjectsTitle')],
-    ['blog-section', t('HomeBlogTitle')],
-    ['tech-section', t('HomeTechTitle')],
-    ['garden-section', t('HomeGardenTitle')],
-  ];
+
+  const isZh = lang === 'zh';
+  const sections = useMemo(
+    () => [
+      ['hero-section', isZh ? '首屏总览' : 'Overview'],
+      ['projects-section', isZh ? '工程作品' : 'Projects'],
+      ['blog-section', isZh ? '深度长文' : 'Essays'],
+      ['tech-section', isZh ? '技术矩阵' : 'Tech Stack'],
+      ['garden-section', isZh ? '数字花园' : 'Garden'],
+    ],
+    [isZh],
+  );
+  const sectionTitles = useMemo(() => sections.map(([, title]) => title), [sections]);
 
   useEffect(() => {
     const elements = Array.from(document.querySelectorAll<HTMLElement>('.home-page section[id]'));
@@ -62,7 +70,7 @@ export default function HomeInteractions({ lang, items }: { lang: Locale; items:
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
     const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
     const cleanups: (() => void)[] = [];
-    const controls = new Set<ReturnType<typeof animate>>();
+    const controls = new Set<AnimationPlaybackControls>();
     const reveal = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry, index) => {
@@ -81,45 +89,40 @@ export default function HomeInteractions({ lang, items }: { lang: Locale; items:
       },
       { threshold: 0.1 },
     );
-    document.querySelectorAll('[data-home-reveal]').forEach((element) => {
-      reveal.observe(element);
-    });
-    document
-      .querySelectorAll<HTMLElement>('[data-magnetic], [data-home-tilt]')
-      .forEach((element) => {
-        let animation: ReturnType<typeof animate> | undefined;
-        const move = (event: PointerEvent) => {
-          if (preference.matches || !finePointer.matches) return;
+
+    for (const element of Array.from(
+      document.querySelectorAll<HTMLElement>('[data-home-reveal]'),
+    )) {
+      if (preference.matches) {
+        element.style.opacity = '1';
+        element.style.transform = 'none';
+      } else {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(24px)';
+        reveal.observe(element);
+      }
+    }
+
+    if (finePointer.matches && !preference.matches) {
+      for (const element of Array.from(document.querySelectorAll<HTMLElement>('[data-magnetic]'))) {
+        const move = (event: MouseEvent) => {
           const rect = element.getBoundingClientRect();
-          const x = (event.clientX - rect.left) / rect.width - 0.5;
-          const y = (event.clientY - rect.top) / rect.height - 0.5;
-          animation?.stop();
-          animation = element.hasAttribute('data-magnetic')
-            ? animate(element, { x: x * 10, y: y * 8 }, { duration: 0.2 })
-            : animate(
-                element,
-                { rotateX: -y * 4, rotateY: x * 4, transformPerspective: 1200 },
-                { duration: 0.2 },
-              );
+          const x = (event.clientX - (rect.left + rect.width / 2)) * 0.2;
+          const y = (event.clientY - (rect.top + rect.height / 2)) * 0.2;
+          element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
         };
-        const reset = () => {
-          animation?.stop();
-          animation = animate(
-            element,
-            { x: 0, y: 0, rotateX: 0, rotateY: 0 },
-            { duration: preference.matches ? 0 : 0.3 },
-          );
+        const leave = () => {
+          element.style.transform = 'translate3d(0, 0, 0)';
         };
-        element.addEventListener('pointermove', move);
-        element.addEventListener('pointerleave', reset);
-        preference.addEventListener('change', reset);
+        element.addEventListener('mousemove', move);
+        element.addEventListener('mouseleave', leave);
         cleanups.push(() => {
-          animation?.stop();
-          element.removeEventListener('pointermove', move);
-          element.removeEventListener('pointerleave', reset);
-          preference.removeEventListener('change', reset);
+          element.removeEventListener('mousemove', move);
+          element.removeEventListener('mouseleave', leave);
         });
-      });
+      }
+    }
+
     return () => {
       reveal.disconnect();
       controls.forEach((control) => {
@@ -135,21 +138,49 @@ export default function HomeInteractions({ lang, items }: { lang: Locale; items:
   const results = items.filter((item) =>
     terms.every((term) => `${item.title} ${item.description}`.toLocaleLowerCase().includes(term)),
   );
+  const activeIndex = sections.findIndex(([id]) => id === active);
+
+  const handleSectionClick = useCallback(
+    (index: number) => {
+      const [id] = sections[index];
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    },
+    [sections],
+  );
 
   return (
     <>
-      <nav className="home-scroll-nav" aria-label={t('HomeNavigation')}>
-        {sections.map(([id, title]) => (
-          <a
-            key={id}
-            href={`#${id}`}
-            aria-label={title}
-            aria-current={active === id ? 'location' : undefined}
-          >
-            <span>{title}</span>
-          </a>
-        ))}
-      </nav>
+      <aside
+        aria-label={t('HomeNavigation')}
+        className="fixed left-2 sm:left-6 top-1/2 -translate-y-1/2 z-30 select-none hidden md:flex"
+      >
+        <LineSidebar
+          ariaLabel={t('HomeNavigation')}
+          items={sectionTitles}
+          activeIndex={activeIndex >= 0 ? activeIndex : 0}
+          onItemClick={handleSectionClick}
+          hoverToRevealText={true}
+          accentColor="var(--line-sidebar-accent)"
+          textColor="var(--line-sidebar-text)"
+          markerColor="var(--line-sidebar-marker)"
+          showIndex={false}
+          showMarker={true}
+          proximityRadius={100}
+          maxShift={30}
+          falloff="smooth"
+          markerLength={60}
+          markerGap={0}
+          tickScale={0.5}
+          scaleTick={true}
+          itemGap={20}
+          fontSize={1.1}
+          smoothing={100}
+          defaultActive={0}
+        />
+      </aside>
       <button
         ref={trigger}
         className="home-search-trigger"
