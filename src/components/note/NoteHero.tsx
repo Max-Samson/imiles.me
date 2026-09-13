@@ -3,17 +3,21 @@
 import { FileText, Github } from 'lucide-react';
 import { motion } from 'motion/react';
 import ShareButton from '@/components/article/actions/ShareButton';
+import BackButton from '@/components/common/BackButton';
 import type { ResearchItem } from '@/data/notes';
 
 interface ResearchHeroProps {
   item: ResearchItem;
+  backHref?: string;
+  backLabel?: string;
 }
 
-export default function ResearchHero({ item }: ResearchHeroProps) {
+export default function ResearchHero({ item, backHref, backLabel }: ResearchHeroProps) {
   const chars = item.title.split('');
 
   return (
-    <section className="container mx-auto px-4 pt-28 pb-12">
+    <section className="container mx-auto px-4 pt-24 pb-12">
+      {backHref && <BackButton href={backHref} label={backLabel ?? 'src/notes'} />}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

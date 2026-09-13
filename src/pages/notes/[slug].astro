@@ -7,11 +7,15 @@ import MarqueeImage from '@/components/note/MarqueeImage';
 import FeatureGrid from '@/components/common/FeatureGrid';
 import TechStackGrid from '@/components/common/TechStackGrid';
 import { research, getResearchItem } from '@/data/notes';
+import { getLocaleFromPathname, localizePathname } from '@/lib/i18n';
+
 export function getStaticPaths() {
   return research
     .filter((r) => r.hasDetailPage)
     .map((r) => ({ params: { slug: r.slug } }));
 }
+
+const lang = getLocaleFromPathname(Astro.url.pathname);
 
 const { slug } = Astro.params;
 const item = getResearchItem(slug!);
@@ -25,7 +29,12 @@ if (!item) {
   <main class="relative isolate min-h-screen overflow-hidden pb-16">
     <ContentLightRaysBackground client:only="react" />
 
-    <NoteHero item={item} client:load />
+    <NoteHero
+      item={item}
+      backHref={localizePathname('/notes', lang)}
+      backLabel="src/notes"
+      client:load
+    />
 
     <section class="container mx-auto px-4 py-12">
       <h2 class="mb-4 text-2xl font-bold">Overview</h2>

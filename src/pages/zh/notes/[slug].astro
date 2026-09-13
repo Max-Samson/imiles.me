@@ -29,7 +29,12 @@ if (!item) {
     <ContentLightRaysBackground client:only="react" />
 
     <div class="relative z-10">
-      <NoteHero item={item} client:load />
+      <NoteHero
+        item={item}
+        backHref={localizePathname('/notes', lang)}
+        backLabel="src/notes"
+        client:load
+      />
   
       <section class="container mx-auto px-4 py-12">
         <h2 class="mb-4 text-2xl font-bold tracking-tight">{t('NoteSectionOneTitle')}</h2>

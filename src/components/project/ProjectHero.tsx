@@ -3,6 +3,7 @@
 import { Github } from 'lucide-react';
 import { motion } from 'motion/react';
 import ShareButton from '@/components/article/actions/ShareButton';
+import BackButton from '@/components/common/BackButton';
 import StatusBadge from '@/components/common/StatusBadge';
 import type { Project } from '@/data/projects';
 import { type Locale, useTranslations } from '@/lib/i18n';
@@ -11,9 +12,10 @@ import { InteractiveHoverButton } from '@/registry/magicui/interactive-hover-but
 interface ProjectHeroProps {
   project: Project;
   lang?: Locale;
+  backHref?: string;
+  backLabel?: string;
 }
-
-export default function ProjectHero({ project, lang }: ProjectHeroProps) {
+export default function ProjectHero({ project, lang, backHref, backLabel }: ProjectHeroProps) {
   const chars = project.title.split('');
   const { t } = useTranslations(lang);
   const actionButtonClass =
@@ -27,8 +29,11 @@ export default function ProjectHero({ project, lang }: ProjectHeroProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="mb-6"
+        className="mb-6 flex flex-wrap items-center gap-3"
       >
+        {backHref && (
+          <BackButton href={backHref} label={backLabel ?? 'src/projects'} className="mb-0" />
+        )}
         <StatusBadge status={project.status} />
       </motion.div>
 

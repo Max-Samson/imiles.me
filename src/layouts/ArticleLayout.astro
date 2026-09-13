@@ -2,7 +2,8 @@
 import ShareButton from '@/components/article/actions/ShareButton';
 import CopyMarkdownButton from '@/components/article/actions/CopyMarkdownButton';
 import ContentLightRaysBackground from '@/components/layout/ContentLightRaysBackground';
-import { formatDate, getLocaleFromPathname, useTranslations } from '@/lib/i18n';
+import BackButton from '@/components/common/BackButton';
+import { formatDate, getLocaleFromPathname, useTranslations, localizePathname } from '@/lib/i18n';
 import type { PostFrontmatter } from '@/lib/mdxToMarkdown';
 
 interface Props {
@@ -17,6 +18,8 @@ interface Props {
   frontmatter: PostFrontmatter;
   slug: string;
   proseClass?: string;
+  backHref?: string;
+  backLabel?: string;
 }
 
 const {
@@ -31,16 +34,22 @@ const {
   frontmatter,
   slug,
   proseClass,
+  backHref,
+  backLabel,
 } = Astro.props as Props;
 
 const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
+const defaultBackHref = localizePathname('/blog', lang);
+const resolvedBackHref = backHref ?? defaultBackHref;
+const resolvedBackLabel = backLabel ?? 'src/blog';
 ---
 
 <article class="relative isolate mx-auto min-h-screen max-w-3xl px-6 pt-24 pb-16">
   <ContentLightRaysBackground client:only="react" />
 
   <header class="mb-8">
+    <BackButton href={resolvedBackHref} label={resolvedBackLabel} />
     <h1 class="text-4xl font-bold">{title}</h1>
     <div class="mt-4 flex items-center gap-2">
       <CopyMarkdownButton
