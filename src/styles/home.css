@@ -46,6 +46,9 @@
   margin-bottom: 2.7rem;
   max-width: 44rem;
 }
+#projects-section .home-section-heading {
+  scroll-margin-top: 2rem;
+}
 .home-eyebrow {
   font-size: 0.7rem;
   letter-spacing: 0.2em;

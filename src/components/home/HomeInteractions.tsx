@@ -139,7 +139,12 @@ export default function HomeInteractions({ lang, items }: { lang: Locale; items:
       const [id] = sections[index];
       const el = document.getElementById(id);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
+        if (id === 'projects-section') {
+          const heading = el.querySelector<HTMLElement>('header.home-section-heading');
+          (heading ?? el).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
       }
     },
     [sections],
