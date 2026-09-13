@@ -40,6 +40,15 @@ export const zh = {
   HomeWip: '开发中',
   HomeArchived: '已归档',
 
+  HomeXpEyebrow: 'Journey',
+  HomeXpTitle: '我的航线🛩️',
+  HomeXpIntro: '工作、教育与里程碑。',
+  HomeXpWork: '工作',
+  HomeXpEducation: '教育',
+  HomeXpAward: '荣誉',
+  HomeXpProject: '项目',
+  HomeXpViewAbout: '完整故事',
+
   Headerhome: '首页',
   Headerabout: '关于',
   Headerblog: '博客',

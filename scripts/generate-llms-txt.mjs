@@ -3,8 +3,8 @@ import { extname, join, relative, resolve, sep } from 'node:path';
 import ts from 'typescript';
 
 const rootDir = resolve('.');
-const blogDir = resolve(rootDir, 'src', 'blog');
-const storiesDir = resolve(rootDir, 'src', 'stories');
+const blogDir = resolve(rootDir, 'content', 'blog');
+const storiesDir = resolve(rootDir, 'content', 'stories');
 const outputPath = resolve(rootDir, 'public', 'llms.txt');
 const siteUrl = 'https://imiles.me';
 const siteName = 'imiles.me';
@@ -325,8 +325,8 @@ Official links:
 
 This site is organized into several content areas that map to the project source structure:
 
-- Blog (\`src/blog/\`): Markdown and MDX posts. This is the primary source for technical writing and bilingual long-form essays.
-- Stories (\`src/stories/\`): Text-first fiction and narrative experiments published as Markdown.
+- Blog (\`content/blog/\`): Markdown and MDX posts. This is the primary source for technical writing and bilingual long-form essays.
+- Stories (\`content/stories/\`): Text-first fiction and narrative experiments published as Markdown.
 - Projects (\`src/data/projects.ts\`): Structured project entries rendered as index and detail pages.
 - Notes (\`src/data/notes.ts\`): Lighter notebook-style entries and daily updates.
 

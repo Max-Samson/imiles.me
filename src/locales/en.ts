@@ -40,6 +40,15 @@ export const en = {
   HomeWip: 'In progress',
   HomeArchived: 'Archived',
 
+  HomeXpEyebrow: 'Journey🛩️',
+  HomeXpTitle: 'Experience & Growth',
+  HomeXpIntro: 'Work, education, and milestones — in order.',
+  HomeXpWork: 'Work',
+  HomeXpEducation: 'Education',
+  HomeXpAward: 'Award',
+  HomeXpProject: 'Project',
+  HomeXpViewAbout: 'Full story',
+
   Headerhome: 'Home',
   Headerabout: 'About',
   Headerblog: 'Blog',

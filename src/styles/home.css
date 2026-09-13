@@ -36,14 +36,14 @@
   width: min(1120px, calc(100% - 4rem));
   margin-inline: auto;
   min-height: 100dvh;
-  padding-block: 8rem 6rem;
+  padding-block: 5.5rem 4.5rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   scroll-margin-top: 2rem;
 }
 .home-section-heading {
-  margin-bottom: 2.7rem;
+  margin-bottom: 2.2rem;
   max-width: 44rem;
 }
 #projects-section .home-section-heading {
@@ -282,7 +282,7 @@
 @media (max-width: 767px) {
   .home-section {
     width: calc(100% - 2rem);
-    padding-block: 5rem 3rem;
+    padding-block: 3.5rem 2.5rem;
     min-height: auto;
   }
   .home-garden-content {
@@ -335,4 +335,304 @@ body:has(.home-page) footer p {
 }
 .home-essay:only-child > p {
   max-width: 65ch;
+}
+
+/* ─── Experience Timeline — faithful to changelog-template layout ─── */
+
+/* Container */
+.home-xp-timeline {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Each item: flex-col on mobile, flex-row on md+ (gap-y-6 on mobile) */
+.home-xp-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* gap-y-6 */
+}
+@media (min-width: 768px) {
+  .home-xp-item {
+    flex-direction: row;
+    gap: 0;
+  }
+}
+
+/* ── LEFT column: md:w-48 flex-shrink-0 ── */
+.home-xp-left {
+  flex-shrink: 0;
+  width: 100%;
+}
+@media (min-width: 768px) {
+  .home-xp-left {
+    width: 12rem; /* md:w-48 */
+  }
+}
+
+/* Inner: sticky on desktop, compact on mobile */
+.home-xp-left-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.65rem;
+  padding-bottom: 0;
+}
+@media (min-width: 768px) {
+  .home-xp-left-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding-bottom: 2.5rem; /* pb-10 */
+    position: sticky;
+    top: 2rem; /* md:top-8 */
+  }
+}
+
+/* Period/date — mirrors <time className="text-sm font-medium text-muted-foreground"> */
+.home-xp-period {
+  display: block;
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500; /* font-medium */
+  color: var(--muted-foreground);
+  line-height: 1.4;
+}
+
+/* Type badge:
+   adaptive width (never overflows), compact height, crisp rounded-md border */
+.home-xp-badge {
+  display: inline-flex;
+  position: relative;
+  z-index: 10;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-width: 2.25rem;
+  max-width: 100%;
+  height: 1.45rem;
+  padding-inline: 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--muted) 40%, transparent);
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background 0.2s;
+}
+/* Type-specific accent colours */
+.home-xp-badge--work {
+  border-color: color-mix(in srgb, oklch(0.65 0.18 220) 45%, var(--border));
+  color: oklch(0.7 0.16 220);
+  background: color-mix(in srgb, oklch(0.65 0.18 220) 10%, transparent);
+}
+.home-xp-badge--award {
+  border-color: color-mix(in srgb, oklch(0.75 0.17 85) 50%, var(--border));
+  color: oklch(0.72 0.16 85);
+  background: color-mix(in srgb, oklch(0.75 0.17 85) 12%, transparent);
+}
+.home-xp-badge--education {
+  border-color: color-mix(in srgb, oklch(0.68 0.22 150) 45%, var(--border));
+  color: oklch(0.68 0.2 150);
+  background: color-mix(in srgb, oklch(0.68 0.22 150) 10%, transparent);
+}
+.home-xp-badge--project {
+  border-color: var(--border);
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+
+/* ── RIGHT column: flex-1 md:pl-8 relative pb-10 ── */
+.home-xp-right {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  padding-bottom: 2.5rem; /* pb-10 */
+}
+@media (min-width: 768px) {
+  .home-xp-right {
+    padding-left: 2rem; /* md:pl-8 */
+  }
+}
+.home-xp-item:last-child .home-xp-right {
+  padding-bottom: 0;
+}
+
+/* Vertical line — hidden md:block absolute top-2 left-0 w-px h-full bg-border
+   The dot lives INSIDE this div (as in template) */
+.home-xp-line {
+  display: none;
+}
+@media (min-width: 768px) {
+  .home-xp-line {
+    display: block;
+    position: absolute;
+    top: 0.5rem; /* top-2 */
+    left: 0;
+    width: 1px;
+    height: 100%;
+    background: var(--border);
+  }
+  .home-xp-item:last-child .home-xp-line {
+    background: linear-gradient(to bottom, var(--border) 0%, transparent 95%);
+  }
+}
+
+/* Timeline dot — hidden md:block absolute -translate-x-1/2 size-3 bg-primary rounded-full z-10
+   Positioned inside .home-xp-line div, at its top-left */
+.home-xp-dot {
+  display: none;
+}
+@media (min-width: 768px) {
+  .home-xp-dot {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translateX(-50%); /* -translate-x-1/2 */
+    width: 0.75rem; /* size-3 */
+    height: 0.75rem; /* size-3 */
+    border-radius: 9999px; /* rounded-full */
+    z-index: 10;
+    background: var(--foreground); /* bg-primary equivalent */
+    transition: transform 0.2s;
+  }
+}
+/* Type-specific dot colours */
+.home-xp-dot--work {
+  background: oklch(0.65 0.18 220);
+  box-shadow: 0 0 0 3px color-mix(in srgb, oklch(0.65 0.18 220) 20%, transparent);
+}
+.home-xp-dot--award {
+  background: oklch(0.72 0.16 85);
+  box-shadow: 0 0 0 3px color-mix(in srgb, oklch(0.72 0.16 85) 22%, transparent);
+}
+.home-xp-dot--education {
+  background: oklch(0.68 0.22 150);
+  box-shadow: 0 0 0 3px color-mix(in srgb, oklch(0.68 0.22 150) 20%, transparent);
+}
+.home-xp-dot--project {
+  background: var(--muted-foreground);
+}
+.home-xp-item:hover .home-xp-dot {
+  transform: translateX(-50%) scale(1.4);
+}
+
+/* ── Body: space-y-6, z-10, relative ── */
+.home-xp-body {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* space-y-6 */
+}
+
+/* Head block: title + org + tags (gap-2 as in template) */
+.home-xp-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* gap-2 */
+}
+
+/* Title — text-2xl font-semibold tracking-tight text-balance */
+.home-xp-title {
+  font-size: 1.5rem; /* text-2xl */
+  font-weight: 600; /* font-semibold */
+  letter-spacing: -0.025em; /* tracking-tight */
+  text-wrap: balance; /* text-balance */
+  line-height: 1.3;
+  color: var(--foreground);
+  margin: 0;
+}
+
+/* Org name */
+.home-xp-org {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+.home-xp-org--link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--muted-foreground);
+  text-decoration: none;
+  text-underline-offset: 3px;
+  transition: color 0.15s;
+}
+.home-xp-org--link:hover {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
+/* Tags row — flex-wrap gap-2 */
+.home-xp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem; /* gap-2 */
+}
+
+/* Individual tag pill —
+   h-6 w-fit px-2 text-xs font-medium bg-muted text-muted-foreground
+   rounded-full border flex items-center justify-center */
+.home-xp-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.5rem; /* h-6 */
+  padding-inline: 0.5rem; /* px-2 */
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 500; /* font-medium */
+  background: var(--muted);
+  color: var(--muted-foreground);
+  border-radius: 9999px; /* rounded-full */
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+/* Prose area — scoped font-size reduction so prose doesn't overpower the UI */
+.home-xp-prose {
+  font-size: 0.9375rem;
+}
+.home-xp-prose.prose :where(p):not(:where([class~="not-prose"] *)) {
+  color: var(--muted-foreground);
+}
+.home-xp-prose.prose :where(li):not(:where([class~="not-prose"] *)) {
+  color: var(--muted-foreground);
+}
+.home-xp-prose.prose :where(a):not(:where([class~="not-prose"] *)) {
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+/* Language-aware bilingual MDX blocks in experience timeline */
+html[lang="zh"] .home-xp-prose [data-lang="en"] {
+  display: none !important;
+}
+html:not([lang="zh"]) .home-xp-prose [data-lang="zh"] {
+  display: none !important;
+}
+/* Mobile: left border replaces spine line */
+@media (max-width: 767px) {
+  .home-xp-right {
+    border-left: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    padding-left: 1.25rem;
+  }
+}
+
+/* Reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .home-xp-dot {
+    transition: none;
+  }
+  .home-xp-item:hover .home-xp-dot {
+    transform: translateX(-50%);
+  }
 }

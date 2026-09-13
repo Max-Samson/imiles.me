@@ -24,6 +24,7 @@ export default function HomeInteractions({ lang, items }: { lang: Locale; items:
     () => [
       ['hero-section', isZh ? 'Ming' : 'Miles'],
       ['projects-section', isZh ? '工程作品' : 'Projects'],
+      ['experience-section', isZh ? '我的航线🛩️' : 'Journey🛩️'],
       ['blog-section', isZh ? '深度长文' : 'Essays'],
       ['tech-section', isZh ? '技术矩阵' : 'Tech Stack'],
       ['garden-section', isZh ? '数字花园' : 'Garden'],

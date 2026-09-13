@@ -31,8 +31,8 @@ Official links:
 
 This site is organized into several content areas that map to the project source structure:
 
-- Blog (`src/blog/`): Markdown and MDX posts. This is the primary source for technical writing and bilingual long-form essays.
-- Stories (`src/stories/`): Text-first fiction and narrative experiments published as Markdown.
+- Blog (`content/blog/`): Markdown and MDX posts. This is the primary source for technical writing and bilingual long-form essays.
+- Stories (`content/stories/`): Text-first fiction and narrative experiments published as Markdown.
 - Projects (`src/data/projects.ts`): Structured project entries rendered as index and detail pages.
 - Notes (`src/data/notes.ts`): Lighter notebook-style entries and daily updates.
 
@@ -88,6 +88,15 @@ This site is organized into several content areas that map to the project source
 - Description: dsh-usage-chart is an open-source usage, cost, and account-balance dashboard plugin engineered for DeepSeek Harness (DSH) Web. It mounts an active metric indicator directly below the conversation composer and unfolds into an interactive, zero-dependency SVG chart dashboard. The plugin tracks input (uncached and cache-hit) and output tokens, context pressure, and DeepSeek account balance in real time. It calculates costs using official dual-currency (CNY / USD) list prices across peak and off-peak billing tiers without inaccurate FX conversions, supports custom pricing.json overrides, and provides detailed per-round attribution for duration, TTFT, TPS, cost anomalies, and compaction diagnostics.
 - Keywords: TypeScript, React 18, Cordis, Node.js, esbuild, SVG
 
+### Floating 3D Particles
+- URL: https://imiles.me/projects/floating-3d-particles
+- Description: Floating 3D Particles started as an observation: the particle field behind GitMind's hero section had a quality that most canvas backgrounds lack — genuine depth. Particles near the viewer appeared larger and brighter; those far away shrank and faded. The effect used no WebGL, no Three.js, just a Canvas 2D context and a single perspective-divide formula. I rebuilt it from scratch as a self-contained React component and opened PR #1002 against Magic UI on Aug 17, 2026.
+
+The initial submission carried 22 configurable props — particle counts, color, size and opacity ranges, rotation and float speeds, raw perspective parameters (fov, perspectiveDistance, depthRange), mouse interaction, DPI scaling, and visibility hooks. Reviewer Yeom-JinHo ran it locally and found three bugs that did not surface in demos. First: with prefers-reduced-motion enabled, the component rendered a blank canvas on every frame. The reduced-motion branch drew one static frame and stopped re-queuing rAF; ResizeObserver then fired its mandatory initial callback, reassigned canvas.width — which clears the bitmap — and the canvas stayed empty for the lifetime of the component, with zero painted pixels against the ~37,000 in the normal path. Second: a negative drift value (particles falling instead of rising) drained the particle field entirely, because only the top boundary triggered a respawn. Third: color lived in the useEffect dependency array, so every theme switch tore down the animation loop and respawned all 400 particles.
+
+Yeom-JinHo also flagged the prop surface: 22 props is the highest count in the Magic UI registry, and any prop published becomes a breaking-change boundary. Several could be collapsed — background and zIndex are reachable via the style prop; the three raw projection parameters had combinations that produced a near-zero denominator in the perspective divide. After I committed to revising, the reviewer pushed seven small follow-up commits directly to the branch: the reduced-motion fix using a staticDirty flag so the rAF loop keeps running without repainting on every frame; the bi-directional respawn so negative drift falls instead of draining; colorRef so theme switches repaint in place without rebuilding the field; and theme-aware default colors in the plain demo. The three projection parameters were collapsed into a single 0–1 depth knob backed by deriveProjection(), which maps the scalar to safe fov/perspectiveDistance/depthRange values with a guaranteed positive denominator. The final API is six props. The component merged on Sep 4, 2026.
+- Keywords: React, TypeScript, Canvas 2D
+
 ## English Projects
 
 ### MTimer
@@ -99,6 +108,15 @@ This site is organized into several content areas that map to the project source
 - URL: https://imiles.me/projects/dsh-usage-chart
 - Description: dsh-usage-chart is an open-source usage, cost, and account-balance dashboard plugin engineered for DeepSeek Harness (DSH) Web. It mounts an active metric indicator directly below the conversation composer and unfolds into an interactive, zero-dependency SVG chart dashboard. The plugin tracks input (uncached and cache-hit) and output tokens, context pressure, and DeepSeek account balance in real time. It calculates costs using official dual-currency (CNY / USD) list prices across peak and off-peak billing tiers without inaccurate FX conversions, supports custom pricing.json overrides, and provides detailed per-round attribution for duration, TTFT, TPS, cost anomalies, and compaction diagnostics.
 - Keywords: TypeScript, React 18, Cordis, Node.js, esbuild, SVG
+
+### Floating 3D Particles
+- URL: https://imiles.me/projects/floating-3d-particles
+- Description: Floating 3D Particles started as an observation: the particle field behind GitMind's hero section had a quality that most canvas backgrounds lack — genuine depth. Particles near the viewer appeared larger and brighter; those far away shrank and faded. The effect used no WebGL, no Three.js, just a Canvas 2D context and a single perspective-divide formula. I rebuilt it from scratch as a self-contained React component and opened PR #1002 against Magic UI on Aug 17, 2026.
+
+The initial submission carried 22 configurable props — particle counts, color, size and opacity ranges, rotation and float speeds, raw perspective parameters (fov, perspectiveDistance, depthRange), mouse interaction, DPI scaling, and visibility hooks. Reviewer Yeom-JinHo ran it locally and found three bugs that did not surface in demos. First: with prefers-reduced-motion enabled, the component rendered a blank canvas on every frame. The reduced-motion branch drew one static frame and stopped re-queuing rAF; ResizeObserver then fired its mandatory initial callback, reassigned canvas.width — which clears the bitmap — and the canvas stayed empty for the lifetime of the component, with zero painted pixels against the ~37,000 in the normal path. Second: a negative drift value (particles falling instead of rising) drained the particle field entirely, because only the top boundary triggered a respawn. Third: color lived in the useEffect dependency array, so every theme switch tore down the animation loop and respawned all 400 particles.
+
+Yeom-JinHo also flagged the prop surface: 22 props is the highest count in the Magic UI registry, and any prop published becomes a breaking-change boundary. Several could be collapsed — background and zIndex are reachable via the style prop; the three raw projection parameters had combinations that produced a near-zero denominator in the perspective divide. After I committed to revising, the reviewer pushed seven small follow-up commits directly to the branch: the reduced-motion fix using a staticDirty flag so the rAF loop keeps running without repainting on every frame; the bi-directional respawn so negative drift falls instead of draining; colorRef so theme switches repaint in place without rebuilding the field; and theme-aware default colors in the plain demo. The three projection parameters were collapsed into a single 0–1 depth knob backed by deriveProjection(), which maps the scalar to safe fov/perspectiveDistance/depthRange values with a guaranteed positive denominator. The final API is six props. The component merged on Sep 4, 2026.
+- Keywords: React, TypeScript, Canvas 2D
 
 ## English Notes
 

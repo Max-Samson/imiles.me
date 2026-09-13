@@ -1,0 +1,177 @@
+---
+import { getCollection, render } from 'astro:content';
+import { type Locale, useTranslations, localizePathname, formatDate } from '@/lib/i18n';
+import { rainbowButtonVariants } from '@/registry/magicui/rainbow-button';
+import { cn } from '@/lib/utils';
+
+interface Props { lang: Locale }
+const { lang } = Astro.props;
+const { t } = useTranslations(lang);
+const isZh = lang === 'zh';
+
+interface ParsedExperienceDate {
+  isPresent: boolean;
+  startTimestamp: number;
+  endTimestamp: number;
+}
+
+function parseExperienceDate(d: {
+  period?: string;
+  periodZh?: string;
+  startDate?: string;
+  endDate?: string;
+  year?: string;
+}): ParsedExperienceDate {
+  const isPresent = /present|至今|now/i.test(`${d.period ?? ''} ${d.periodZh ?? ''} ${d.endDate ?? ''}`);
+  const dates = `${d.startDate ?? ''} ${d.period ?? ''}`.match(/\d{4}(?:[.\-\/]\d{1,2})?/g) ?? [];
+  const startStr = d.startDate || dates[0] || d.year || '2000';
+  const endStr = isPresent ? '9999' : (d.endDate || dates[1] || startStr);
+
+  const parseToTimestamp = (str: string): number => {
+    const parts = str.split(/[.\-\/]/);
+    const y = Number.parseInt(parts[0], 10) || 2000;
+    const m = parts[1] ? Number.parseInt(parts[1], 10) - 1 : 0;
+    return new Date(y, m, 1).getTime();
+  };
+
+  return {
+    isPresent,
+    startTimestamp: parseToTimestamp(startStr),
+    endTimestamp: isPresent ? Number.MAX_SAFE_INTEGER : parseToTimestamp(endStr),
+  };
+}
+
+// 自动依据时间倒序排列（最新排在最前，上学等早期经历排在最后）
+const rawEntries = await getCollection('experience', ({ data }) => !data.draft);
+const entries = rawEntries.sort((a, b) => {
+  // 如果手动显式指定了 order，作为优先权重兼容
+  if (typeof a.data.order === 'number' && typeof b.data.order === 'number') {
+    return b.data.order - a.data.order;
+  }
+
+  const pA = parseExperienceDate(a.data);
+  const pB = parseExperienceDate(b.data);
+
+  // 1. 起始时间较晚（较新）的排在前面（倒序）
+  if (pB.startTimestamp !== pA.startTimestamp) {
+    return pB.startTimestamp - pA.startTimestamp;
+  }
+  // 2. 若起始时间完全相同，进行中（Present/至今）排在前面
+  if (pA.isPresent !== pB.isPresent) {
+    return pA.isPresent ? -1 : 1;
+  }
+  // 3. 结束时间较晚的排在前面
+  return pB.endTimestamp - pA.endTimestamp;
+});
+// Pre-render all MDX bodies
+const rendered = await Promise.all(
+  entries.map(async (entry) => {
+    const { Content } = await render(entry);
+    return { entry, Content };
+  }),
+);
+
+// Type → label (used for the square version-style badge)
+const typeLabel: Record<string, string> = {
+  work:      t('HomeXpWork'),
+  education: t('HomeXpEducation'),
+  award:     t('HomeXpAward'),
+  project:   t('HomeXpProject'),
+};
+---
+
+<section id="experience-section" class="home-section" aria-labelledby="home-xp-title">
+  <header class="home-section-heading">
+    <p class="home-eyebrow">{t('HomeXpEyebrow')}</p>
+    <h2 id="home-xp-title">{t('HomeXpTitle')}</h2>
+    <p>{t('HomeXpIntro')}</p>
+  </header>
+
+  <!-- Timeline — mirrors changelog-template layout exactly -->
+  <div class="home-xp-timeline">
+    {rendered.map(({ entry, Content }, _idx) => {
+      const d = entry.data;
+      const title  = isZh ? d.titleZh  : d.title;
+      const org    = isZh ? d.orgZh    : d.org;
+      const period = isZh ? d.periodZh : d.period;
+      const tags   = (isZh && d.tagsZh && d.tagsZh.length > 0) ? d.tagsZh : d.tags;
+      return (
+        <div class="home-xp-item" data-home-reveal data-type={d.type}>
+
+          {/* ── LEFT: sticky date + square type-badge ── */}
+          <div class="home-xp-left">
+            <div class="home-xp-left-inner">
+              {/* Full period — mirrors <time> in template */}
+              <time class="home-xp-period" datetime={d.year}>{period}</time>
+
+              {/* Square badge — mirrors version box in template */}
+                <div class={`home-xp-badge home-xp-badge--${d.type}`} aria-label={typeLabel[d.type]}>
+                  {typeLabel[d.type]}
+                </div>
+            </div>
+          </div>
+
+          {/* ── RIGHT: line + dot + content ── */}
+          <div class="home-xp-right">
+
+            {/* Vertical line — contains dot (exactly as template) */}
+            <div class="home-xp-line" aria-hidden="true">
+              <div class={`home-xp-dot home-xp-dot--${d.type}`} />
+            </div>
+
+            {/* Content — space-y-6 as in template */}
+            <div class="home-xp-body">
+
+              {/* Title + org block — z-10 above line */}
+              <div class="home-xp-head">
+                <h3 class="home-xp-title">{title}</h3>
+
+                {/* Org — below title, optional link */}
+                {d.orgUrl ? (
+                  <a
+                    href={d.orgUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="home-xp-org home-xp-org--link"
+                  >
+                    {org} <span aria-hidden="true">↗</span>
+                  </a>
+                ) : (
+                  <p class="home-xp-org">{org}</p>
+                )}
+
+                {/* Tags — rounded-full pills, directly below title+org */}
+                {tags.length > 0 && (
+                  <div class="home-xp-tags">
+                    {tags.map(tag => (
+                      <span class="home-xp-tag">{tag}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* MDX prose — Tailwind Typography, matches template exactly */}
+              <div class="home-xp-prose prose dark:prose-invert max-w-none prose-headings:scroll-mt-8 prose-headings:font-semibold prose-a:no-underline prose-headings:tracking-tight prose-headings:text-balance prose-p:tracking-tight prose-p:text-balance">
+                <Content />
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      );
+    })}
+  </div>
+
+  <!-- CTA -->
+  <!-- <a
+    href={localizePathname('/about', lang)}
+    class={cn(
+      rainbowButtonVariants({ size: 'default' }),
+      'home-section-more rounded-xl font-medium shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]',
+    )}
+  >
+    <span>{t('HomeXpViewAbout')}</span>
+    <span aria-hidden="true">→</span>
+  </a> -->
+</section>

@@ -42,7 +42,7 @@ const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
 const defaultBackHref = localizePathname('/blog', lang);
 const resolvedBackHref = backHref ?? defaultBackHref;
-const resolvedBackLabel = backLabel ?? 'src/blog';
+const resolvedBackLabel = backLabel ?? 'content/blog';
 ---
 
 <article class="relative isolate mx-auto min-h-screen max-w-3xl px-6 pt-24 pb-16">

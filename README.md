@@ -139,7 +139,7 @@ pnpm perf:budget -- --json                # machine-readable report
 
 ## Content
 
-Content lives in `src/blog/` (`.mdx`) and `src/stories/` (`.md`) and is validated against the schemas in `src/content.config.ts`.
+Content lives in `content/blog/` (`.mdx`), `content/stories/` (`.md`), and `content/experience/` (`.mdx`), and is validated against the schemas in `src/content.config.ts`.
 
 - **Blog posts** — frontmatter: `title`, `description`, `pubDate`, `tags`; optional `heroImage`, `updatedDate`, `draft`, `shareText`, `lang`, `llms`. Support KaTeX math and React islands (`client:load` / `client:visible`).
 - **Stories** — frontmatter: `title`, `description`, `pubDate`, `tags`; optional `draft`, `llms`. Pure prose: no images, components, headings, or math. Use `--` for em-dashes and `---` for scene breaks.

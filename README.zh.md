@@ -141,7 +141,7 @@ pnpm perf:budget -- --json                # 机器可读的 JSON 报告
 
 ## 内容写作
 
-内容存放于 `src/blog/`（`.mdx`）与 `src/stories/`（`.md`），并通过 `src/content.config.ts` 中的 schema 校验。
+内容存放于 `content/blog/`（`.mdx`）、`content/stories/`（`.md`）与 `content/experience/`（`.mdx`），并通过 `src/content.config.ts` 中的 schema 校验。
 
 - **博客文章** —— frontmatter 必填：`title`、`description`、`pubDate`、`tags`；可选：`heroImage`、`updatedDate`、`draft`、`shareText`、`lang`、`llms`。支持 KaTeX 数学公式与 React 岛屿组件（`client:load` / `client:visible`）。
 - **故事** —— frontmatter 必填：`title`、`description`、`pubDate`、`tags`；可选：`draft`、`llms`。纯散文：不使用图片、组件、标题或数学公式。破折号用 `--`，场景切换用 `---`。

@@ -4,6 +4,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import Hero from './Hero';
 import HomeProjectsSection from './HomeProjectsSection.astro';
 import HomeBlogSection from './HomeBlogSection.astro';
+import HomeExperienceSection from './HomeExperienceSection.astro';
 import HomeInteractions from './HomeInteractions';
 import HomeGardenParticles from './HomeGardenParticles';
 import HomeGardenTitle from './HomeGardenTitle';
@@ -49,10 +50,13 @@ const newsletter = import.meta.env.PUBLIC_BUTTONDOWN_USERNAME;
       <!-- Screen 2: Projects Section -->
       <HomeProjectsSection {lang} {projects} />
 
-      <!-- Screen 3: Blog Section -->
+      <!-- Screen 3: Experience Timeline -->
+      <HomeExperienceSection {lang} />
+
+      <!-- Screen 4: Blog Section -->
       <HomeBlogSection {lang} posts={posts.slice(0, 4)} />
 
-      <!-- Screen 4: Tech Stack Section -->
+      <!-- Screen 5: Tech Stack Section -->
       <section id="tech-section" class="home-section" aria-labelledby="home-tech-title">
         <div class="home-tech-layout">
           <div>

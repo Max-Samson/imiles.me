@@ -8,30 +8,30 @@ Personal website and blog at [imiles.me](https://imiles.me). Built with Astro, R
 
 ## Architecture
 
-```
+content/
+  blog/           # MDX blog posts (schema: title, description, pubDate, tags, draft, heroImage)
+  stories/        # Markdown stories (schema: title, description, pubDate, tags, draft)
+  experience/     # Bilingual MDX experience timeline entries
 src/
   pages/          # Astro routes (index, blog, stories, projects, notes, about, rss, og)
   components/     # React (.tsx) and Astro (.astro) components
   layouts/        # BaseLayout.astro — single layout wrapping all pages
-  blog/           # MDX blog posts (schema: title, description, pubDate, tags, draft, heroImage)
-  stories/        # Markdown stories (schema: title, description, pubDate, tags, draft)
   data/           # Static data: projects.ts, socialLinks.ts, imageCredits.ts, research.ts, welcomeTimeline.tsx, scriptMappings.ts
   hooks/          # React hooks (useScrollDirection, useReducedMotion, useSimulatedPulse, useTextScramble)
   lib/            # Utilities (i18n, readTime, search, utils, mdxToMarkdown, enhanceCodeBlocks)
   styles/         # global.css (Tailwind v4)
-  content.config.ts  # Astro content collection schemas for blog and stories
+  content.config.ts  # Astro content collection schemas for blog, stories, and experience
 public/
   images/         # Static images (welcome timeline, logos)
   projects/       # Project demo assets organized by slug
   fonts/          # Inter fonts for OG image generation
   icons/          # PWA icons
-```
 
 ## Key conventions
 
 - **Styling:** Tailwind CSS v4 with dark mode default. Use `cn()` from `src/lib/utils.ts` for class merging.
 - **Components:** React components use `.tsx`. Astro components use `.astro`. React islands are hydrated via `client:load` or `client:visible`.
-- **Content:** Blog posts go in `src/blog/` as `.mdx`. Stories go in `src/stories/` as `.md`. Both must include valid frontmatter matching their schema in `content.config.ts`.
+- **Content:** Blog posts go in `content/blog/` as `.mdx`. Stories go in `content/stories/` as `.md`. Experiences go in `content/experience/` as `.mdx`. All must include valid frontmatter matching their schema in `content.config.ts`.
 - **Images:** Place in `public/` under the appropriate subdirectory. Third-party photos require a credit entry in `src/data/imageCredits.ts`.
 - **Linting:** Biome handles lint and format. Run `pnpm lint` and `pnpm format:check` before committing.
 - **Pre-commit:** Husky + lint-staged runs Biome on staged files.
@@ -148,7 +148,7 @@ Import individually or via barrel export from `../components`:
 
 ### Stories
 
-Stories are **text-only Markdown** (`.md`) in `src/stories/`. They use no React components, no images, and no MDX.
+Stories are **text-only Markdown** (`.md`) in `content/stories/`. They use no React components, no images, and no MDX.
 
 **Frontmatter requires:** `title`, `description`, `pubDate`, `tags`. Optional: `updatedDate`, `draft`.
 
