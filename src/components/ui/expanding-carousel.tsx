@@ -53,8 +53,8 @@ export default function ExpandingCarousel({
   renderPreview,
   renderMedia,
   initialIndex = 0,
-  // 元素自动切换轮播时间为7s
-  interval = 7000,
+  // 元素自动切换轮播时间为3s
+  interval = 3000,
 }: ExpandingCarouselProps) {
   const count = items.length;
   const [selected, setSelected] = useState(Math.max(0, Math.min(initialIndex, count - 1)));
