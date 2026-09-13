@@ -1,5 +1,5 @@
 import type { ExpandingCarouselItem } from '@/components/ui/expanding-carousel';
-import type { Project } from '@/data/projects';
+import { getProjectCategory, type Project } from '@/data/projects';
 import { type Locale, localizePathname, useTranslations } from '@/lib/i18n';
 
 export function getProjectShowcaseItems(
@@ -10,13 +10,15 @@ export function getProjectShowcaseItems(
 
   return projects.slice(0, 6).map<ExpandingCarouselItem>((project) => {
     const status = t(
-      project.status === 'active'
-        ? 'HomeActive'
-        : project.status === 'wip'
-          ? 'HomeWip'
-          : 'HomeArchived',
+      project.status === 'completed'
+        ? 'HomeCompleted'
+        : project.status === 'active'
+          ? 'HomeActive'
+          : project.status === 'wip'
+            ? 'HomeWip'
+            : 'HomeArchived',
     );
-
+    const category = getProjectCategory(project.category, lang);
     const links: NonNullable<ExpandingCarouselItem['links']> = [];
     if (project.hasDetailPage) {
       links.push({
@@ -44,7 +46,9 @@ export function getProjectShowcaseItems(
 
     return {
       id: project.slug,
-      eyebrow: `${project.title} · ${status}`,
+      category,
+      status,
+      eyebrow: category ? `${category} · ${status}` : status,
       title: project.title,
       description: project.tagline,
       badges: project.tech.slice(0, 5).map((tech) => tech.name),

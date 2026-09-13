@@ -34,7 +34,7 @@ export default function ProjectHero({ project, lang, backHref, backLabel }: Proj
         {backHref && (
           <BackButton href={backHref} label={backLabel ?? 'src/projects'} className="mb-0" />
         )}
-        <StatusBadge status={project.status} />
+        <StatusBadge status={project.status} lang={lang} />
       </motion.div>
 
       <h1 className="mb-4 text-4xl font-bold sm:text-5xl lg:text-6xl">

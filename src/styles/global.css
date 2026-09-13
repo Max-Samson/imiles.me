@@ -661,7 +661,10 @@
     animation: status-pulse 2s ease-in-out infinite;
     will-change: opacity;
   }
-
+  .status-dot-completed {
+    background: var(--status-active);
+    box-shadow: 0 0 6px oklch(from var(--status-active) l c h / 50%);
+  }
   .status-dot-wip {
     background: var(--status-wip);
     box-shadow: 0 0 6px oklch(from var(--status-wip) l c h / 50%);

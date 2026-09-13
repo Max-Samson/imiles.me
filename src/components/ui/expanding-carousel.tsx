@@ -18,6 +18,8 @@ export interface ExpandingCarouselItem {
   title: string;
   description: string;
   eyebrow?: string;
+  category?: string;
+  status?: string;
   image?: { src: string; alt: string; previewSrc?: string; fit?: 'cover' | 'contain' };
   badges?: string[];
   links?: { label: string; href: string; external?: boolean }[];
@@ -320,8 +322,26 @@ export default function ExpandingCarousel({
                       <>
                         <div className="expanding-carousel-copy">
                           <div className="expanding-carousel-heading">
-                            {item.eyebrow && (
-                              <p className="expanding-carousel-eyebrow">{item.eyebrow}</p>
+                            {(item.category || item.status || item.eyebrow) && (
+                              <div className="expanding-carousel-eyebrow">
+                                {item.category && (
+                                  <span className="expanding-carousel-category">
+                                    {item.category}
+                                  </span>
+                                )}
+                                {item.status && (
+                                  <span className="expanding-carousel-status">
+                                    <span
+                                      className="expanding-carousel-status-dot"
+                                      aria-hidden="true"
+                                    />
+                                    {item.status}
+                                  </span>
+                                )}
+                                {!item.category && !item.status && item.eyebrow && (
+                                  <span>{item.eyebrow}</span>
+                                )}
+                              </div>
                             )}
                             <h3>{item.title}</h3>
                           </div>

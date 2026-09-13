@@ -36,6 +36,7 @@ export const zh = {
   HomeEmail: '邮箱地址',
   HomeSubscribe: '邮件订阅',
   HomeActive: '持续维护',
+  HomeCompleted: '已完结',
   HomeWip: '开发中',
   HomeArchived: '已归档',
 

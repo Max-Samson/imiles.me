@@ -1,7 +1,7 @@
 import type { Locale } from '@/lib/i18n';
 
-/** 项目状态:进行中 / 开发中 / 已归档 */
-export type ProjectStatus = 'active' | 'wip' | 'archived';
+/** 项目状态:进行中 / 已完结 / 开发中 / 已归档 */
+export type ProjectStatus = 'active' | 'completed' | 'wip' | 'archived';
 
 /** 技术栈条目:name 显示名,icon 为 react-simple-icons 的 key(如 'go'、'react') */
 export interface ProjectTech {
@@ -43,19 +43,21 @@ export interface LiveDemoConfig {
 
 /** 演示配置:终端模拟 / 图片展示 / 活体组件,三选一 */
 export type DemoConfig = TerminalDemoConfig | ImageShowcaseConfig | LiveDemoConfig;
+/** 项目类别:桌面应用 / DSH 插件 / UI 组件 / Web 应用 */
+export type ProjectCategory = 'desktop' | 'dshplugin' | 'ui-component' | 'web';
 
 /** 项目多语言覆盖(可选字段,缺省时回退到顶层字段) */
 export interface ProjectLocalization {
   title?: string;
   tagline?: string;
   description?: string;
+  category?: string;
   features?: ProjectFeature[];
   demo?: DemoConfig;
   tags?: string[];
   pageLabel?: string;
   coverImage?: string;
 }
-
 /**
  * 项目条目结构(驱动 /projects 列表与详情页)。
  * - slug: 唯一标识,同时作为详情页 URL(/projects/<slug>)
@@ -74,6 +76,7 @@ export interface Project {
   title: string;
   tagline: string;
   description: string;
+  category?: ProjectCategory | string;
   status: ProjectStatus;
   githubUrl: string;
   pageUrl?: string;
@@ -95,7 +98,8 @@ export const projects: Project[] = [
     tagline: 'Wails-powered Pomodoro desktop app with AI planning',
     description:
       'MTimer is a cross-platform desktop focus app built around the Pomodoro Technique. It packages a Go backend and Vue 3 frontend into a native desktop experience with Wails, combining standard Pomodoro and custom focus modes, task management, focus session history, white noise and background music, analytics dashboards, and an AI planning assistant that can connect to DeepSeek or any OpenAI-compatible API. SQLite stores tasks, sessions, daily stats, and event stats, while Pinia coordinates timer, task, and settings state on the frontend and ECharts powers the visual reports.',
-    status: 'active',
+    category: 'desktop',
+    status: 'completed',
     githubUrl: 'https://github.com/Max-Samson/MTimer_v2.1.1.0',
     pageUrl: 'https://mtimerpage.pages.dev/',
     coverImage: '/projects/mtimer/mtimer-cover.jpeg',
@@ -197,6 +201,7 @@ export const projects: Project[] = [
     },
     locales: {
       zh: {
+        category: '桌面应用',
         coverImage: '/projects/mtimer/mtimer-cover-zh.jpeg',
         tagline: '基于 Wails 的番茄钟桌面应用，内置 AI 时间规划',
         description:
@@ -283,6 +288,7 @@ export const projects: Project[] = [
     tagline: 'Real-time token usage, cost, and balance dashboard plugin for DeepSeek Harness Web',
     description:
       'dsh-usage-chart is an open-source usage, cost, and account-balance dashboard plugin engineered for DeepSeek Harness (DSH) Web. It mounts an active metric indicator directly below the conversation composer and unfolds into an interactive, zero-dependency SVG chart dashboard. The plugin tracks input (uncached and cache-hit) and output tokens, context pressure, and DeepSeek account balance in real time. It calculates costs using official dual-currency (CNY / USD) list prices across peak and off-peak billing tiers without inaccurate FX conversions, supports custom pricing.json overrides, and provides detailed per-round attribution for duration, TTFT, TPS, cost anomalies, and compaction diagnostics.',
+    category: 'dshplugin',
     status: 'active',
     githubUrl: 'https://github.com/Max-Samson/dsh-usage-chart',
     pageUrl: 'https://www.npmjs.com/package/dsh-usage-chart',
@@ -353,7 +359,8 @@ export const projects: Project[] = [
       zh: {
         pageLabel: '查看 npm',
         coverImage: '/projects/dsh-usage-chart/dsh-usage-chart-cover-zh.jpeg',
-        tagline: 'DeepSeek 用量 / 成本 / 余额仪表盘 · DSH Web 插件',
+        category: 'DSH 插件',
+        tagline: 'DeepSeek 用量 / 成本 / 余额仪表盘 · Deepseek Harness Web 插件',
         description:
           'dsh-usage-chart 是专为 DeepSeek Harness (DSH) Web 设计的高性能用量、成本与账户余额监控插件。它在输入框下方嵌入紧凑的实时指标指示器，并支持展开零依赖手绘 SVG 用量可视化面板。插件直接消费官方 adapter 投影数据，精准展示未命中/命中输入 Token、输出 Token、缓存命中率与上下文占用；内置官方高峰/空闲双时段刊例价，支持 CNY/USD 双币种直接计费与 pricing.json 覆盖；提供逐轮耗时、TTFT、TPS、成本突增异常标记、输入来源归因（人工/Agent/续跑）以及上下文构成与折叠压缩诊断，余额查询直连官方接口并由宿主安全代理。',
         features: [
@@ -404,6 +411,7 @@ export const projects: Project[] = [
       'Canvas-based pseudo-3D particle background contributed to Magic UI — from GitMind hero to open-source component',
     description:
       "Floating 3D Particles started as an observation: the particle field behind GitMind's hero section had a quality that most canvas backgrounds lack — genuine depth. Particles near the viewer appeared larger and brighter; those far away shrank and faded. The effect used no WebGL, no Three.js, just a Canvas 2D context and a single perspective-divide formula. I rebuilt it from scratch as a self-contained React component and opened PR #1002 against Magic UI on Aug 17, 2026.\n\nThe initial submission carried 22 configurable props — particle counts, color, size and opacity ranges, rotation and float speeds, raw perspective parameters (fov, perspectiveDistance, depthRange), mouse interaction, DPI scaling, and visibility hooks. Reviewer Yeom-JinHo ran it locally and found three bugs that did not surface in demos. First: with prefers-reduced-motion enabled, the component rendered a blank canvas on every frame. The reduced-motion branch drew one static frame and stopped re-queuing rAF; ResizeObserver then fired its mandatory initial callback, reassigned canvas.width — which clears the bitmap — and the canvas stayed empty for the lifetime of the component, with zero painted pixels against the ~37,000 in the normal path. Second: a negative drift value (particles falling instead of rising) drained the particle field entirely, because only the top boundary triggered a respawn. Third: color lived in the useEffect dependency array, so every theme switch tore down the animation loop and respawned all 400 particles.\n\nYeom-JinHo also flagged the prop surface: 22 props is the highest count in the Magic UI registry, and any prop published becomes a breaking-change boundary. Several could be collapsed — background and zIndex are reachable via the style prop; the three raw projection parameters had combinations that produced a near-zero denominator in the perspective divide. After I committed to revising, the reviewer pushed seven small follow-up commits directly to the branch: the reduced-motion fix using a staticDirty flag so the rAF loop keeps running without repainting on every frame; the bi-directional respawn so negative drift falls instead of draining; colorRef so theme switches repaint in place without rebuilding the field; and theme-aware default colors in the plain demo. The three projection parameters were collapsed into a single 0–1 depth knob backed by deriveProjection(), which maps the scalar to safe fov/perspectiveDistance/depthRange values with a guaranteed positive denominator. The final API is six props. The component merged on Sep 4, 2026.",
+    category: 'ui-component',
     status: 'active',
     githubUrl: 'https://github.com/magicuidesign/magicui/pull/1002',
     pageUrl: 'https://magicui.design/docs/components/floating-3d-particles',
@@ -470,6 +478,7 @@ export const projects: Project[] = [
     },
     locales: {
       zh: {
+        category: 'UI 组件',
         tagline:
           '向 Magic UI 贡献的 Canvas 伪 3D 粒子背景组件——从 GitMind hero 到开源落地的完整开发记录',
         description:
@@ -535,4 +544,15 @@ export function getProjects(locale: Locale = 'en'): Project[] {
 export function getProject(slug: string, locale: Locale = 'en'): Project | undefined {
   const project = projects.find((p) => p.slug === slug);
   return project ? localizeProject(project, locale) : undefined;
+}
+
+export function getProjectCategory(category?: string, locale: Locale = 'en'): string {
+  if (!category) return '';
+  const map: Record<string, Record<Locale, string>> = {
+    desktop: { en: 'Desktop App', zh: '桌面应用' },
+    dshplugin: { en: 'DSH Plugin', zh: 'DSH 插件' },
+    'ui-component': { en: 'UI Component', zh: 'UI 组件' },
+    web: { en: 'Web App', zh: 'Web 应用' },
+  };
+  return map[category]?.[locale] ?? category;
 }

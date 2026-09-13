@@ -36,6 +36,7 @@ export const en = {
   HomeEmail: 'Email address',
   HomeSubscribe: 'Subscribe by email',
   HomeActive: 'Active',
+  HomeCompleted: 'Completed',
   HomeWip: 'In progress',
   HomeArchived: 'Archived',
 
