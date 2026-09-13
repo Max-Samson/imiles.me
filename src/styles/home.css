@@ -46,6 +46,12 @@
   margin-bottom: 2.2rem;
   max-width: 44rem;
 }
+.home-xp-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem 1.25rem;
+}
 #projects-section .home-section-heading {
   scroll-margin-top: 2rem;
 }

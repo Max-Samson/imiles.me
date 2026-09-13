@@ -3,7 +3,7 @@ import { getCollection, render } from 'astro:content';
 import { type Locale, useTranslations, localizePathname, formatDate } from '@/lib/i18n';
 import { rainbowButtonVariants } from '@/registry/magicui/rainbow-button';
 import { cn } from '@/lib/utils';
-
+import ProfileCardMiles from './ProfileCardMiles';
 interface Props { lang: Locale }
 const { lang } = Astro.props;
 const { t } = useTranslations(lang);
@@ -83,7 +83,10 @@ const typeLabel: Record<string, string> = {
 <section id="experience-section" class="home-section" aria-labelledby="home-xp-title">
   <header class="home-section-heading">
     <p class="home-eyebrow">{t('HomeXpEyebrow')}</p>
-    <h2 id="home-xp-title">{t('HomeXpTitle')}</h2>
+    <div class="home-xp-title-row">
+      <h2 id="home-xp-title">{t('HomeXpTitle')}</h2>
+      <ProfileCardMiles client:idle label={t('HomeXpMeetMe')} lang={lang} />
+    </div>
     <p>{t('HomeXpIntro')}</p>
   </header>
 
