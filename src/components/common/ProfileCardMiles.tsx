@@ -28,7 +28,7 @@ export interface ProfileCardMilesProps {
   enableMobileTilt?: boolean;
   /** 移动端倾斜灵敏度 */
   mobileTiltSensitivity?: number;
-  /** 背后光晕颜色 */
+  /** 背后光晕颜色，默认明亮杏金色 */
   behindGlowColor?: string;
   /** 背后光晕尺寸 */
   behindGlowSize?: string;
@@ -38,7 +38,7 @@ export interface ProfileCardMilesProps {
   iconUrl?: string;
   /** 纹理杂色图案 */
   grainUrl?: string;
-  /** 卡片内部渐变 */
+  /** 卡片内部渐变，默认暖陶色过渡到蜜桃与香槟金 */
   innerGradient?: string;
   /** 当前语言环境（用于自动本地化头衔、状态与反馈文本） */
   lang?: Locale;
@@ -60,12 +60,12 @@ export default function ProfileCardMiles({
   enableTilt = true,
   enableMobileTilt = true,
   mobileTiltSensitivity = 5,
-  behindGlowColor = 'rgba(125, 190, 255, 0.67)',
+  behindGlowColor = 'rgba(255, 196, 125, 0.72)',
   behindGlowSize = '50%',
   behindGlowEnabled = true,
   iconUrl = '/assets/demo/iconpattern.png',
   grainUrl,
-  innerGradient = 'linear-gradient(145deg,#60496e8c 0%,#71C4FF44 100%)',
+  innerGradient = 'linear-gradient(145deg, #b8775599 0%, #e9ac7373 55%, #ffe0a85c 100%)',
   lang = 'en',
   onContactClick,
   className = '',

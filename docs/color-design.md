@@ -44,7 +44,7 @@
 
 ---
 
-## 四、ProfileCard 原版效果与标准调用规范
+## 四、ProfileCard 暖色默认配色与标准调用规范
 
 `ProfileCard`（`src/registry/react-bits/ProfileCard.tsx`）是严格按原版保留的交互卡片，业务层通过 `src/components/common/ProfileCardMiles.tsx` 直接传参调用，**不篡改其内部实现**：
 
@@ -62,17 +62,19 @@ import ProfileCard from '@/components/common/ProfileCard';
   enableTilt={true}
   enableMobileTilt
   onContactClick={() => console.log('Contact clicked')}
-  behindGlowColor="rgba(125, 190, 255, 0.67)"
+  behindGlowColor="rgba(255, 196, 125, 0.72)"
   iconUrl="/assets/demo/iconpattern.png"
   behindGlowEnabled
-  innerGradient="linear-gradient(145deg,#60496e8c 0%,#71C4FF44 100%)"
+  innerGradient="linear-gradient(145deg, #b8775599 0%, #e9ac7373 55%, #ffe0a85c 100%)"
 />
 ```
 
-### 原版视觉参数特征
+### 业务层暖色默认参数
 
-- **卡片底层全息渐变 (`innerGradient`)**：`linear-gradient(145deg,#60496e8c 0%,#71C4FF44 100%)`
-- **悬浮后置光晕 (`behindGlowColor`)**：`rgba(125, 190, 255, 0.67)`
+业务包装层采用更明亮的暖陶色 → 蜜桃色 → 香槟金渐变，搭配杏金色后置光晕。通过公开参数设置配色，保留元组件内建全息反射与文字效果；调用方仍可覆盖这两个参数。
+
+- **卡片底层全息渐变 (`innerGradient`)**：`linear-gradient(145deg, #b8775599 0%, #e9ac7373 55%, #ffe0a85c 100%)`
+- **悬浮后置光晕 (`behindGlowColor`)**：`rgba(255, 196, 125, 0.72)`
 - **全息光斑图案 (`iconUrl`)**：`/assets/demo/iconpattern.png`
 - **头像展示**：自然采用原版 `mix-blend-mode: luminosity` 与三维视差浮动；
 - **文字样式**：保留原版金属反光质感与层叠视差位移。
