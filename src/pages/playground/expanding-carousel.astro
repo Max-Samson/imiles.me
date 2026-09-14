@@ -5,10 +5,10 @@ import { ExpandingCarouselShowcase } from '@/components/playground/PlaygroundExt
 import PropsTable, { type PropItem } from '@/components/playground/PropsTable.astro';
 import ArchitectureFeatures from '@/components/playground/ArchitectureFeatures.astro';
 
-const codeSnippet = `import ExpandingCarousel from '@/components/ui/expanding-carousel';
+const codeSnippet = `import ExpandingCarousel, { type ExpandingCarouselItem } from '@/components/ui/expanding-carousel';
 
 export function CarouselDemo() {
-  const items = [
+  const items: ExpandingCarouselItem[] = [
     {
       id: 'demo-1',
       eyebrow: 'Demo 01',
@@ -68,12 +68,23 @@ const propItems: PropItem[] = [
     prop: 'interval',
     type: 'number',
     default: '3000',
-    description: '自动轮播切换时间间隔（毫秒）。设为 0 时彻底禁用自动轮播。鼠标悬停或失焦时自动暂停。',
+    description: '自动轮播切换时间间隔（毫秒）。设为 0 时彻底禁用自动轮播。鼠标悬停、焦点进入组件、离开视口或页面隐藏时暂停；减少动态效果偏好下不自动播放。',
+  },
+  {
+    prop: 'initialIndex',
+    type: 'number',
+    default: '0',
+    description: '首次挂载时选中的卡片下标，从 0 开始；超出范围会限制到有效下标。',
+  },
+  {
+    prop: 'renderMedia',
+    type: '(item: ExpandingCarouselItem) => ReactNode | undefined',
+    description: '替换默认布局的媒体区域，保留标题与详情；返回 undefined 时使用 image/terminal。',
   },
   {
     prop: 'renderContent',
     type: '(item, active) => ReactNode',
-    description: '自定义展开态卡片内容与布局的渲染函数，提供超高自由度扩展能力。',
+    description: '替换整个展开内容（包括文字和媒体）；使用后默认媒体区域及 renderMedia 不再渲染。',
   },
   {
     prop: 'renderPreview',
@@ -121,6 +132,18 @@ const features = [
     color="sky"
     description="参考 Calendly 首页设计，基于 CSS Container Queries 与动态 SVG 连接件打造的高交互展开轮播。"
   />
+
+  <section class="space-y-4 text-sm text-muted-foreground leading-relaxed" aria-labelledby="carousel-usage">
+    <h2 id="carousel-usage" class="text-xl font-bold text-foreground">图片与使用说明</h2>
+    <ul class="list-disc pl-5 space-y-3">
+      <li><code>image.fit</code> 默认为 <code>'cover'</code>：按比例铺满媒体区域，多出的部分会裁切。使用 <code>'contain'</code> 可完整显示截图，但图片与容器比例不同时会留白。没有固定像素尺寸要求，建议选择清晰且主体居中的素材。</li>
+      <li><code>image.src</code> 与 <code>image.alt</code> 分别提供图片地址和替代文本。可选的 <code>image.previewSrc</code> 仅替换侧边缩略图；侧边图片始终按 cover 裁切，不受展开图的 fit 设置影响。</li>
+      <li>默认文字区域使用纵向弹性布局，标题和详情之间的实际间距随卡片高度与内容量变化；仅替换图片、视频或其他媒体时优先使用 <code>renderMedia</code>，完整自定义布局才使用 <code>renderContent</code>。</li>
+      <li>嵌入 Markdown 或带 <code>prose</code> 的正文时，外包一层 <code>not-prose</code>。Playground 的 <code>ComponentPreview</code> 已内置隔离，防止正文样式给图片添加外边距、改变标题和链接样式。</li>
+      <li>在 Astro 中将示例封装为 React 组件，并使用 <code>&lt;CarouselDemo client:visible /&gt;</code> 启用交互。渲染函数放在 React 组件内部，不通过 Astro 水合边界传递。</li>
+      <li>跨项目复用时同时复制 <code>expanding-carousel.tsx</code> 和 <code>expanding-carousel.css</code>，适配 <code>cn</code> 导入、主题变量，并安装 React、lucide-react 依赖。连接件由组件随动画自动测量，无需调用方手动定位。</li>
+    </ul>
+  </section>
 
   {/* 3. 底层物理与光学规格 */}
   <ArchitectureFeatures items={features} className="pt-4" />

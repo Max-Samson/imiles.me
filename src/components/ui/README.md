@@ -44,6 +44,10 @@
 
 ## 2. PlaygroundDocsLayout 极简扩展规范
 
+AI 开发规范见 `src/pages/playground/_agent.md`。该文件以下划线开头，仅供开发参考，Astro 不为其生成页面，也不应加入 Playground 导航。
+
+组件 `.astro` 页面默认不启用文章排版；正文需要时传入 `prose={true}`。`ComponentPreview` 使用 `not-prose` 隔离演示区域，避免图片外边距、链接下划线和标题间距受到文章样式影响。行内代码样式仅作用于 `pre` 外的 `code`，不得污染代码块。
+
 项目维护了全自动文档骨架 `src/layouts/PlaygroundDocsLayout.astro`。当需要为新组件接入 Playground 展示页时，**无需编写重复的侧边栏布局、翻页逻辑与面包屑**，仅需两步即可极速接入：
 
 ### 第一步：在 `src/data/playgroundNav.ts` 中注册一条记录
@@ -297,3 +301,14 @@ SampleComponent.displayName = 'SampleComponent';
 
 3. **Tailwind 配置**：
    确保启用了 Tailwind CSS 的 backdrop 滤镜工具类（Tailwind v3 默认已启用，v4 原生支持）。
+
+
+## ExpandingCarousel 使用约定
+
+完整示例与参数表见 `src/pages/playground/expanding-carousel.astro`（网站路径 `/playground/expanding-carousel`）。示例数据使用 `ExpandingCarouselItem[]` 类型，避免 `image.fit` 被推断为任意字符串。
+
+- 图片默认 `image.fit: 'cover'`，按比例铺满并裁切；`'contain'` 完整显示，比例不同会留白，无固定像素尺寸要求。`previewSrc` 可单独提供侧边缩略图，缩略图始终使用 cover。
+- 默认文字区为纵向弹性布局，标题与详情间距受卡片高度和内容量影响。仅替换媒体使用 `renderMedia`；`renderContent` 会接管整个展开内容。
+- 正文内嵌时用 `not-prose` 隔离；`ComponentPreview` 已内置。不要用更换图片尺寸来修复正文样式引入的图片外边距。
+- Astro 使用 React 包装组件并以 `client:visible` 水合；自定义渲染函数定义在 React 内部。
+- 跨项目需要同时携带 TSX 与 CSS，适配 `cn` 和主题变量，提供 React、lucide-react 依赖。连接件的几何更新由组件内部处理。

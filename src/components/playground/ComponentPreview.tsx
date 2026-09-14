@@ -62,7 +62,7 @@ export function ComponentPreview({
   };
 
   return (
-    <div className={cn('relative my-6 flex flex-col gap-3', className)}>
+    <div className={cn('not-prose relative my-6 flex flex-col gap-3', className)}>
       {/* 1. 选项卡标题栏 (参照 Image #1 极简文字风格 Preview | Code) */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-5 text-sm font-medium select-none">

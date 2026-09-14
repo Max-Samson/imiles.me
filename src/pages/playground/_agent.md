@@ -1,11 +1,6 @@
----
-layout: '@/layouts/PlaygroundDocsLayout.astro'
-title: 'AI Agent 开发规范 (Playground & UI Primitives)'
-description: '面向 AI 编码助手与人类开发者的组件库与操场全套工程架构红线、开发标准与标准作业程序 (SOP)。'
-currentId: 'agent'
-badge: 'AI Development SOP'
-componentPath: 'src/pages/playground/agent.md'
----
+# Playground 与 UI 组件 AI 开发规范
+
+本文件仅供项目开发使用，不作为网站页面发布。
 
 ## 1. 核心使命与架构红线
 
@@ -54,7 +49,7 @@ componentPath: 'src/pages/playground/agent.md'
 
 ---
 
-## 3. 动效、光学与排版 5 大避坑硬性红线
+## 3. 动效、光学与排版 6 大避坑硬性红线
 
 在实际工程落地中总结出的高频深坑，AI Agent 必须严格遵守对应解法：
 
@@ -89,6 +84,13 @@ componentPath: 'src/pages/playground/agent.md'
 
 ### 避坑 5：Astro 模板严禁向组件属性直接传递 React JSX 字面量
 - 在 `.astro` 文件中，写 `icon={<Sparkles className="size-4" />}` 会引发 Astro JSX 编译器的 `Expected ">" but found "className"` 语法解析错误。复杂 React 节点请封装在独立的 `.tsx` 文件中导出。
+
+### 避坑 6：组件演示与文章排版样式隔离
+
+- `PlaygroundDocsLayout` 对 Markdown 页面自动启用 `prose`；Astro 组件页面默认使用组件自身的布局。如需正文排版，可显式传入 `prose={true}`。
+- `ComponentPreview` 自带 `not-prose`，避免文章样式给演示图片添加外边距、给整张目录卡片添加下划线，或改变组件标题间距。手工嵌入正文的其他 UI 区域也应使用 `not-prose`。
+- 行内 `code` 可以使用背景和边框；`pre > code` 应保留代码块的统一背景与语法高亮，不要给所有 `code` 应用行内标签样式。
+- 轮播照片默认使用 `image.fit: 'cover'` 铺满并按比例裁切；需要保留完整截图时使用 `'contain'`，比例不一致时会留白。图片没有固定尺寸要求，素材比例影响裁切范围。
 
 ---
 

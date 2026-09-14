@@ -14,6 +14,8 @@ interface Props {
   description?: string;
   componentPath?: string;
   badge?: string;
+  /** Enable article typography for Markdown content, not component demos. */
+  prose?: boolean;
   frontmatter?: Record<string, any>;
 }
 
@@ -21,17 +23,16 @@ const pathname = Astro.url.pathname;
 const allItems = getAllPlaygroundItems();
 
 const isOverview = pathname === '/playground' || pathname === '/playground/';
-const isAgent = pathname === '/playground/agent' || pathname === '/playground/agent/';
 
 // 支持 Frontmatter (用于 .md 页面) 与直接 Props
 const fm = Astro.props.frontmatter ?? {};
+const useProse = Astro.props.prose ?? fm.prose ?? (Astro.props.frontmatter !== undefined);
 
 // 自动识别当前组件 ID：优先取 props，次之取 frontmatter，再次之匹配路径
 const detectedId =
   Astro.props.currentId ??
   fm.currentId ??
   (isOverview ? 'overview' : undefined) ??
-  (isAgent ? 'agent' : undefined) ??
   allItems.find((item) => pathname.includes(item.id))?.id ??
   'overview';
 
@@ -214,8 +215,11 @@ const resolvedBadge = Astro.props.badge ?? fm.badge ?? current?.badge ?? 'UI Pri
             </div>
           </div>
 
-          {/* 插入主内容视窗与属性表插槽，支持常规 React 节点与 Markdown prose 排版 */}
-          <div class="space-y-10 prose prose-neutral dark:prose-invert max-w-none prose-headings:scroll-mt-24 prose-headings:font-bold prose-headings:tracking-tight prose-h2:border-b prose-h2:border-border/60 prose-h2:pb-3 prose-h2:text-xl prose-h3:text-base prose-code:before:content-none prose-code:after:content-none prose-code:text-sky-600 dark:prose-code:text-sky-400 prose-code:bg-muted/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:border prose-code:border-border/50">
+          {/* Markdown opts into typography; component pages own their spacing and links. */}
+          <div class:list={[
+            'space-y-10 min-w-0',
+            useProse && 'playground-prose prose prose-neutral dark:prose-invert max-w-none prose-headings:scroll-mt-24 prose-headings:font-bold prose-headings:tracking-tight prose-h2:border-b prose-h2:border-border/60 prose-h2:pb-3 prose-h2:text-xl prose-h3:text-base',
+          ]}>
             <slot />
           </div>
         </main>
@@ -223,3 +227,23 @@ const resolvedBadge = Astro.props.badge ?? fm.badge ?? current?.badge ?? 'UI Pri
     </div>
   </div>
 </BaseLayout>
+
+<style>
+  /* Inline code badges must not style the code inside fenced blocks or demos. */
+  :global(.playground-prose :where(:not(pre) > code):not(:where(.not-prose, .not-prose *))) {
+    color: var(--brand);
+    background: color-mix(in srgb, var(--muted) 50%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    border-radius: 0.375rem;
+    padding: 0.125rem 0.375rem;
+    overflow-wrap: anywhere;
+  }
+  :global(.playground-prose :where(code)::before),
+  :global(.playground-prose :where(code)::after) {
+    content: none;
+  }
+  :global(.playground-prose pre) {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+</style>

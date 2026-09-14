@@ -1,7 +1,7 @@
 ---
 import PlaygroundDocsLayout from '@/layouts/PlaygroundDocsLayout.astro';
-import { PLAYGROUND_NAVIGATION, getAllPlaygroundItems } from '@/data/playgroundNav';
-import { ArrowRight, BookOpen, Layers, ShieldCheck, Sparkles, Zap } from 'lucide-react';
+import { getAllPlaygroundItems } from '@/data/playgroundNav';
+import { ArrowRight, BookOpen } from 'lucide-react';
 
 const allComponents = getAllPlaygroundItems().filter((item) => item.id !== 'overview');
 
@@ -93,11 +93,11 @@ const pillars = [
         allComponents.map((comp) => (
           <a
             href={comp.href}
-            class="group relative flex flex-col justify-between p-5 rounded-2xl border border-border/70 bg-card/40 backdrop-blur-xl shadow-sm transition-all hover:border-sky-500/40 hover:bg-card/70 hover:shadow-md"
+            class="group relative min-w-0 no-underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-500 flex flex-col justify-between p-5 rounded-2xl border border-border/70 bg-card/40 backdrop-blur-xl shadow-sm transition-all hover:border-sky-500/40 hover:bg-card/70 hover:shadow-md"
           >
             <div>
               <div class="flex items-center justify-between gap-2 mb-2">
-                <span class="text-xs font-mono text-sky-600 dark:text-sky-400 font-semibold truncate">
+                <span class="min-w-0 text-xs font-mono text-sky-600 dark:text-sky-400 font-semibold truncate">
                   {comp.componentPath}
                 </span>
                 {comp.isNew && (

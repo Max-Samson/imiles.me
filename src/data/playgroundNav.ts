@@ -30,17 +30,6 @@ export const PLAYGROUND_NAVIGATION: PlaygroundNavCategory[] = [
           '全站核心通用基础 UI 交互组件库。严格遵循单一职责、零业务耦合、跨项目无缝移植与空间拟物折射光学设计规范。',
         badge: 'Architecture & Overview',
       },
-      {
-        id: 'agent',
-        name: 'Agent SOP',
-        label: 'AI 开发规范',
-        href: '/playground/agent',
-        componentPath: 'src/pages/playground/agent.md',
-        description:
-          '面向 AI Agent 与人类开发者的组件库与操场全套工程架构红线、开发标准与 5 步 SOP 指南。',
-        badge: 'AI Development SOP',
-        isNew: true,
-      },
     ],
   },
   {
