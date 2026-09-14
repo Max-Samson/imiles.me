@@ -3,6 +3,7 @@ import PlaygroundDocsLayout from '@/layouts/PlaygroundDocsLayout.astro';
 import { ComponentPreview } from '@/components/playground/ComponentPreview';
 import { LiquidGlassHeroPreview } from '@/components/playground/PlaygroundExtraDemos';
 import PropsTable, { type PropItem } from '@/components/playground/PropsTable.astro';
+import ArchitectureFeatures, { type ArchitectureFeatureItem } from '@/components/playground/ArchitectureFeatures.astro';
 import LiquidGlassButtonDemo from '@/components/playground/LiquidGlassButtonDemo';
 
 const heroCode = `import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
@@ -121,6 +122,13 @@ const propItems: PropItem[] = [
     description: '禁用状态，半透明降低对比度并锁死交互。',
   },
 ];
+
+const features: ArchitectureFeatureItem[] = [
+  { label: 'Optics', value: '24px Blur + 180% Saturate', description: 'VisionOS 高斯模糊双层微折射' },
+  { label: 'Highlight', value: '1px Convex Curved Bevel', description: '顶部弧面透镜镜面倒角高光' },
+  { label: 'Dynamics', value: 'Fresnel Spotlight + Shimmer', description: '光标聚光漫射与持续液态流光' },
+  { label: 'Variants', value: '10 Styles & 8 Sizes', description: '包含 Apple Intelligence 虹彩流光' },
+];
 ---
 
 <PlaygroundDocsLayout currentId="liquid-glass-button">
@@ -137,22 +145,23 @@ const propItems: PropItem[] = [
   {/* 2. 声明式 Props 参数表格 (Astro 结构化驱动，零 HTML 样板代码) */}
   <PropsTable
     items={propItems}
-    color="sky"
     description="支持通过 class-variance-authority 变体扩展与原生 HTML/Motion 属性无缝透传。"
   />
 
-  {/* 3. 完整交互沙盒与多场景演练 */}
+  {/* 3. 完整交互沙盒与调参台 */}
   <section class="space-y-4 pt-4">
     <div class="border-b border-border/60 pb-3">
       <h2 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-        <span class="text-sky-400">🛠️</span>
-        <span>Interactive Sandbox & Scenarios</span>
+        <span class="text-sky-400">🎛</span>
+        <span>Interactive Sandbox</span>
       </h2>
       <p class="text-xs text-muted-foreground mt-1 leading-relaxed">
-        可实时切换 5 种不同折射底色背景、10 款玻璃材质变体、形态与物理特性的完整调参台。
+        实时切换材质变体、形态与物理特性的完整调参台。
       </p>
     </div>
-
     <LiquidGlassButtonDemo client:load />
   </section>
+
+  {/* 4. 底层物理与光学规格 */}
+  <ArchitectureFeatures items={features} className="pt-4" />
 </PlaygroundDocsLayout>

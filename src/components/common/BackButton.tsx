@@ -17,6 +17,7 @@ export default function BackButton({ href, label, className }: BackButtonProps) 
         href={href}
         variant="rainbow"
         size="xs"
+        shape="rounded"
         glow
         shimmer
         icon={<ArrowLeft className="size-3.5" />}

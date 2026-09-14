@@ -1,0 +1,74 @@
+---
+const colors = [
+  { value: '#0ea5e9', label: 'Sky blue' },
+  { value: '#10b981', label: 'Emerald green' },
+  { value: '#f59e0b', label: 'Amber gold' },
+  { value: '#a855f7', label: 'Violet purple' },
+];
+---
+
+<div
+  class="flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-1.5 py-1"
+  role="group"
+  aria-label="Playground accent color"
+  data-playground-accent-picker
+>
+  {
+    colors.map((color, index) => (
+      <button
+        type="button"
+        class="playground-color-dot size-2.5 rounded-full transition-transform hover:scale-125 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--swatch-color)]"
+        style={`--swatch-color: ${color.value}; background: var(--swatch-color);`}
+        data-playground-accent={color.value}
+        aria-label={color.label}
+        aria-pressed={index === 0 ? 'true' : 'false'}
+        title={color.label}
+      />
+    ))
+  }
+</div>
+
+<script>
+  const storageKey = 'playground-accent-color';
+  const root = document.querySelector<HTMLElement>('[data-playground-root]');
+  const picker = document.querySelector<HTMLElement>('[data-playground-accent-picker]');
+  const dots = Array.from(
+    picker?.querySelectorAll<HTMLButtonElement>('[data-playground-accent]') ?? [],
+  );
+
+  if (root && picker) {
+    const savedColor = localStorage.getItem(storageKey);
+    const selectedColor = dots.some((dot) => dot.dataset.playgroundAccent === savedColor)
+      ? savedColor
+      : dots[0]?.dataset.playgroundAccent;
+
+    const selectColor = (color: string) => {
+      root.style.setProperty('--playground-accent', color);
+      localStorage.setItem(storageKey, color);
+      dots.forEach((dot) => {
+        dot.setAttribute('aria-pressed', String(dot.dataset.playgroundAccent === color));
+      });
+    };
+
+    if (selectedColor) selectColor(selectedColor);
+
+    dots.forEach((dot) => {
+      dot.addEventListener('click', () => {
+        const color = dot.dataset.playgroundAccent;
+        if (color) selectColor(color);
+      });
+    });
+  }
+</script>
+
+<style>
+  .playground-color-dot {
+    box-shadow: 0 0 7px color-mix(in srgb, var(--swatch-color) 55%, transparent);
+  }
+
+  .playground-color-dot[aria-pressed='true'] {
+    outline: 2px solid color-mix(in srgb, var(--swatch-color) 55%, white);
+    outline-offset: 2px;
+    transform: scale(1.08);
+  }
+</style>

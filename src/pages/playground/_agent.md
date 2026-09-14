@@ -41,6 +41,7 @@
          └─ 文件位置：src/pages/playground/<kebab-name>.astro
          └─ 规范要求：套用 <PlaygroundDocsLayout currentId="<kebab-name>">
          └─ 内容编排：Header → ComponentPreview → PropsTable → ArchitectureFeatures
+         └─ 配色要求：PropsTable 统一读取 --playground-accent，禁止传入页面专属颜色
 
 [步骤 5] 质量验证与生产构建
          └─ 执行命令：pnpm exec biome check <files>（确保 0 警告 0 错误）

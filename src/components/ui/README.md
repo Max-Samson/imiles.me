@@ -48,6 +48,8 @@ AI 开发规范见 `src/pages/playground/_agent.md`。该文件以下划线开�
 
 组件 `.astro` 页面默认不启用文章排版；正文需要时传入 `prose={true}`。`ComponentPreview` 使用 `not-prose` 隔离演示区域，避免图片外边距、链接下划线和标题间距受到文章样式影响。行内代码样式仅作用于 `pre` 外的 `code`，不得污染代码块。
 
+Playground 顶栏的天蓝、翡翠绿、琥珀金和紫色圆点是全局强调色选择器。选择结果保存在浏览器的 `playground-accent-color` 中，由 `--playground-accent` 同时驱动布局导航、页面徽章和全部 `PropsTable`。详情页不得再给 `PropsTable` 传入页面专属颜色。
+
 项目维护了全自动文档骨架 `src/layouts/PlaygroundDocsLayout.astro`。当需要为新组件接入 Playground 展示页时，**无需编写重复的侧边栏布局、翻页逻辑与面包屑**，仅需两步即可极速接入：
 
 ### 第一步：在 `src/data/playgroundNav.ts` 中注册一条记录
@@ -69,7 +71,12 @@ AI 开发规范见 `src/pages/playground/_agent.md`。该文件以下划线开�
 ---
 import PlaygroundDocsLayout from '@/layouts/PlaygroundDocsLayout.astro';
 import { ComponentPreview } from '@/components/playground/ComponentPreview';
+import PropsTable, { type PropItem } from '@/components/playground/PropsTable.astro';
 import { MyComponent } from '@/components/ui/my-component';
+
+const propItems: PropItem[] = [
+  { prop: 'label', type: 'string', required: true, description: 'Accessible label.' },
+];
 
 const codeSnippet = `import { MyComponent } from '@/components/ui/my-component';
 
@@ -85,12 +92,7 @@ export function Demo() {
   </ComponentPreview>
 
   {/* 2. Props & API Reference 参数表格 (暂不显示下载模块) */}
-  <section class="space-y-4">
-    <h2 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2 border-b border-border/60 pb-3">
-      <span>⚡</span> Props & API Reference
-    </h2>
-    <!-- 参数表格 -->
-  </section>
+  <PropsTable items={propItems} />
 </PlaygroundDocsLayout>
 ```
 `PlaygroundDocsLayout` 将**自动根据 `currentId` 完成以下全套渲染**：

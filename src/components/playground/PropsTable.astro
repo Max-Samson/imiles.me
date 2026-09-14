@@ -21,39 +21,17 @@ interface Props {
   title?: string;
   /** 自定义描述/提示文本 */
   description?: string;
-  /** 主题色调，用于高亮属性名 (sky | emerald | amber | purple) */
-  color?: 'sky' | 'emerald' | 'amber' | 'purple';
   /** 自定义外层类名 */
   className?: string;
 }
 
-const {
-  items,
-  title = 'Props & API Reference',
-  description,
-  color = 'sky',
-  className,
-} = Astro.props;
-
-const colorMap = {
-  sky: 'text-sky-600 dark:text-sky-400',
-  emerald: 'text-emerald-600 dark:text-emerald-400',
-  amber: 'text-amber-600 dark:text-amber-400',
-  purple: 'text-purple-600 dark:text-purple-400',
-};
-
-const iconColorMap = {
-  sky: 'text-sky-400',
-  emerald: 'text-emerald-400',
-  amber: 'text-amber-400',
-  purple: 'text-purple-400',
-};
+const { items, title = 'Props & API Reference', description, className } = Astro.props;
 ---
 
 <section class={cn("space-y-4", className)}>
   <div class="border-b border-border/60 pb-3">
     <h2 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-      <span class={iconColorMap[color]}>⚡</span>
+      <span class="text-[var(--playground-accent,var(--brand))]">⚡</span>
       <span>{title}</span>
     </h2>
     {description && (
@@ -79,7 +57,7 @@ const iconColorMap = {
             {/* Prop Name */}
             <td class="py-3 px-4 align-top">
               <div class="flex items-center gap-1.5 flex-wrap">
-                <code class={cn("font-bold text-xs", colorMap[color])}>
+                <code class="font-bold text-xs text-[var(--playground-accent,var(--brand))]">
                   {item.prop}
                 </code>
                 {item.required && (
