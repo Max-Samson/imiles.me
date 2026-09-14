@@ -1,0 +1,31 @@
+---
+import { cn } from '@/lib/utils';
+
+export interface ArchitectureFeatureItem {
+  /** 特性分类标签 (如 Physics, Optics, Alignment) */
+  label: string;
+  /** 特性核心数值/定义 (如 Spring stiffness 220, 24px Blur) */
+  value: string;
+  /** 补充说明 (可选) */
+  description?: string;
+}
+
+interface Props {
+  items: ArchitectureFeatureItem[];
+  className?: string;
+}
+
+const { items, className } = Astro.props;
+---
+
+<section class={cn("grid grid-cols-2 sm:grid-cols-4 gap-3 text-center", className)}>
+  {items.map((item) => (
+    <div class="p-4 rounded-2xl bg-card/40 border border-border/60 backdrop-blur-sm flex flex-col justify-center transition-all hover:bg-card/60">
+      <p class="text-[10px] uppercase font-mono text-muted-foreground tracking-wider">{item.label}</p>
+      <p class="text-xs font-semibold text-foreground mt-1">{item.value}</p>
+      {item.description && (
+        <p class="text-[11px] text-muted-foreground mt-0.5">{item.description}</p>
+      )}
+    </div>
+  ))}
+</section>

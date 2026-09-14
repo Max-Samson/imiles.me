@@ -1,0 +1,72 @@
+---
+import PlaygroundDocsLayout from '@/layouts/PlaygroundDocsLayout.astro';
+import { ComponentPreview } from '@/components/playground/ComponentPreview';
+import { FloatingDockShowcase } from '@/components/playground/PlaygroundExtraDemos';
+import PropsTable, { type PropItem } from '@/components/playground/PropsTable.astro';
+import ArchitectureFeatures from '@/components/playground/ArchitectureFeatures.astro';
+
+const codeSnippet = `import { FloatingDock } from '@/components/ui/floating-dock';
+import { Home, Laptop, Terminal, Mail, Code, FolderGit2 } from 'lucide-react';
+
+const dockItems = [
+  { title: 'Home', icon: <Home className="size-full" />, href: '/' },
+  { title: 'Projects', icon: <Laptop className="size-full" />, href: '/projects' },
+  { title: 'Terminal', icon: <Terminal className="size-full" />, href: '/notes' },
+  { title: 'Code', icon: <Code className="size-full" />, href: 'https://github.com/...', target: '_blank' },
+  { title: 'Contact', icon: <Mail className="size-full" />, href: 'mailto:...' },
+];
+
+export function DockDemo() {
+  return <FloatingDock items={dockItems} />;
+}`;
+
+const propItems: PropItem[] = [
+  {
+    prop: 'items',
+    type: 'FloatingDockItem[]',
+    required: true,
+    description: '导航项数据源数组，每个 item 包含 title（气泡文案）、icon（图标节点）、href（目标链接）与可选的 target。',
+  },
+  {
+    prop: 'desktopClassName',
+    type: 'string',
+    description: '桌面端悬浮胶囊自定义容器类名，可覆写背景模糊度、边框或位置。',
+  },
+  {
+    prop: 'mobileClassName',
+    type: 'string',
+    description: '移动端窄屏下紧凑底栏自定义容器类名。',
+  },
+];
+
+const features = [
+  { label: 'Physics', value: 'Spring Stiffness 220', description: '基于 Motion 物理弹簧阻尼' },
+  { label: 'Optics', value: '24px Blur + 180% Saturation', description: '苹果微高光水银液态底座' },
+  { label: 'Alignment', value: '1:1 clientX Distance Map', description: '视口坐标对齐，消除滚动偏移' },
+  { label: 'Responsiveness', value: 'Full Viewport Responsive', description: '全尺寸窗口动态磁吸支持' },
+];
+---
+
+<PlaygroundDocsLayout currentId="floating-dock">
+  {/* 1. Magic UI 主视窗 (Preview / Code / ↻ Replay / 📋 Copy) */}
+  <ComponentPreview
+    client:load
+    code={codeSnippet}
+    canvasBackground="dots"
+    minHeight="min-h-[340px]"
+  >
+    <div class="py-4 flex justify-center w-full">
+      <FloatingDockShowcase client:load />
+    </div>
+  </ComponentPreview>
+
+  {/* 2. 声明式 Props 参数表格 (Astro 结构化驱动) */}
+  <PropsTable
+    items={propItems}
+    color="emerald"
+    description="支持桌面端平滑磁吸放大与移动端紧凑导航双模式自适应。"
+  />
+
+  {/* 3. 底层物理与光学规格 */}
+  <ArchitectureFeatures items={features} className="pt-4" />
+</PlaygroundDocsLayout>

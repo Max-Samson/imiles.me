@@ -1,0 +1,127 @@
+---
+import PlaygroundDocsLayout from '@/layouts/PlaygroundDocsLayout.astro';
+import { ComponentPreview } from '@/components/playground/ComponentPreview';
+import { ExpandingCarouselShowcase } from '@/components/playground/PlaygroundExtraDemos';
+import PropsTable, { type PropItem } from '@/components/playground/PropsTable.astro';
+import ArchitectureFeatures from '@/components/playground/ArchitectureFeatures.astro';
+
+const codeSnippet = `import ExpandingCarousel from '@/components/ui/expanding-carousel';
+
+export function CarouselDemo() {
+  const items = [
+    {
+      id: 'demo-1',
+      eyebrow: 'Demo 01',
+      title: 'Demo Item 1',
+      description: '这里是卡片简单描述占位文本。',
+      image: { src: '/assets/demo/ExpandingCarousel-demo1.jpeg', alt: 'Demo 1', fit: 'cover' },
+      badges: ['React', 'TypeScript'],
+      links: [{ label: 'Details', href: '/playground' }],
+    },
+    {
+      id: 'demo-2',
+      eyebrow: 'Demo 02',
+      title: 'Demo Item 2',
+      description: '这里是卡片简单描述占位文本。',
+      image: { src: '/assets/demo/ExpandingCarousel-demo2.jpeg', alt: 'Demo 2', fit: 'cover' },
+      badges: ['Motion', 'Tailwind'],
+      links: [{ label: 'Details', href: '/playground' }],
+    },
+  ];
+
+  return (
+    <ExpandingCarousel
+      items={items}
+      label="Demo Carousel"
+      labels={{
+        previous: '上一项',
+        next: '下一项',
+        pause: '暂停',
+        play: '播放',
+        slide: '卡片',
+      }}
+      interval={3500}
+    />
+  );
+}`;
+
+const propItems: PropItem[] = [
+  {
+    prop: 'items',
+    type: 'ExpandingCarouselItem[]',
+    required: true,
+    description: '卡片项数据源数组。包含 id、title、description、image、badges、links 等。',
+  },
+  {
+    prop: 'label',
+    type: 'string',
+    required: true,
+    description: '轮播组件的可访问性 ARIA 标识文本 (如 "Selected projects")。',
+  },
+  {
+    prop: 'labels',
+    type: '{ previous, next, pause, play, slide }',
+    required: true,
+    description: '国际化无障碍操作按钮文案对象（上一张、下一张、暂停、播放等）。',
+  },
+  {
+    prop: 'interval',
+    type: 'number',
+    default: '3000',
+    description: '自动轮播切换时间间隔（毫秒）。设为 0 时彻底禁用自动轮播。鼠标悬停或失焦时自动暂停。',
+  },
+  {
+    prop: 'renderContent',
+    type: '(item, active) => ReactNode',
+    description: '自定义展开态卡片内容与布局的渲染函数，提供超高自由度扩展能力。',
+  },
+  {
+    prop: 'renderPreview',
+    type: '(item) => ReactNode',
+    description: '自定义未展开侧边卡片缩略内容的渲染函数。',
+  },
+  {
+    prop: 'className',
+    type: 'string',
+    description: '最外层容器查询容器的自定义 CSS 类名合并。',
+  },
+  {
+    prop: 'style',
+    type: 'CSSProperties',
+    description: '支持传入 --carousel-* 系列 CSS 变量进行尺寸、表面颜色与位移动效定制。',
+  },
+];
+
+const features = [
+  { label: 'Geometry', value: '3-Tier Connected Cards', description: '中央展开卡与两侧折叠缩略卡' },
+  { label: 'Connectors', value: 'Dynamic SVG Bridging', description: '实时测量外露边缘并生成无缝接缝' },
+  { label: 'Indicators', value: '8px to 80px Progress Bar', description: '底部进度条随轮播自动拉伸' },
+  { label: 'Responsive', value: 'CSS Container Queries', description: '@container 自适应任意父容器宽度' },
+];
+---
+
+<PlaygroundDocsLayout currentId="expanding-carousel">
+  {/* 1. Magic UI 主视窗 (Preview / Code / ↻ Replay / 📋 Copy) */}
+  {/* 增加高度为 min-h-[640px] 并优化 padding 为 px-2 sm:px-4 py-8，彻底解决底部进度条和左右侧卡被截断的问题 */}
+  <ComponentPreview
+    client:load
+    code={codeSnippet}
+    canvasBackground="dots"
+    minHeight="min-h-[640px]"
+    contentPadding="px-2 sm:px-4 py-8"
+  >
+    <div class="w-full">
+      <ExpandingCarouselShowcase client:load />
+    </div>
+  </ComponentPreview>
+
+  {/* 2. 声明式 Props 参数表格 (Astro 结构化驱动) */}
+  <PropsTable
+    items={propItems}
+    color="sky"
+    description="参考 Calendly 首页设计，基于 CSS Container Queries 与动态 SVG 连接件打造的高交互展开轮播。"
+  />
+
+  {/* 3. 底层物理与光学规格 */}
+  <ArchitectureFeatures items={features} className="pt-4" />
+</PlaygroundDocsLayout>

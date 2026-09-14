@@ -1,0 +1,89 @@
+---
+import PlaygroundDocsLayout from '@/layouts/PlaygroundDocsLayout.astro';
+import { ComponentPreview } from '@/components/playground/ComponentPreview';
+import { PlaceholdersInputShowcase } from '@/components/playground/PlaygroundExtraDemos';
+import PropsTable, { type PropItem } from '@/components/playground/PropsTable.astro';
+import ArchitectureFeatures from '@/components/playground/ArchitectureFeatures.astro';
+
+const codeSnippet = `import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
+
+export function SearchDemo() {
+  const placeholders = [
+    '搜索博客文章与深度思考...',
+    '键入文字并按回车体验粒子粉碎...',
+    'Ask Apple Intelligence a question...',
+  ];
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    console.log('Query submitted!');
+  };
+
+  return (
+    <PlaceholdersAndVanishInput
+      placeholders={placeholders}
+      onSubmit={handleSubmit}
+      ariaLabel="Search"
+    />
+  );
+}`;
+
+const propItems: PropItem[] = [
+  {
+    prop: 'placeholders',
+    type: 'string[]',
+    required: true,
+    description: '打字机效果循环滚动的占位提示文案数组，内置 3.2s 自动切换与平滑进出场。',
+  },
+  {
+    prop: 'onSubmit',
+    type: '(e: React.FormEvent<HTMLFormElement>) => void',
+    description: '提交事件回调。按下 Enter 键或点击右侧水银按钮时触发，自动启动文字粒子解构消散。',
+  },
+  {
+    prop: 'onChange',
+    type: '(e: React.ChangeEvent<HTMLInputElement>) => void',
+    description: '输入框原生内容变更监听回调。',
+  },
+  {
+    prop: 'ariaLabel',
+    type: 'string',
+    description: '无障碍访问标签说明。',
+  },
+  {
+    prop: 'className',
+    type: 'string',
+    description: '外层胶囊容器自定义 CSS 类名合并。',
+  },
+];
+
+const features = [
+  { label: 'Physics', value: 'Canvas 2D Particle Gravity', description: '高拟真物理微粒子消散算法' },
+  { label: 'Sampling', value: 'Alpha-Aware Subpixel Grid', description: '精确透明度扫描，杜绝丢失抗锯齿' },
+  { label: 'Optics', value: '24px Blur + 1px Convex Bevel', description: '苹果拟物液态玻璃双层底座' },
+  { label: 'Animation', value: 'AnimatePresence 3.2s Loop', description: '无感优雅滚动轮播占位文案' },
+];
+---
+
+<PlaygroundDocsLayout currentId="placeholders-and-vanish-input">
+  {/* 1. Magic UI 主视窗 (Preview / Code / ↻ Replay / 📋 Copy) */}
+  <ComponentPreview
+    client:load
+    code={codeSnippet}
+    canvasBackground="dots"
+    minHeight="min-h-[340px]"
+  >
+    <div class="w-full max-w-xl py-4">
+      <PlaceholdersInputShowcase client:load />
+    </div>
+  </ComponentPreview>
+
+  {/* 2. 声明式 Props 参数表格 */}
+  <PropsTable
+    items={propItems}
+    color="sky"
+    description="内置 HTML5 Canvas 物理粒子引擎，原生支持明暗自适应与表单安全防重复提交。"
+  />
+
+  {/* 3. 底层物理与光学规格 */}
+  <ArchitectureFeatures items={features} className="pt-4" />
+</PlaygroundDocsLayout>

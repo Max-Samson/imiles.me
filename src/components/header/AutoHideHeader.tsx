@@ -17,9 +17,15 @@ type Props = {
   lang?: Locale;
   pathname?: string;
   children?: ReactNode;
+  hideLanguageSwitcher?: boolean;
 };
 
-export default function AutoHideHeader({ lang, pathname, children }: Props) {
+export default function AutoHideHeader({
+  lang,
+  pathname,
+  children,
+  hideLanguageSwitcher = false,
+}: Props) {
   const { isVisible } = useScrollDirection();
   const resolvedPathname = pathname ?? '/';
   const resolvedLang = lang ?? getLocaleFromPathname(resolvedPathname);
@@ -30,6 +36,8 @@ export default function AutoHideHeader({ lang, pathname, children }: Props) {
     alternateLocale,
   );
   const languageToggleLabel = alternateLocale === 'zh' ? '中文' : 'EN';
+
+  const shouldHideLanguage = hideLanguageSwitcher || resolvedPathname.startsWith('/playground');
 
   return (
     <MotionConfig reducedMotion="user">
@@ -53,19 +61,21 @@ export default function AutoHideHeader({ lang, pathname, children }: Props) {
           {/* Desktop nav + actions cluster */}
           <div className="hidden md:flex md:items-center md:gap-2.5">
             <NavigationMenuDemo lang={lang} pathname={pathname} />
-            {children}
+            {!shouldHideLanguage && children}
             <ModeToggle />
           </div>
 
           {/* Mobile hamburger + theme toggle */}
           <div className="flex items-center gap-2 md:hidden">
-            <a
-              href={languageToggleHref}
-              className="inline-flex h-9 min-w-9 items-center justify-center rounded-md border border-border bg-background px-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-              aria-label={`Switch language to ${alternateLocale === 'zh' ? 'Chinese' : 'English'}`}
-            >
-              {languageToggleLabel}
-            </a>
+            {!shouldHideLanguage && (
+              <a
+                href={languageToggleHref}
+                className="inline-flex h-9 min-w-9 items-center justify-center rounded-md border border-border bg-background px-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                aria-label={`Switch language to ${alternateLocale === 'zh' ? 'Chinese' : 'English'}`}
+              >
+                {languageToggleLabel}
+              </a>
+            )}
             <ModeToggle />
             <MobileMenu lang={lang} pathname={pathname} />
           </div>

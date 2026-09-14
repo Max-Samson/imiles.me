@@ -46,3 +46,9 @@ export { default as PDFLink } from './pdf/PDFLink';
 export { default as StandalonePDFReader } from './pdf/StandalonePDFReader';
 export { default as ProjectCard } from './project/ProjectCard';
 export { default as ProjectHero } from './project/ProjectHero';
+export {
+  default as ExpandingCarousel,
+  type ExpandingCarouselItem,
+  type ExpandingCarouselProps,
+} from './ui/expanding-carousel';
+export { LiquidButton, LiquidGlassButton } from './ui/liquid-glass-button';

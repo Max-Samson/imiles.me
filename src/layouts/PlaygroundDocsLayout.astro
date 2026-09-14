@@ -1,0 +1,225 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import BackButton from '@/components/common/BackButton';
+import {
+  PLAYGROUND_NAVIGATION,
+  getPrevAndNextPlaygroundItem,
+  getAllPlaygroundItems,
+} from '@/data/playgroundNav';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+
+interface Props {
+  currentId?: string;
+  title?: string;
+  description?: string;
+  componentPath?: string;
+  badge?: string;
+  frontmatter?: Record<string, any>;
+}
+
+const pathname = Astro.url.pathname;
+const allItems = getAllPlaygroundItems();
+
+const isOverview = pathname === '/playground' || pathname === '/playground/';
+const isAgent = pathname === '/playground/agent' || pathname === '/playground/agent/';
+
+// 支持 Frontmatter (用于 .md 页面) 与直接 Props
+const fm = Astro.props.frontmatter ?? {};
+
+// 自动识别当前组件 ID：优先取 props，次之取 frontmatter，再次之匹配路径
+const detectedId =
+  Astro.props.currentId ??
+  fm.currentId ??
+  (isOverview ? 'overview' : undefined) ??
+  (isAgent ? 'agent' : undefined) ??
+  allItems.find((item) => pathname.includes(item.id))?.id ??
+  'overview';
+
+const { current, prev, next, category } = getPrevAndNextPlaygroundItem(detectedId);
+
+const resolvedTitle = Astro.props.title ?? fm.title ?? current?.name ?? 'Component';
+const resolvedDescription = Astro.props.description ?? fm.description ?? current?.description ?? '';
+const resolvedPath = Astro.props.componentPath ?? fm.componentPath ?? current?.componentPath ?? 'src/components/ui';
+const resolvedBadge = Astro.props.badge ?? fm.badge ?? current?.badge ?? 'UI Primitive';
+---
+
+<BaseLayout
+  title={`${resolvedTitle} | UI Playground`}
+  description={resolvedDescription}
+  hideLanguageSwitcher={true}
+>
+  {/* 统一全页背景色 (bg-background)，彻底移除仅覆盖第一屏的绝对定位光线层，消除滚动色差 */}
+  <div class="relative min-h-screen isolate bg-background pt-24 sm:pt-28 lg:pt-32 pb-16 px-4 sm:px-8 lg:px-12">
+    {/* 容器宽度提升至 max-w-[1560px]，彻底释放大屏下预览与文档区域的展示宽度 */}
+    <div class="relative z-10 w-full max-w-[1560px] mx-auto space-y-8">
+      {/* ─── 顶部面包屑与全局导航栏 ─── */}
+      <header class="w-full flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-border/60">
+        <div class="flex items-center gap-3">
+          <BackButton href="/" label="Home" className="mb-0" />
+          <span class="text-muted-foreground/40">/</span>
+          <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs font-mono">
+            <a href="/playground" class="text-muted-foreground hover:text-foreground transition-colors">
+              Playground
+            </a>
+            <span class="text-muted-foreground/40">/</span>
+            {category !== 'Getting Started' && (
+              <>
+                <span class="text-muted-foreground">{category}</span>
+                <span class="text-muted-foreground/40">/</span>
+              </>
+            )}
+            <span class="text-foreground font-semibold text-sky-600 dark:text-sky-400">{resolvedTitle}</span>
+          </nav>
+        </div>
+
+        <div class="flex items-center gap-2.5 text-xs font-mono text-muted-foreground">
+          <span class="size-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Magic UI Docs System</span>
+        </div>
+      </header>
+
+      {/* ─── 移动端水平滚动导航胶囊 ─── */}
+      <div class="md:hidden w-full overflow-x-auto pb-2 scrollbar-none">
+        <div class="flex items-center gap-1.5 min-w-max">
+          {
+            allItems.map((item) => {
+              const isActive = item.id === detectedId;
+              return (
+                <a
+                  href={item.href}
+                  class:list={[
+                    'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap',
+                    isActive
+                      ? 'bg-sky-500/10 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300 font-semibold shadow-xs border border-sky-500/25 dark:border-sky-500/30'
+                      : 'bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/70 border border-border/50',
+                  ]}
+                >
+                  <span>{item.name}</span>
+                  {item.isNew && (
+                    <span class="text-[9px] font-mono font-semibold px-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                      New
+                    </span>
+                  )}
+                </a>
+              );
+            })
+          }
+        </div>
+      </div>
+
+      {/* ─── 核心左右双栏布局 (解除 max-w-4xl 瓶颈，允许主体在宽屏自然展开) ─── */}
+      <div class="flex gap-8 lg:gap-12 items-start">
+        {/* ─── 左侧固钉导航栏 (Left Sticky Sidebar) ─── */}
+        <aside class="w-56 lg:w-60 shrink-0 hidden md:block sticky top-24 lg:top-28 max-h-[calc(100vh-8rem)] overflow-y-auto pr-4 space-y-8 select-none">
+          {
+            PLAYGROUND_NAVIGATION.map((group) => (
+              <div class="space-y-2">
+                <h3 class="text-[11px] font-mono font-semibold uppercase tracking-wider text-muted-foreground/70 px-3">
+                  {group.category}
+                </h3>
+                <ul class="space-y-1">
+                  {group.items.map((item) => {
+                    const isActive = item.id === detectedId;
+                    return (
+                      <li>
+                        <a
+                          href={item.href}
+                          class:list={[
+                            'flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-all',
+                            // 选中态优化：使用温和浅色微光药丸 (bg-sky-500/10 text-sky-600)，彻底移除刺眼的纯黑大色块
+                            isActive
+                              ? 'bg-sky-500/10 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300 font-semibold shadow-xs border border-sky-500/25 dark:border-sky-500/30'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent',
+                          ]}
+                        >
+                          <div class="flex items-center gap-2 truncate">
+                            {isActive && (
+                              <span class="size-1.5 rounded-full bg-sky-500 shrink-0" aria-hidden="true"></span>
+                            )}
+                            <span class="truncate">{item.name}</span>
+                          </div>
+                          {item.isNew && (
+                            <span
+                              class:list={[
+                                'ml-2 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full border leading-none shrink-0',
+                                isActive
+                                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+                              ]}
+                            >
+                              New
+                            </span>
+                          )}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))
+          }
+        </aside>
+
+        {/* ─── 右侧主体内容区 ─── */}
+        <main class="flex-1 min-w-0 w-full pb-16">
+          {/* 文档头部 */}
+          <div class="space-y-3 mb-8">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-sky-400/30 bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-mono uppercase tracking-wider mb-2">
+                  <span>{resolvedBadge}</span>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+                  {resolvedTitle}
+                </h1>
+                <p class="text-sm sm:text-base text-muted-foreground leading-relaxed mt-2 text-balance max-w-3xl">
+                  {resolvedDescription}
+                </p>
+              </div>
+
+              {/* 右上角快捷动作 (Prev / Next 导航) */}
+              <div class="flex items-center gap-1.5 shrink-0 pt-1">
+                {
+                  prev && (
+                    <a
+                      href={prev.href}
+                      title={`Previous: ${prev.name}`}
+                      aria-label="Previous component"
+                      class="flex size-8 items-center justify-center rounded-lg border border-border/60 bg-card/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-all shadow-xs"
+                    >
+                      <ArrowLeft className="size-4" />
+                    </a>
+                  )
+                }
+                {
+                  next && (
+                    <a
+                      href={next.href}
+                      title={`Next: ${next.name}`}
+                      aria-label="Next component"
+                      class="flex size-8 items-center justify-center rounded-lg border border-border/60 bg-card/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-all shadow-xs"
+                    >
+                      <ArrowRight className="size-4" />
+                    </a>
+                  )
+                }
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1 font-mono text-xs text-muted-foreground">
+              <span>Source:</span>
+              <code class="bg-muted/40 px-2 py-0.5 rounded text-foreground border border-border/40">
+                {resolvedPath}
+              </code>
+            </div>
+          </div>
+
+          {/* 插入主内容视窗与属性表插槽，支持常规 React 节点与 Markdown prose 排版 */}
+          <div class="space-y-10 prose prose-neutral dark:prose-invert max-w-none prose-headings:scroll-mt-24 prose-headings:font-bold prose-headings:tracking-tight prose-h2:border-b prose-h2:border-border/60 prose-h2:pb-3 prose-h2:text-xl prose-h3:text-base prose-code:before:content-none prose-code:after:content-none prose-code:text-sky-600 dark:prose-code:text-sky-400 prose-code:bg-muted/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:border prose-code:border-border/50">
+            <slot />
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

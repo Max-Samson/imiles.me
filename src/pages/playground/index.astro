@@ -1,0 +1,145 @@
+---
+import PlaygroundDocsLayout from '@/layouts/PlaygroundDocsLayout.astro';
+import { PLAYGROUND_NAVIGATION, getAllPlaygroundItems } from '@/data/playgroundNav';
+import { ArrowRight, BookOpen, Layers, ShieldCheck, Sparkles, Zap } from 'lucide-react';
+
+const allComponents = getAllPlaygroundItems().filter((item) => item.id !== 'overview');
+
+const pillars = [
+  {
+    icon: '🏛️',
+    title: '职责单一与完全隔离',
+    subtitle: 'Single Responsibility & Isolation',
+    description:
+      'src/components/ui/ 仅存放纯粹的成熟 UI 原语，内部零调试代码、零假数据污染，可随时独立复制到任意外部项目。',
+  },
+  {
+    icon: '🔮',
+    title: '空间拟物折射光学',
+    subtitle: 'Apple Liquid Glass Optics',
+    description:
+      '继承 NavigationMenu 核心光学：双层高斯模糊 (backdrop-blur-2xl)、180% 饱和度增益、双层菲涅尔折射与 1px 凸面镜倒角。',
+  },
+  {
+    icon: '⚡',
+    title: '动效与坐标安全体系',
+    subtitle: 'Motion & Coordinate Safety',
+    description:
+      '严格分离 CSS translate 与 Motion transform 避免双重偏移；坐标统一对齐 clientX；浮层全局挂载 Portal 杜绝截断。',
+  },
+  {
+    icon: '🧩',
+    title: 'CVA 变体与多态扩展',
+    subtitle: 'Class Variance Authority',
+    description:
+      '基于 cva 构建严谨的类型化变体与尺寸体系，支持用户传入 className 安全覆写，并可通过 Radix Slot 实现无感多态代理。',
+  },
+];
+---
+
+<PlaygroundDocsLayout
+  currentId="overview"
+  title="Component Library Overview"
+  description="全站核心通用基础 UI 交互组件库。严格遵循单一职责、零业务耦合、跨项目无缝移植与空间拟物折射光学设计规范。"
+  componentPath="src/components/ui/README.md"
+  badge="Architecture & Design System"
+>
+  {/* ─── 1. 四大设计体系基石 (Four Architectural Pillars) ─── */}
+  <section class="space-y-4">
+    <div class="border-b border-border/60 pb-3">
+      <h2 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <span class="text-sky-400">🏛️</span>
+        <span>Design Principles & Architecture</span>
+      </h2>
+      <p class="text-xs text-muted-foreground mt-1">
+        组件库建设的核心原则：以工业级隔离度保障随时可抽离复用，以统一拟物物理光学呈现苹果空间质感。
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {
+        pillars.map((pillar) => (
+          <div class="p-5 rounded-2xl border border-border/70 bg-card/40 backdrop-blur-xl shadow-sm space-y-2 hover:border-border transition-all">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl">{pillar.icon}</span>
+              <div>
+                <h3 class="text-sm font-bold text-foreground">{pillar.title}</h3>
+                <p class="text-[10px] font-mono text-muted-foreground">{pillar.subtitle}</p>
+              </div>
+            </div>
+            <p class="text-xs text-muted-foreground leading-relaxed pt-1">
+              {pillar.description}
+            </p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  {/* ─── 2. 全量组件目录矩阵与快速入口 (Component Catalog Matrix) ─── */}
+  <section class="space-y-4 pt-4">
+    <div class="border-b border-border/60 pb-3">
+      <h2 class="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+        <span class="text-emerald-400">⚡</span>
+        <span>Component Catalog ({allComponents.length})</span>
+      </h2>
+      <p class="text-xs text-muted-foreground mt-1">
+        点击任意组件卡片即可进入带有 Magic UI 双模态 Preview/Code 视窗、参数表格与交互演示的详情页。
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {
+        allComponents.map((comp) => (
+          <a
+            href={comp.href}
+            class="group relative flex flex-col justify-between p-5 rounded-2xl border border-border/70 bg-card/40 backdrop-blur-xl shadow-sm transition-all hover:border-sky-500/40 hover:bg-card/70 hover:shadow-md"
+          >
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <span class="text-xs font-mono text-sky-600 dark:text-sky-400 font-semibold truncate">
+                  {comp.componentPath}
+                </span>
+                {comp.isNew && (
+                  <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
+                    New
+                  </span>
+                )}
+              </div>
+
+              <h3 class="text-base font-bold text-foreground group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                {comp.name}
+              </h3>
+              <p class="text-xs font-medium text-muted-foreground mt-0.5">
+                {comp.label}
+              </p>
+
+              <p class="text-xs text-muted-foreground leading-relaxed mt-2.5 line-clamp-2">
+                {comp.description}
+              </p>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs font-mono text-muted-foreground group-hover:text-foreground">
+              <span>View Component & Docs</span>
+              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1 text-sky-500" />
+            </div>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  {/* ─── 3. 开发规范与代码指引 (Development Guide Reference) ─── */}
+  <section class="rounded-2xl border border-border/70 bg-muted/20 p-6 space-y-3">
+    <div class="flex items-center gap-2">
+      <BookOpen className="size-4 text-sky-500" />
+      <h3 class="text-sm font-bold text-foreground">组件库开发规范文档已同步建立</h3>
+    </div>
+    <p class="text-xs text-muted-foreground leading-relaxed">
+      详细的 AI Agent 5 步开发标准工作流 (SOP)、Apple Liquid Glass 5 层统一光学配方、动效排版避坑红线备忘录及标准组件起手式模板已存放在：
+    </p>
+    <code class="block text-xs font-mono text-sky-600 dark:text-sky-400 bg-background/80 border border-border/60 p-2.5 rounded-xl">
+      src/components/ui/README.md
+    </code>
+  </section>
+</PlaygroundDocsLayout>

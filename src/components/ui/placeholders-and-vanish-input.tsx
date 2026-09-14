@@ -4,34 +4,43 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
-type PixelData = { x: number; y: number; color: number[] };
-type AnimatedPixelData = { x: number; y: number; r: number; color: string };
+type PixelParticle = {
+  x: number;
+  y: number;
+  originX: number;
+  originY: number;
+  r: number;
+  color: string;
+};
 
 export function PlaceholdersAndVanishInput({
   placeholders,
   onChange,
   onSubmit,
   ariaLabel,
+  className,
 }: {
   placeholders: string[];
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
   ariaLabel?: string;
+  className?: string;
 }) {
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
-
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const startAnimation = useCallback(() => {
     intervalRef.current = setInterval(() => {
       setCurrentPlaceholder((prev) => (prev + 1) % placeholders.length);
     }, 3000);
   }, [placeholders.length]);
+
   const handleVisibilityChange = useCallback(() => {
     if (document.visibilityState !== 'visible' && intervalRef.current) {
-      clearInterval(intervalRef.current); // Clear the interval when the tab is not visible
+      clearInterval(intervalRef.current);
       intervalRef.current = null;
     } else if (document.visibilityState === 'visible') {
-      startAnimation(); // Restart the interval when the tab becomes visible
+      startAnimation();
     }
   }, [startAnimation]);
 
@@ -40,151 +49,194 @@ export function PlaceholdersAndVanishInput({
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      clearInterval(intervalRef.current as NodeJS.Timeout);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [startAnimation, handleVisibilityChange]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const newDataRef = useRef<AnimatedPixelData[]>([]);
+  const particlesRef = useRef<PixelParticle[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState('');
   const [animating, setAnimating] = useState(false);
+  const isAnimatingRef = useRef(false);
 
+  // 1:1 像素映射绘制函数
   const draw = useCallback(() => {
     if (!inputRef.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
-    canvas.width = 800;
-    canvas.height = 800;
-    ctx.clearRect(0, 0, 800, 800);
+    const rect = inputRef.current.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.floor(rect.width);
+    const height = Math.floor(rect.height);
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, width, height);
+
     const computedStyles = getComputedStyle(inputRef.current);
+    const fontSize = Number.parseFloat(computedStyles.getPropertyValue('font-size')) || 15;
+    const paddingLeft = Number.parseFloat(computedStyles.getPropertyValue('padding-left')) || 24;
 
-    const fontSize = parseFloat(computedStyles.getPropertyValue('font-size'));
-    ctx.font = `${fontSize * 2}px ${computedStyles.fontFamily}`;
-    ctx.fillStyle = '#FFF';
-    ctx.fillText(value, 16, 40);
+    ctx.font = `${computedStyles.fontWeight} ${fontSize}px ${computedStyles.fontFamily || 'sans-serif'}`;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(value, paddingLeft, height / 2);
 
-    const imageData = ctx.getImageData(0, 0, 800, 800);
+    const imageData = ctx.getImageData(0, 0, width * dpr, height * dpr);
     const pixelData = imageData.data;
-    const newData: PixelData[] = [];
+    const particles: PixelParticle[] = [];
 
-    for (let t = 0; t < 800; t++) {
-      const i = 4 * t * 800;
-      for (let n = 0; n < 800; n++) {
-        const e = i + 4 * n;
-        if (pixelData[e] !== 0 && pixelData[e + 1] !== 0 && pixelData[e + 2] !== 0) {
-          newData.push({
-            x: n,
-            y: t,
-            color: [pixelData[e], pixelData[e + 1], pixelData[e + 2], pixelData[e + 3]],
+    // 以 2px 步长抽取粒子，保证 60fps 流畅度与粒子密度的最佳平衡
+    const step = 2 * Math.round(dpr);
+    const totalW = width * dpr;
+    const totalH = height * dpr;
+
+    for (let y = 0; y < totalH; y += step) {
+      const rowOffset = y * totalW * 4;
+      for (let x = 0; x < totalW; x += step) {
+        const idx = rowOffset + x * 4;
+        const alpha = pixelData[idx + 3];
+        // 判定有效文字像素
+        if (alpha > 40) {
+          particles.push({
+            x: x / dpr,
+            y: y / dpr,
+            originX: x / dpr,
+            originY: y / dpr,
+            r: 1.5,
+            color: `rgba(${pixelData[idx]}, ${pixelData[idx + 1]}, ${pixelData[idx + 2]}, ${alpha / 255})`,
           });
         }
       }
     }
 
-    newDataRef.current = newData.map(({ x, y, color }) => ({
-      x,
-      y,
-      r: 1,
-      color: `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3]})`,
-    }));
+    particlesRef.current = particles;
   }, [value]);
 
   useEffect(() => {
     draw();
-  }, [value, draw]);
+  }, [draw]);
 
-  const animate = (start: number) => {
-    const animateFrame = (pos: number = 0) => {
-      requestAnimationFrame(() => {
-        const newArr = [];
-        for (let i = 0; i < newDataRef.current.length; i++) {
-          const current = newDataRef.current[i];
-          if (current.x < pos) {
-            newArr.push(current);
-          } else {
-            if (current.r <= 0) {
-              current.r = 0;
-              continue;
-            }
-            current.x += Math.random() > 0.5 ? 1 : -1;
-            current.y += Math.random() > 0.5 ? 1 : -1;
-            current.r -= 0.05 * Math.random();
-            newArr.push(current);
-          }
-        }
-        newDataRef.current = newArr;
-        const ctx = canvasRef.current?.getContext('2d');
-        if (ctx) {
-          ctx.clearRect(pos, 0, 800, 800);
-          newDataRef.current.forEach((t) => {
-            const { x: n, y: i, r: s, color } = t;
-            if (n > pos) {
-              ctx.beginPath();
-              ctx.rect(n, i, s, s);
-              ctx.fillStyle = color;
-              ctx.strokeStyle = color;
-              ctx.stroke();
-            }
-          });
-        }
-        if (newDataRef.current.length > 0) {
-          animateFrame(pos - 8);
-        } else {
-          setValue('');
-          setAnimating(false);
-        }
-      });
-    };
-    animateFrame(start);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !animating) {
-      vanishAndSubmit();
-    }
-  };
-
-  const vanishAndSubmit = () => {
+  // 粒子物理消散动画
+  const runVanishAnimation = () => {
+    if (isAnimatingRef.current || !value.trim()) return;
+    isAnimatingRef.current = true;
     setAnimating(true);
     draw();
 
-    const value = inputRef.current?.value || '';
-    if (value && inputRef.current) {
-      const maxX = newDataRef.current.reduce(
-        (prev, current) => (current.x > prev ? current.x : prev),
-        0,
-      );
-      animate(maxX);
+    if (particlesRef.current.length === 0) {
+      setValue('');
+      setAnimating(false);
+      isAnimatingRef.current = false;
+      return;
     }
+
+    const maxX = particlesRef.current.reduce((max, p) => (p.originX > max ? p.originX : max), 0);
+
+    const animateFrame = (wavePos: number) => {
+      requestAnimationFrame(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const dpr = window.devicePixelRatio || 1;
+        ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+
+        let activeCount = 0;
+        const nextParticles: PixelParticle[] = [];
+
+        for (let i = 0; i < particlesRef.current.length; i++) {
+          const p = particlesRef.current[i];
+          if (p.originX < wavePos) {
+            // 波前左侧未消散文字：在画布上保持原文字像素位置绘制
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.originX, p.originY, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+            nextParticles.push(p);
+            activeCount++;
+          } else {
+            // 波前右侧已被消散的粒子：物理漂移与缩减
+            if (p.r > 0.08) {
+              p.x += (Math.random() - 0.45) * 2.8;
+              p.y += (Math.random() - 0.55) * 2.5 - 0.4; // 微弱上浮
+              p.r -= 0.035 * Math.random() + 0.02;
+
+              ctx.fillStyle = p.color;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, Math.max(0.2, p.r), 0, Math.PI * 2);
+              ctx.fill();
+
+              nextParticles.push(p);
+              activeCount++;
+            }
+          }
+        }
+
+        particlesRef.current = nextParticles;
+
+        if (wavePos > -20 || activeCount > 0) {
+          animateFrame(wavePos - 12);
+        } else {
+          setValue('');
+          setAnimating(false);
+          isAnimatingRef.current = false;
+        }
+      });
+    };
+
+    animateFrame(maxX);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    vanishAndSubmit();
+    if (isAnimatingRef.current || !value.trim()) return;
+    runVanishAnimation();
     onSubmit?.(e);
   };
+
   return (
     <form
       className={cn(
-        'w-full relative max-w-xl mx-auto bg-background h-12 rounded-full overflow-hidden shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),_0px_1px_0px_0px_rgba(25,28,33,0.02),_0px_0px_0px_1px_rgba(25,28,33,0.08)] transition duration-200',
-        value && 'bg-muted',
+        // 核心尺寸与胶囊形态
+        'relative w-full max-w-xl mx-auto h-12 rounded-full overflow-hidden isolate',
+        // 结合 NavigationMenu.tsx 苹果液态玻璃核心滤镜
+        'backdrop-blur-2xl saturate-180',
+        // 渐变半透明液态质感底色
+        'bg-gradient-to-b from-white/80 via-white/55 to-white/70',
+        'dark:bg-gradient-to-b dark:from-neutral-800/80 dark:via-neutral-900/60 dark:to-neutral-900/75',
+        // 细致半透明双层边缘折射
+        'border border-white/70 dark:border-white/15',
+        'shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08),inset_0_1.5px_1px_0_rgba(255,255,255,0.95),inset_0_-1px_1px_0_rgba(0,0,0,0.03)]',
+        'dark:shadow-[0_12px_32px_-4px_rgba(0,0,0,0.5),inset_0_1.5px_1px_0_rgba(255,255,255,0.22),inset_0_-1px_1px_0_rgba(0,0,0,0.4)]',
+        'transition-all duration-300',
+        className,
       )}
       onSubmit={handleSubmit}
     >
+      {/* 顶部 1px 凸面透镜倒角镜面高光反射线 (模拟苹果弧面玻璃倒角) */}
+      <span
+        className="pointer-events-none absolute inset-x-4 top-0 z-20 h-[1px] bg-gradient-to-r from-transparent via-white/95 to-transparent dark:via-white/35"
+        aria-hidden="true"
+      />
+
+      {/* 粒子物理消散画布 */}
       <canvas
         className={cn(
-          'absolute pointer-events-none  text-base transform scale-50 top-[20%] left-2 sm:left-8 origin-top-left filter invert dark:invert-0 pr-20',
+          'pointer-events-none absolute inset-0 z-40 h-full w-full filter invert dark:invert-0',
           !animating ? 'opacity-0' : 'opacity-100',
         )}
         ref={canvasRef}
       />
+
+      {/* 原生输入框 */}
       <input
         onChange={(e) => {
           if (!animating) {
@@ -192,77 +244,61 @@ export function PlaceholdersAndVanishInput({
             onChange?.(e);
           }
         }}
-        onKeyDown={handleKeyDown}
         ref={inputRef}
         value={value}
         type="text"
         aria-label={ariaLabel}
         className={cn(
-          'w-full relative text-sm sm:text-base z-50 border-none dark:text-white bg-transparent text-black h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20',
-          animating && 'text-transparent dark:text-transparent',
+          'w-full relative z-30 h-full pl-6 pr-14 text-sm sm:text-base font-medium',
+          'bg-transparent text-neutral-900 dark:text-neutral-100',
+          'border-none focus:outline-none focus:ring-0',
+          animating && 'text-transparent dark:text-transparent select-none',
         )}
       />
 
+      {/* 液态玻璃提交发送按钮 */}
       <button
-        disabled={!value}
+        disabled={!value.trim() || animating}
         type="submit"
         aria-label="Submit search"
-        className="absolute right-2 top-1/2 z-50 -translate-y-1/2 h-8 w-8 rounded-full disabled:bg-muted bg-foreground dark:disabled:bg-muted transition duration-200 flex items-center justify-center"
+        className={cn(
+          'absolute right-2 top-1/2 -translate-y-1/2 z-40 size-8 rounded-full',
+          'flex items-center justify-center transition-all duration-200',
+          // 仿苹果微高光水银质感按钮
+          value.trim() && !animating
+            ? 'bg-neutral-900 text-white shadow-md dark:bg-white dark:text-neutral-950 scale-100 opacity-100 hover:scale-105 active:scale-95 cursor-pointer'
+            : 'bg-black/5 dark:bg-white/10 text-neutral-400 dark:text-neutral-500 scale-95 opacity-50 cursor-not-allowed',
+        )}
       >
         <motion.svg
           xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="text-muted-foreground h-4 w-4"
+          className="size-4"
+          aria-hidden="true"
         >
-          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-          <motion.path
-            d="M5 12l14 0"
-            initial={{
-              strokeDasharray: '50%',
-              strokeDashoffset: '50%',
-            }}
-            animate={{
-              strokeDashoffset: value ? 0 : '50%',
-            }}
-            transition={{
-              duration: 0.3,
-              ease: 'linear',
-            }}
-          />
-          <path d="M13 18l6 -6" />
-          <path d="M13 6l6 6" />
+          <path d="M5 12h14" />
+          <path d="m12 5 7 7-7 7" />
         </motion.svg>
       </button>
 
-      <div className="absolute inset-0 flex items-center rounded-full pointer-events-none">
+      {/* 滚动轮播占位符 */}
+      <div className="absolute inset-0 flex items-center rounded-full pointer-events-none z-20">
         <AnimatePresence mode="wait">
           {!value && (
             <motion.p
-              initial={{
-                y: 5,
-                opacity: 0,
-              }}
+              initial={{ y: 8, opacity: 0 }}
               key={`current-placeholder-${currentPlaceholder}`}
-              animate={{
-                y: 0,
-                opacity: 1,
-              }}
-              exit={{
-                y: -15,
-                opacity: 0,
-              }}
-              transition={{
-                duration: 0.3,
-                ease: 'linear',
-              }}
-              className="text-muted-foreground text-sm sm:text-base font-normal pl-4 sm:pl-12 text-left w-[calc(100%-2rem)] truncate"
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -8, opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="text-neutral-500/80 dark:text-neutral-400/80 text-sm sm:text-base font-normal pl-6 text-left w-[calc(100%-4rem)] truncate select-none"
             >
               {placeholders[currentPlaceholder]}
             </motion.p>

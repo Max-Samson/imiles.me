@@ -1,0 +1,110 @@
+---
+import PlaygroundDocsLayout from '@/layouts/PlaygroundDocsLayout.astro';
+import { Button } from '@/components/ui/button';
+import { ComponentPreview } from '@/components/playground/ComponentPreview';
+import PropsTable, { type PropItem } from '@/components/playground/PropsTable.astro';
+import ArchitectureFeatures from '@/components/playground/ArchitectureFeatures.astro';
+import { Sparkles, Trash2, Compass } from 'lucide-react';
+
+const codeSnippet = `import { Button } from '@/components/ui/button';
+import { Sparkles, Trash2, Compass } from 'lucide-react';
+
+export function ButtonDemo() {
+  return (
+    <div className="flex flex-wrap gap-4 items-center justify-center">
+      <Button variant="default">
+        <Sparkles className="size-4 mr-2" />
+        Primary Action
+      </Button>
+
+      <Button variant="secondary">
+        Secondary
+      </Button>
+
+      <Button variant="outline">
+        <Compass className="size-4 mr-2" />
+        Outline Glass
+      </Button>
+
+      <Button variant="destructive">
+        <Trash2 className="size-4 mr-2" />
+        Delete Item
+      </Button>
+    </div>
+  );
+}`;
+
+const propItems: PropItem[] = [
+  {
+    prop: 'variant',
+    type: "'default' | 'secondary' | 'outline' | 'destructive' | 'ghost' | 'link'",
+    default: "'default'",
+    description: '按钮语义化视觉变体风格。支持主操作、次操作、玻璃线框、危险操作、幽灵按钮与下划线链接。',
+  },
+  {
+    prop: 'size',
+    type: "'default' | 'sm' | 'lg' | 'icon' | 'icon-sm' | 'icon-lg'",
+    default: "'default'",
+    description: '尺寸规范，支持小/中/大及正方形图标专用尺寸。',
+  },
+  {
+    prop: 'asChild',
+    type: 'boolean',
+    default: 'false',
+    description: '通过 Radix Slot 代理，将按钮属性完整透传给直接子元素（例如将按钮无缝渲染为链接 <a> 标签）。',
+  },
+  {
+    prop: 'className',
+    type: 'string',
+    description: '用户自定义 CSS 类名合并，由 twMerge 智能覆写底层默认样式。',
+  },
+];
+
+const features = [
+  { label: 'Architecture', value: 'Class Variance Authority', description: '基于 cva 构建的结构化变体系统' },
+  { label: 'Polymorphic', value: 'Radix Slot asChild', description: '支持零多余 DOM 标签语义化代理' },
+  { label: 'Accessibility', value: 'focus-visible:ring-ring', description: '键盘焦点环与无障碍标准兼容' },
+  { label: 'Scalability', value: '6 Styles & 6 Sizes', description: '全站通用基础按钮设计基石' },
+];
+---
+
+<PlaygroundDocsLayout currentId="button">
+  {/* 1. Magic UI 主视窗 (Preview / Code / ↻ Replay / 📋 Copy) */}
+  <ComponentPreview
+    client:load
+    code={codeSnippet}
+    canvasBackground="dots"
+    minHeight="min-h-[260px]"
+  >
+    <div class="flex flex-wrap items-center justify-center gap-4 py-6">
+      <Button client:load variant="default" size="default">
+        <Sparkles className="size-4 mr-2" />
+        Primary Action
+      </Button>
+
+      <Button client:load variant="secondary" size="default">
+        Secondary Action
+      </Button>
+
+      <Button client:load variant="outline" size="default">
+        <Compass className="size-4 mr-2" />
+        Outline Glass
+      </Button>
+
+      <Button client:load variant="destructive" size="default">
+        <Trash2 className="size-4 mr-2" />
+        Delete Item
+      </Button>
+    </div>
+  </ComponentPreview>
+
+  {/* 2. 声明式 Props 参数表格 */}
+  <PropsTable
+    items={propItems}
+    color="amber"
+    description="基于 Radix UI Slot 与 CVA 构建，全站所有页面与复杂交互的通用点击原语。"
+  />
+
+  {/* 3. 底层物理与光学规格 */}
+  <ArchitectureFeatures items={features} className="pt-4" />
+</PlaygroundDocsLayout>
