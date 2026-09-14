@@ -1,16 +1,35 @@
 'use client';
 
+import { ArrowRight, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import ProfileCardMilesCommon from '@/components/common/ProfileCardMiles';
+import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
 import type { Locale } from '@/lib/i18n';
 
 export interface ProfileCardMilesProps {
-  label: string;
+  label?: string;
   lang?: Locale;
 }
 
-export default function ProfileCardMiles({ label, lang = 'en' }: ProfileCardMilesProps) {
+export default function ProfileCardMiles({
+  label = 'Liquid Glass',
+  lang = 'en',
+}: ProfileCardMilesProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDark, setIsDark] = useState(
+    () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
+  );
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const updateTheme = () => setIsDark(root.classList.contains('dark'));
+    updateTheme();
+
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+
+    return () => observer.disconnect();
+  }, []);
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
@@ -39,22 +58,20 @@ export default function ProfileCardMiles({ label, lang = 'en' }: ProfileCardMile
   return (
     <>
       {/* Trigger Button beside H2 title */}
-      <button
+      <LiquidGlassButton
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/70 hover:bg-muted/80 mt-2.5 px-3.5 py-1.5 text-xs sm:text-sm font-medium text-foreground backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:border-foreground/30 cursor-pointer"
+        variant={isDark ? 'obsidian' : 'default'}
+        size="sm"
+        shimmer
+        glow
+        iconRight={<ArrowRight className="size-4" />}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
+        className="mt-2.5 cursor-pointer"
       >
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-        </span>
-        <span>{label}</span>
-        <span aria-hidden="true" className="text-muted-foreground text-xs">
-          ↗
-        </span>
-      </button>
+        {label}
+      </LiquidGlassButton>
 
       {/* Full-screen Modal Overlay — clicking backdrop closes modal */}
       {isOpen && (
@@ -92,20 +109,25 @@ export default function ProfileCardMiles({ label, lang = 'en' }: ProfileCardMile
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span>{lang === 'zh' ? '名片卡' : 'Profile'}</span>
               </div>
-              <button
+              <LiquidGlassButton
                 type="button"
                 onClick={handleClose}
-                className="group flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur-xl transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-lg hover:border-white/40"
+                variant="brand"
+                size="sm"
+                shimmer
+                glow
                 aria-label="Close modal"
+                iconRight={
+                  <span className="inline-flex items-center gap-1.5">
+                    <kbd className="hidden sm:inline-block rounded border border-current/20 bg-black/10 dark:bg-white/10 px-1.5 py-0.5 text-[10px] font-mono opacity-70 leading-none">
+                      ESC
+                    </kbd>
+                    <X className="size-3.5 transition-transform duration-200 group-hover:rotate-90" />
+                  </span>
+                }
               >
-                <span>{lang === 'zh' ? '关闭' : 'Close'}</span>
-                <kbd className="hidden sm:inline-block rounded border border-white/20 bg-white/10 px-1 py-0.2 text-[10px] font-mono opacity-60">
-                  ESC
-                </kbd>
-                <span className="text-xs transition-transform duration-200 group-hover:rotate-90">
-                  ✕
-                </span>
-              </button>
+                {lang === 'zh' ? '关闭' : 'Close'}
+              </LiquidGlassButton>
             </div>
 
             <ProfileCardMilesCommon lang={lang} />
