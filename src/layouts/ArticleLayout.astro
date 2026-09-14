@@ -49,7 +49,7 @@ const resolvedBackLabel = backLabel ?? 'content/blog';
   <ContentLightRaysBackground client:only="react" />
 
   <header class="mb-8">
-    <BackButton href={resolvedBackHref} label={resolvedBackLabel} />
+    <BackButton client:visible href={resolvedBackHref} label={resolvedBackLabel} />
     <h1 class="text-4xl font-bold">{title}</h1>
     <div class="mt-4 flex items-center gap-2">
       <CopyMarkdownButton

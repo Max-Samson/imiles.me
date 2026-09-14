@@ -56,7 +56,7 @@ const resolvedBadge = Astro.props.badge ?? fm.badge ?? current?.badge ?? 'UI Pri
       {/* ─── 顶部面包屑与全局导航栏 ─── */}
       <header class="w-full flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-border/60">
         <div class="flex items-center gap-3">
-          <BackButton href="/" label="Home" className="mb-0" />
+          <BackButton client:visible href="/" label="Home" className="mb-0" />
           <span class="text-muted-foreground/40">/</span>
           <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs font-mono">
             <a href="/playground" class="text-muted-foreground hover:text-foreground transition-colors">

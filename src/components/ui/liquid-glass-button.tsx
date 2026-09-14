@@ -9,7 +9,7 @@ export const liquidGlassVariants = cva(
   [
     // 基础布局与交互
     'group relative inline-flex items-center justify-center font-medium select-none cursor-pointer',
-    'overflow-hidden isolate',
+    'overflow-visible isolate',
     'transition-all duration-300 ease-out',
     // 聚焦轮廓与可访问性
     'outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -301,34 +301,40 @@ export const LiquidGlassButton = React.forwardRef<
         />
       )}
 
-      {/* 5. 动态光标聚光折射 (Fresnel Spotlight) */}
-      {interactive && mousePos && (
-        <motion.span
-          className="pointer-events-none absolute -inset-px z-10 transition-opacity duration-200"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isHovered ? 1 : 0 }}
-          style={{
-            background: `radial-gradient(110px circle at ${mousePos.x}px ${mousePos.y}px, rgba(255, 255, 255, 0.38), transparent 75%)`,
-          }}
-          aria-hidden="true"
-        />
-      )}
+      {/* Clip moving highlights locally so the ambient glow can extend beyond the button. */}
+      <span
+        className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-[inherit]"
+        aria-hidden="true"
+      >
+        {/* 5. 动态光标聚光折射 (Fresnel Spotlight) */}
+        {interactive && mousePos && (
+          <motion.span
+            className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-200"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isHovered ? 1 : 0 }}
+            style={{
+              background: `radial-gradient(110px circle at ${mousePos.x}px ${mousePos.y}px, rgba(255, 255, 255, 0.38), transparent 75%)`,
+            }}
+            aria-hidden="true"
+          />
+        )}
 
-      {/* 6. 持续微光液态流动动画 (Shimmer wave) */}
-      {shimmer && (
-        <motion.span
-          className="pointer-events-none absolute inset-y-0 w-1/2 -z-5 bg-gradient-to-r from-transparent via-white/30 to-transparent dark:via-white/15 -skew-x-12"
-          initial={{ x: '-150%' }}
-          animate={{ x: '350%' }}
-          transition={{
-            repeat: Number.POSITIVE_INFINITY,
-            duration: 2.8,
-            ease: 'easeInOut',
-            repeatDelay: 1,
-          }}
-          aria-hidden="true"
-        />
-      )}
+        {/* 6. 持续微光液态流动动画 (Shimmer wave) */}
+        {shimmer && (
+          <motion.span
+            className="pointer-events-none absolute inset-y-0 left-0 w-1/2 z-0 bg-gradient-to-r from-transparent via-white/30 to-transparent dark:via-white/15 -skew-x-12"
+            initial={{ x: '-150%' }}
+            animate={{ x: '350%' }}
+            transition={{
+              repeat: Number.POSITIVE_INFINITY,
+              duration: 2.8,
+              ease: 'easeInOut',
+              repeatDelay: 1,
+            }}
+            aria-hidden="true"
+          />
+        )}
+      </span>
 
       {/* 7. 主体内容与图标 */}
       <span className="relative z-20 inline-flex items-center justify-center gap-[inherit]">
