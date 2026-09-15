@@ -15,7 +15,7 @@
 - **Stories** — text-only, first-person Markdown prose with a dedicated reading layout (`story-prose`).
 - **Notes / Projects / Research** — structured content pages driven by typed data files.
 - **Interactive visuals** — Three.js plexus hero (React Three Fiber), GSAP-style scroll/animation islands, fuzzy blog search.
-- **PWA** — web manifest, service worker, offline fallback page, and auto-generated icons.
+- **PWA** — web manifest, safe static-asset caching, and auto-generated icons.
 - **Auto-generated outputs** — RSS feed, XML sitemap, per-page OG images via [Satori](https://github.com/vercel/satori), and an `llms.txt` index for LLM discovery.
 - **Performance budgets** — a script that fails CI when homepage bundle budgets are exceeded.
 - **Dark-mode-first** — Tailwind CSS v4 with `dark` default and light-mode toggle.

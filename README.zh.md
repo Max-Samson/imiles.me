@@ -15,7 +15,7 @@
 - **Stories（故事）** —— 纯文本、第一人称的 Markdown 叙事，配以专门的阅读布局（`story-prose`）。
 - **Notes / Projects** —— 由类型化数据文件驱动的结构化内容页面。
 - **交互式视觉** —— 基于 React Three Fiber 的 Three.js plexus 主页背景、滚动/动画岛屿、模糊搜索的博客搜索。
-- **PWA** —— Web 清单（manifest）、Service Worker、离线回退页与自动生成的图标。
+- **PWA** —— Web 清单（manifest）、安全的静态资源缓存与自动生成的图标。
 - **自动生成的产物** —— RSS 订阅、XML 站点地图、基于 [Satori](https://github.com/vercel/satori) 的逐页 OG 图片，以及面向 LLM 索引的 `llms.txt`。
 - **性能预算** —— 首页打包体积超预算时可使 CI 失败的检查脚本。
 - **暗色优先** —— Tailwind CSS v4，默认暗色主题并支持浅色切换。
