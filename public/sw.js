@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const PAGES_CACHE = `pages-${CACHE_VERSION}`;
 const IMAGES_CACHE = `images-${CACHE_VERSION}`;
@@ -13,24 +13,60 @@ const storeSuccessfulResponse = (cache, request, response) => {
 // Install: precache essential resources
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS))
+    caches
+      .open(STATIC_CACHE)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 // Activate: clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== STATIC_CACHE && key !== PAGES_CACHE && key !== IMAGES_CACHE)
-          .map((key) => caches.delete(key))
-      )
-    )
+    Promise.all([
+      caches.keys().then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key !== STATIC_CACHE && key !== PAGES_CACHE && key !== IMAGES_CACHE)
+            .map((key) => caches.delete(key))
+        )
+      ),
+      self.clients.claim(),
+    ])
   );
-  self.clients.claim();
 });
+
+const bufferNavigationResponse = async (response) => {
+  const body = await response.arrayBuffer();
+  const headers = new Headers(response.headers);
+
+  // Fetch exposes a decoded body while these headers still describe the wire payload.
+  // Keeping them on a synthetic response can cause a second, invalid decompression pass.
+  headers.delete('content-encoding');
+  headers.delete('content-length');
+
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+};
+
+const getOfflineResponse = async () => {
+  const response = await caches.match('/offline');
+  if (!response) return Response.error();
+
+  const headers = new Headers(response.headers);
+  headers.set('x-imiles-offline-fallback', 'true');
+  headers.delete('content-encoding');
+  headers.delete('content-length');
+
+  return new Response(await response.arrayBuffer(), {
+    status: 503,
+    statusText: 'Service Unavailable',
+    headers,
+  });
+};
 
 // Fetch: apply caching strategies
 self.addEventListener('fetch', (event) => {
@@ -80,12 +116,7 @@ self.addEventListener('fetch', (event) => {
       if (!response.ok) throw new Error(`Navigation returned ${response.status}`);
 
       // Buffer SSR output so a stream that fails after its 200 headers can use the fallback path.
-      const body = await response.arrayBuffer();
-      return new Response(body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-      });
+      return bufferNavigationResponse(response);
     });
     event.waitUntil(
       Promise.all([cachePromise, networkPromise])
@@ -97,9 +128,7 @@ self.addEventListener('fetch', (event) => {
         try {
           return await networkPromise;
         } catch {
-          return (
-            (await cache.match(request)) ?? (await caches.match('/offline')) ?? Response.error()
-          );
+          return (await cache.match(request)) ?? getOfflineResponse();
         }
       })
     );
