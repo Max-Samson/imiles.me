@@ -38,7 +38,7 @@ export function getProjectShowcaseItems(
       (project.demo?.kind === 'image' ? project.demo.images[0]?.src : undefined);
     const coverAlt =
       project.demo?.kind === 'image' ? project.demo.images[0]?.alt : `${project.title} cover`;
-    const objectFit = project.coverImage
+    const fit = project.coverImage
       ? ('cover' as const)
       : project.demo?.kind === 'image'
         ? ((project.demo.images[0]?.fit ?? 'contain') as 'cover' | 'contain')
@@ -56,8 +56,11 @@ export function getProjectShowcaseItems(
       image: coverSrc
         ? {
             src: coverSrc,
+            sources: project.mobileCoverImage
+              ? [{ media: '(max-width: 599px)', srcSet: project.mobileCoverImage }]
+              : undefined,
             alt: coverAlt,
-            objectFit,
+            fit,
           }
         : undefined,
     };

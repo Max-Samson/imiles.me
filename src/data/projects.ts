@@ -57,6 +57,8 @@ export interface ProjectLocalization {
   tags?: string[];
   pageLabel?: string;
   coverImage?: string;
+  /** 首页轮播在窄屏使用的横向封面 */
+  mobileCoverImage?: string;
 }
 /**
  * 项目条目结构(驱动 /projects 列表与详情页)。
@@ -67,6 +69,7 @@ export interface ProjectLocalization {
  * - hasDetailPage: 是否生成独立详情页
  * - demo: 详情页演示(终端/图片)
  * - coverImage: 项目专属展位封面大图(全屏轮播铺满)
+ * - mobileCoverImage: 首页轮播移动端封面，缺省时回退到 coverImage
  * - locales: 各语言覆盖内容(zh/en)
  * - llms: 是否纳入 llms.txt 索引
  * - tags: 功能/主题标签列表(支持前端 UI 呈现)
@@ -82,6 +85,7 @@ export interface Project {
   pageUrl?: string;
   pageLabel?: string;
   coverImage?: string;
+  mobileCoverImage?: string;
   tech: ProjectTech[];
   features: ProjectFeature[];
   hasDetailPage: boolean;
@@ -103,6 +107,7 @@ export const projects: Project[] = [
     githubUrl: 'https://github.com/Max-Samson/MTimer_v2.1.1.0',
     pageUrl: 'https://mtimerpage.pages.dev/',
     coverImage: '/projects/mtimer/mtimer-cover.jpeg',
+    mobileCoverImage: '/projects/mtimer/mtimer-cover-ph.webp',
     tech: [
       { name: 'Go', icon: 'go' },
       { name: 'Wails', icon: 'wails' },
@@ -203,6 +208,7 @@ export const projects: Project[] = [
       zh: {
         category: '桌面应用',
         coverImage: '/projects/mtimer/mtimer-cover-zh.jpeg',
+        mobileCoverImage: '/projects/mtimer/mtimer-cover-ph-zh.webp',
         tagline: '基于 Wails 的番茄钟桌面应用，内置 AI 时间规划',
         description:
           'MTimer 是一个围绕番茄工作法构建的跨平台桌面专注工具。项目使用 Wails 将 Go 后端与 Vue 3 前端打包为原生桌面应用，提供番茄/自定义双专注模式、任务清单、专注会话记录、白噪音与背景音乐、统计可视化，以及可接入 DeepSeek 或自定义 OpenAI-compatible API 的 AI 时间规划助手。后端通过 SQLite 保存任务、会话、每日统计与事件统计，并在会话完成时用事务同步更新统计数据；前端用 Pinia 管理计时器、任务和设置状态，用 ECharts 展示每日汇总、番茄趋势、任务完成率与时段分布。',
@@ -294,6 +300,7 @@ export const projects: Project[] = [
     pageUrl: 'https://www.npmjs.com/package/dsh-usage-chart',
     pageLabel: 'View on npm',
     coverImage: '/projects/dsh-usage-chart/dsh-usage-chart-cover.jpeg',
+    mobileCoverImage: '/projects/dsh-usage-chart/dsh-usage-chart-ph.webp',
     tech: [
       { name: 'TypeScript', icon: 'typescript' },
       { name: 'React 18', icon: 'react' },
@@ -359,6 +366,7 @@ export const projects: Project[] = [
       zh: {
         pageLabel: '查看 npm',
         coverImage: '/projects/dsh-usage-chart/dsh-usage-chart-cover-zh.jpeg',
+        mobileCoverImage: '/projects/dsh-usage-chart/dsh-usage-chart-ph-zh.webp',
         category: 'DSH 插件',
         tagline: 'DeepSeek 用量 / 成本 / 余额仪表盘 · Deepseek Harness Web 插件',
         description:

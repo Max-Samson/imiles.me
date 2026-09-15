@@ -474,7 +474,7 @@ export function ExpandingCarouselShowcase() {
       image: {
         src: '/assets/demo/ExpandingCarousel-demo1.jpeg',
         alt: 'Demo Cover 1',
-        objectFit: 'cover',
+        fit: 'cover',
       },
       links: [{ label: '查看详情', href: '/playground' }],
     },
@@ -489,7 +489,7 @@ export function ExpandingCarouselShowcase() {
       image: {
         src: '/assets/demo/ExpandingCarousel-demo2.jpeg',
         alt: 'Demo Cover 2',
-        objectFit: 'cover',
+        fit: 'cover',
       },
       links: [{ label: '查看详情', href: '/playground' }],
     },
@@ -504,7 +504,7 @@ export function ExpandingCarouselShowcase() {
       image: {
         src: '/assets/demo/ExpandingCarousel-demo3.jpeg',
         alt: 'Demo Cover 3',
-        objectFit: 'cover',
+        fit: 'cover',
       },
       links: [{ label: '查看详情', href: '/playground' }],
     },
@@ -519,7 +519,7 @@ export function ExpandingCarouselShowcase() {
       image: {
         src: '/assets/demo/ExpandingCarousel-demo4.jpeg',
         alt: 'Demo Cover 4',
-        objectFit: 'cover',
+        fit: 'cover',
       },
       links: [{ label: '查看详情', href: '/playground' }],
     },
@@ -534,7 +534,7 @@ export function ExpandingCarouselShowcase() {
       image: {
         src: '/assets/demo/ExpandingCarousel-demo5.jpeg',
         alt: 'Demo Cover 5',
-        objectFit: 'cover',
+        fit: 'cover',
       },
       links: [{ label: '查看详情', href: '/playground' }],
     },

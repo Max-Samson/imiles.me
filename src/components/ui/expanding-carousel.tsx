@@ -13,6 +13,26 @@ import {
 import { cn } from '@/lib/utils';
 import './expanding-carousel.css';
 
+export interface ExpandingCarouselImageSource {
+  srcSet: string;
+  /** Native viewport media query; independent of the carousel's container queries. */
+  media?: string;
+  type?: string;
+  sizes?: string;
+}
+
+export interface ExpandingCarouselImage {
+  src: string;
+  alt: string;
+  srcSet?: string;
+  sizes?: string;
+  /** Ordered picture sources. The browser uses the first supported, matching source. */
+  sources?: ExpandingCarouselImageSource[];
+  /** Explicit static preview override; otherwise previews share responsive sources. */
+  previewSrc?: string;
+  fit?: 'cover' | 'contain';
+}
+
 export interface ExpandingCarouselItem {
   id: string;
   title: string;
@@ -20,7 +40,7 @@ export interface ExpandingCarouselItem {
   eyebrow?: string;
   category?: string;
   status?: string;
-  image?: { src: string; alt: string; previewSrc?: string; fit?: 'cover' | 'contain' };
+  image?: ExpandingCarouselImage;
   badges?: string[];
   links?: { label: string; href: string; external?: boolean }[];
   terminal?: { title?: string; lines: { type: 'command' | 'output'; text: string }[] };
@@ -40,6 +60,40 @@ export interface ExpandingCarouselProps {
   initialIndex?: number;
   /** Set to 0 to disable automatic rotation. Pauses on hover, focus, or leaving the viewport. */
   interval?: number;
+}
+
+function CarouselImage({
+  image,
+  preview = false,
+}: {
+  image: ExpandingCarouselImage;
+  preview?: boolean;
+}) {
+  const staticPreview = preview && image.previewSrc !== undefined;
+  return (
+    <picture className="expanding-carousel-image">
+      {!staticPreview &&
+        image.sources?.map((source, index) => (
+          <source
+            key={`${index}-${source.media ?? ''}-${source.type ?? ''}`}
+            srcSet={source.srcSet}
+            media={source.media}
+            type={source.type}
+            sizes={source.sizes ?? image.sizes}
+          />
+        ))}
+      <img
+        src={staticPreview ? image.previewSrc : image.src}
+        srcSet={staticPreview ? undefined : image.srcSet}
+        sizes={staticPreview ? undefined : image.sizes}
+        alt={preview ? '' : image.alt}
+        loading="lazy"
+        decoding="async"
+        draggable={false}
+        data-fit={preview ? 'cover' : (image.fit ?? 'cover')}
+      />
+    </picture>
+  );
 }
 
 /** A connected, expanding card carousel. Content is independent of projects or testimonials. */
@@ -177,7 +231,7 @@ export default function ExpandingCarousel({
     for (const offset of [-1, 0, 1]) {
       const index = (active + offset + count) % count;
       const image = root.current?.querySelector<HTMLImageElement>(
-        `[data-slide-index="${index}"] .expanding-carousel-media > img`,
+        `[data-slide-index="${index}"] .expanding-carousel-media img`,
       );
       if (!image) continue;
       image.loading = 'eager';
@@ -292,13 +346,7 @@ export default function ExpandingCarousel({
                   {renderPreview ? (
                     renderPreview(item)
                   ) : item.image ? (
-                    <img
-                      src={item.image.previewSrc ?? item.image.src}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      draggable={false}
-                    />
+                    <CarouselImage image={item.image} preview />
                   ) : (
                     <span>{item.title}</span>
                   )}
@@ -374,16 +422,7 @@ export default function ExpandingCarousel({
                         <div className="expanding-carousel-media">
                           {renderMedia?.(item) ?? (
                             <>
-                              {item.image && (
-                                <img
-                                  src={item.image.src}
-                                  alt={item.image.alt}
-                                  loading="lazy"
-                                  decoding="async"
-                                  draggable={false}
-                                  data-fit={item.image.fit ?? 'cover'}
-                                />
-                              )}
+                              {item.image && <CarouselImage image={item.image} />}
                               {item.terminal && (
                                 <div className="expanding-carousel-terminal">
                                   <p>{item.terminal.title}</p>

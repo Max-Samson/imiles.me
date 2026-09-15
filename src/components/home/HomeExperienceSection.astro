@@ -1,8 +1,6 @@
 ---
 import { getCollection, render } from 'astro:content';
 import { type Locale, useTranslations, localizePathname, formatDate } from '@/lib/i18n';
-import { rainbowButtonVariants } from '@/registry/magicui/rainbow-button';
-import { cn } from '@/lib/utils';
 import ProfileCardMiles from './ProfileCardMiles';
 interface Props { lang: Locale }
 const { lang } = Astro.props;

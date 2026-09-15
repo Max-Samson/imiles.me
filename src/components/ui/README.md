@@ -309,8 +309,39 @@ SampleComponent.displayName = 'SampleComponent';
 
 完整示例与参数表见 `src/pages/playground/expanding-carousel.astro`（网站路径 `/playground/expanding-carousel`）。示例数据使用 `ExpandingCarouselItem[]` 类型，避免 `image.fit` 被推断为任意字符串。
 
-- 图片默认 `image.fit: 'cover'`，按比例铺满并裁切；`'contain'` 完整显示，比例不同会留白，无固定像素尺寸要求。`previewSrc` 可单独提供侧边缩略图，缩略图始终使用 cover。
-- 默认文字区为纵向弹性布局，标题与详情间距受卡片高度和内容量影响。仅替换媒体使用 `renderMedia`；`renderContent` 会接管整个展开内容。
+- 普通图片只需 `image.src` 和 `image.alt`。`fit: 'cover'`（默认）铺满并裁切；`'contain'` 完整显示并保留内边距，比例不同会留白，无固定像素尺寸要求。
+- 不同构图使用 `image.sources`。每项必填 `srcSet`，可选 `media`、`type`、`sizes`，浏览器按顺序选择第一个符合媒体查询且支持其格式的来源。具体条件在前，无条件来源在后。
+- 同一构图的不同分辨率使用 `image.srcSet` / `image.sizes`；来源也可配置候选列表和 `sizes`，未指定来源级 `sizes` 时继承图片级值。`sizes` 提供预计显示宽度，不设置 CSS 宽度。
+- 未匹配来源时使用默认 `img` 的 `srcSet` / `src`。来源加载失败不会自动切换到默认图。
+- `sources[].media` 基于浏览器视口；轮播布局基于容器宽度。组件不内置图片断点，缩小父容器不会触发视口选图。
+- 侧边图片始终按 cover 裁切。默认共享响应式图片配置；设置 `previewSrc` 后，预览只使用该静态图片，忽略 `sources`、`srcSet`、`sizes`。
+- 普通与响应式图片直接配置 `image`；视频、Canvas 等使用 `renderMedia`，调用方负责自定义节点的尺寸与铺满样式。返回 `undefined` 使用默认 image/terminal。该接口不改变侧边预览，后者使用 `renderPreview`。
+- `renderContent` 接管整个展开内容，此时默认媒体和 `renderMedia` 不再渲染。
 - 正文内嵌时用 `not-prose` 隔离；`ComponentPreview` 已内置。不要用更换图片尺寸来修复正文样式引入的图片外边距。
 - Astro 使用 React 包装组件并以 `client:visible` 水合；自定义渲染函数定义在 React 内部。
 - 跨项目需要同时携带 TSX 与 CSS，适配 `cn` 和主题变量，提供 React、lucide-react 依赖。连接件的几何更新由组件内部处理。
+
+### 响应式图片示例
+
+以下使用仓库现有素材。将 `image` 放入 `ExpandingCarouselItem` 条目，传给轮播的 `items`。跨项目复用时替换素材地址。
+
+```tsx
+import type { ExpandingCarouselImage } from '@/components/ui/expanding-carousel';
+
+const image: ExpandingCarouselImage = {
+  src: '/projects/mtimer/mtimer-cover-zh.jpeg',
+  alt: 'MTimer 番茄钟项目展示',
+  fit: 'cover',
+  sources: [
+    {
+      media: '(max-width: 599px)',
+      srcSet: '/projects/mtimer/mtimer-cover-ph-zh.webp',
+      type: 'image/webp',
+    },
+  ],
+  // 可选：固定侧边缩略图；省略时跟随响应式来源。
+  previewSrc: '/projects/mtimer/mtimer-cover-zh.jpeg',
+};
+```
+
+导出的类型包括 `ExpandingCarouselProps`、`ExpandingCarouselItem`、`ExpandingCarouselImage`、`ExpandingCarouselImageSource`。已有仅提供 `src` / `alt` / `fit` 的用法可以继续使用。不要使用 `image.mobileSrc` 或 `image.objectFit`，对应能力分别是 `image.sources` 和 `image.fit`。

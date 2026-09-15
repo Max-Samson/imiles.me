@@ -144,6 +144,11 @@
   background: transparent;
   transition: opacity 220ms var(--carousel-fade-ease);
 }
+.expanding-carousel-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 .expanding-carousel-preview img {
   display: block;
   margin: 0;
@@ -330,16 +335,18 @@
     opacity 350ms var(--carousel-fade-ease),
     transform var(--carousel-move-duration) var(--carousel-move-ease);
 }
-.expanding-carousel-media > img {
+.expanding-carousel-media > .expanding-carousel-image {
   position: absolute;
   inset: 0;
+}
+.expanding-carousel-media > .expanding-carousel-image > img {
   display: block;
   margin: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.expanding-carousel-media > img[data-fit="contain"] {
+.expanding-carousel-media > .expanding-carousel-image > img[data-fit="contain"] {
   object-fit: contain;
   padding: 10px;
 }

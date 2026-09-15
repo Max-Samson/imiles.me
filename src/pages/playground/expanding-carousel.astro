@@ -1,4 +1,5 @@
 ---
+import { Code } from 'astro:components';
 import PlaygroundDocsLayout from '@/layouts/PlaygroundDocsLayout.astro';
 import { ComponentPreview } from '@/components/playground/ComponentPreview';
 import { ExpandingCarouselShowcase } from '@/components/playground/PlaygroundExtraDemos';
@@ -14,7 +15,11 @@ export function CarouselDemo() {
       eyebrow: 'Demo 01',
       title: 'Demo Item 1',
       description: '这里是卡片简单描述占位文本。',
-      image: { src: '/assets/demo/ExpandingCarousel-demo1.jpeg', alt: 'Demo 1', fit: 'cover' },
+      image: {
+        src: '/assets/demo/ExpandingCarousel-demo1.jpeg',
+        alt: 'Demo 1',
+        fit: 'cover',
+      },
       badges: ['React', 'TypeScript'],
       links: [{ label: 'Details', href: '/playground' }],
     },
@@ -79,7 +84,7 @@ const propItems: PropItem[] = [
   {
     prop: 'renderMedia',
     type: '(item: ExpandingCarouselItem) => ReactNode | undefined',
-    description: '替换默认布局的媒体区域，保留标题与详情；返回 undefined 时使用 image/terminal。',
+    description: '用于视频、Canvas 等自定义媒体，自行设置尺寸；保留文字与侧边预览，返回 undefined 时使用 image/terminal。',
   },
   {
     prop: 'renderContent',
@@ -103,6 +108,47 @@ const propItems: PropItem[] = [
   },
 ];
 
+const imageProps: PropItem[] = [
+  { prop: 'src', type: 'string', required: true, description: '默认图片地址。未匹配 source 时由 img 的 srcSet / src 选图；加载失败不会自动回退。' },
+  { prop: 'alt', type: 'string', required: true, description: '展开图片的替代文本；侧边预览自动使用空 alt，按钮已有可访问名称。' },
+  { prop: 'fit', type: "'cover' | 'contain'", default: "'cover'", description: 'cover 铺满并裁切；contain 完整显示，比例不同时留白。无固定图片尺寸要求；侧边预览始终 cover。' },
+  { prop: 'sources', type: 'ExpandingCarouselImageSource[]', description: '不同构图或格式的候选来源。选择首个 media 匹配且 type 受支持的项，具体条件应放在前面。' },
+  { prop: 'srcSet', type: 'string', description: '默认 img 的分辨率候选，如 /cover-640.webp 640w, /cover-1280.webp 1280w。' },
+  { prop: 'sizes', type: 'string', description: '使用 w 描述符时告诉浏览器图片预计显示宽度，不改变 CSS 布局；source 未设置 sizes 时继承此值。' },
+  { prop: 'previewSrc', type: 'string', description: '可选的独立静态缩略图。设置后预览忽略 sources、srcSet、sizes；未设置时共享展开图的响应式配置。' },
+];
+
+const sourceProps: PropItem[] = [
+  { prop: 'srcSet', type: 'string', required: true, description: '单个图片地址，或带 w / x 描述符的候选列表。' },
+  { prop: 'media', type: 'string', description: '原生视口媒体查询，如 (max-width: 599px)。省略时不限制视口，通常放在数组末尾。' },
+  { prop: 'type', type: 'string', description: '可选 MIME 类型，如 image/avif、image/webp，浏览器跳过不支持的格式。' },
+  { prop: 'sizes', type: 'string', default: 'image.sizes', description: '当前来源的预计显示宽度，覆盖图片级 sizes。' },
+];
+
+const responsiveSnippet = `import type { ExpandingCarouselImage } from '@/components/ui/expanding-carousel';
+
+const image: ExpandingCarouselImage = {
+  src: '/projects/mtimer/mtimer-cover-zh.jpeg',
+  alt: 'MTimer 番茄钟项目展示',
+  fit: 'cover',
+  sources: [
+    {
+      media: '(max-width: 599px)',
+      srcSet: '/projects/mtimer/mtimer-cover-ph-zh.webp',
+      type: 'image/webp',
+    },
+  ],
+};`;
+
+const resolutionSnippet = `// 素材路径为示意，请先提供同一构图的对应分辨率文件。
+const image = {
+  src: '/images/cover-1280.webp',
+  alt: '产品展示',
+  srcSet: '/images/cover-640.webp 640w, /images/cover-1280.webp 1280w',
+  // 示例值，需根据宿主页面中图片实际显示宽度调整。
+  sizes: '(max-width: 599px) 296px, 320px',
+};`;
+
 const features = [
   { label: 'Geometry', value: '3-Tier Connected Cards', description: '中央展开卡与两侧折叠缩略卡' },
   { label: 'Connectors', value: 'Dynamic SVG Bridging', description: '实时测量外露边缘并生成无缝接缝' },
@@ -112,8 +158,6 @@ const features = [
 ---
 
 <PlaygroundDocsLayout currentId="expanding-carousel">
-  {/* 1. Magic UI 主视窗 (Preview / Code / ↻ Replay / 📋 Copy) */}
-  {/* 增加高度为 min-h-[640px] 并优化 padding 为 px-2 sm:px-4 py-8，彻底解决底部进度条和左右侧卡被截断的问题 */}
   <ComponentPreview
     client:load
     code={codeSnippet}
@@ -126,24 +170,27 @@ const features = [
     </div>
   </ComponentPreview>
 
-  {/* 2. 声明式 Props 参数表格 (Astro 结构化驱动) */}
-  <PropsTable
-    items={propItems}
-    description="参考 Calendly 首页设计，基于 CSS Container Queries 与动态 SVG 连接件打造的高交互展开轮播。"
-  />
+  <PropsTable items={propItems} />
+
+  <PropsTable title="图片配置 · ExpandingCarouselImage" items={imageProps} description="配置在 items 中的 image 字段。普通图片只需要 src 与 alt。" />
+  <PropsTable title="图片来源 · ExpandingCarouselImageSource" items={sourceProps} description="sources 数组的每一项对应原生 picture 中的一个 source。" />
+
+  <section class="space-y-4 text-sm text-muted-foreground leading-relaxed" aria-labelledby="carousel-responsive">
+    <h2 id="carousel-responsive" class="text-xl font-bold text-foreground">移动端与桌面端使用不同构图</h2>
+    <p>将下面的 image 放入卡片条目。图片断点由调用方指定，基于视口宽度；轮播布局基于容器宽度，缩小容器不会触发视口选图。</p>
+    <Code code={responsiveSnippet} lang="tsx" />
+    <h3 class="text-lg font-semibold text-foreground">同一构图使用不同分辨率</h3>
+    <Code code={resolutionSnippet} lang="tsx" />
+  </section>
 
   <section class="space-y-4 text-sm text-muted-foreground leading-relaxed" aria-labelledby="carousel-usage">
-    <h2 id="carousel-usage" class="text-xl font-bold text-foreground">图片与使用说明</h2>
+    <h2 id="carousel-usage" class="text-xl font-bold text-foreground">接入提示</h2>
     <ul class="list-disc pl-5 space-y-3">
-      <li><code>image.fit</code> 默认为 <code>'cover'</code>：按比例铺满媒体区域，多出的部分会裁切。使用 <code>'contain'</code> 可完整显示截图，但图片与容器比例不同时会留白。没有固定像素尺寸要求，建议选择清晰且主体居中的素材。</li>
-      <li><code>image.src</code> 与 <code>image.alt</code> 分别提供图片地址和替代文本。可选的 <code>image.previewSrc</code> 仅替换侧边缩略图；侧边图片始终按 cover 裁切，不受展开图的 fit 设置影响。</li>
-      <li>默认文字区域使用纵向弹性布局，标题和详情之间的实际间距随卡片高度与内容量变化；仅替换图片、视频或其他媒体时优先使用 <code>renderMedia</code>，完整自定义布局才使用 <code>renderContent</code>。</li>
-      <li>嵌入 Markdown 或带 <code>prose</code> 的正文时，外包一层 <code>not-prose</code>。Playground 的 <code>ComponentPreview</code> 已内置隔离，防止正文样式给图片添加外边距、改变标题和链接样式。</li>
-      <li>在 Astro 中将示例封装为 React 组件，并使用 <code>&lt;CarouselDemo client:visible /&gt;</code> 启用交互。渲染函数放在 React 组件内部，不通过 Astro 水合边界传递。</li>
-      <li>跨项目复用时同时复制 <code>expanding-carousel.tsx</code> 和 <code>expanding-carousel.css</code>，适配 <code>cn</code> 导入、主题变量，并安装 React、lucide-react 依赖。连接件由组件随动画自动测量，无需调用方手动定位。</li>
+      <li>Astro 中将示例封装为 React 组件，以 <code>&lt;CarouselDemo client:visible /&gt;</code> 水合；自定义渲染函数定义在 React 内部。</li>
+      <li>嵌入带 <code>prose</code> 的正文时，外包 <code>not-prose</code>，避免正文样式影响图片与排版。<code>ComponentPreview</code> 已内置隔离。</li>
+      <li>跨项目复用需同时携带 TSX 与 CSS，适配 <code>cn</code>、主题变量，并提供 React、lucide-react 依赖。</li>
     </ul>
   </section>
 
-  {/* 3. 底层物理与光学规格 */}
   <ArchitectureFeatures items={features} className="pt-4" />
 </PlaygroundDocsLayout>
