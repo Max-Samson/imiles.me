@@ -1,9 +1,14 @@
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const PAGES_CACHE = `pages-${CACHE_VERSION}`;
 const IMAGES_CACHE = `images-${CACHE_VERSION}`;
 
-const PRECACHE_URLS = ['/', '/offline.html'];
+const PRECACHE_URLS = ['/', '/offline'];
+
+const storeSuccessfulResponse = (cache, request, response) => {
+  if (!response.ok) return Promise.resolve();
+  return cache.put(request, response.clone());
+};
 
 // Install: precache essential resources
 self.addEventListener('install', (event) => {
@@ -37,50 +42,66 @@ self.addEventListener('fetch', (event) => {
   // Hashed Astro assets: cache-first (immutable filenames)
   if (url.pathname.startsWith('/_astro/')) {
     event.respondWith(
-      caches.open(STATIC_CACHE).then((cache) =>
-        cache.match(request).then(
-          (cached) => cached || fetch(request).then((response) => {
-            cache.put(request, response.clone());
-            return response;
-          })
-        )
-      )
+      caches.open(STATIC_CACHE).then(async (cache) => {
+        const cached = await cache.match(request);
+        if (cached) return cached;
+
+        const response = await fetch(request);
+        await storeSuccessfulResponse(cache, request, response);
+        return response;
+      })
     );
     return;
   }
 
   // Images: stale-while-revalidate
   if (request.destination === 'image') {
+    const cachePromise = caches.open(IMAGES_CACHE);
+    const fetchPromise = Promise.all([cachePromise, fetch(request)]).then(
+      async ([cache, response]) => {
+        await storeSuccessfulResponse(cache, request, response);
+        return response;
+      }
+    );
+    event.waitUntil(fetchPromise.then(() => undefined).catch(() => undefined));
     event.respondWith(
-      caches.open(IMAGES_CACHE).then((cache) =>
-        cache.match(request).then((cached) => {
-          const fetchPromise = fetch(request)
-            .then((response) => {
-              cache.put(request, response.clone());
-              return response;
-            })
-            .catch(() => cached);
-          return cached || fetchPromise;
-        })
-      )
+      cachePromise.then(async (cache) => {
+        const cached = await cache.match(request);
+        return cached ?? fetchPromise;
+      })
     );
     return;
   }
 
-  // HTML pages: network-first with cache fallback, then offline.html
+  // HTML pages: network-first with cache fallback, then the offline page
   if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
+    const cachePromise = caches.open(PAGES_CACHE);
+    const networkPromise = fetch(request).then(async (response) => {
+      if (!response.ok) throw new Error(`Navigation returned ${response.status}`);
+
+      // Buffer SSR output so a stream that fails after its 200 headers can use the fallback path.
+      const body = await response.arrayBuffer();
+      return new Response(body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
+    });
+    event.waitUntil(
+      Promise.all([cachePromise, networkPromise])
+        .then(([cache, response]) => storeSuccessfulResponse(cache, request, response))
+        .catch(() => undefined)
+    );
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(PAGES_CACHE).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() =>
-          caches.match(request).then((cached) => cached || caches.match('/offline.html'))
-        )
+      cachePromise.then(async (cache) => {
+        try {
+          return await networkPromise;
+        } catch {
+          return (
+            (await cache.match(request)) ?? (await caches.match('/offline')) ?? Response.error()
+          );
+        }
+      })
     );
     return;
   }

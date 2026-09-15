@@ -1,5 +1,4 @@
 ---
-import { Code } from 'astro:components';
 import PlaygroundDocsLayout from '@/layouts/PlaygroundDocsLayout.astro';
 import { ComponentPreview } from '@/components/playground/ComponentPreview';
 import { ExpandingCarouselShowcase } from '@/components/playground/PlaygroundExtraDemos';
@@ -178,9 +177,9 @@ const features = [
   <section class="space-y-4 text-sm text-muted-foreground leading-relaxed" aria-labelledby="carousel-responsive">
     <h2 id="carousel-responsive" class="text-xl font-bold text-foreground">移动端与桌面端使用不同构图</h2>
     <p>将下面的 image 放入卡片条目。图片断点由调用方指定，基于视口宽度；轮播布局基于容器宽度，缩小容器不会触发视口选图。</p>
-    <Code code={responsiveSnippet} lang="tsx" />
+    <pre class="not-prose overflow-x-auto rounded-xl border border-border/70 bg-neutral-950 p-5 text-xs leading-relaxed text-sky-300"><code>{responsiveSnippet}</code></pre>
     <h3 class="text-lg font-semibold text-foreground">同一构图使用不同分辨率</h3>
-    <Code code={resolutionSnippet} lang="tsx" />
+    <pre class="not-prose overflow-x-auto rounded-xl border border-border/70 bg-neutral-950 p-5 text-xs leading-relaxed text-sky-300"><code>{resolutionSnippet}</code></pre>
   </section>
 
   <section class="space-y-4 text-sm text-muted-foreground leading-relaxed" aria-labelledby="carousel-usage">
