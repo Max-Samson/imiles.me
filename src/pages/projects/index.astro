@@ -22,7 +22,7 @@ const projects = getProjects(lang);
 
       <div class="grid gap-6">
         {projects.map((project, i) => (
-          <ProjectCard project={project} index={i} client:visible />
+          <ProjectCard project={project} index={i} lang={lang} client:visible />
         ))}
       </div>
     </main>

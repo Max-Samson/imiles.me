@@ -4,17 +4,21 @@ import { ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
 import StatusBadge from '@/components/common/StatusBadge';
 import type { Project } from '@/data/projects';
+import { type Locale, localizePathname } from '@/lib/i18n';
 import { ShineBorder } from '@/registry/magicui/shine-border';
 
 interface ProjectCardProps {
   project: Project;
   index: number;
+  lang?: Locale;
 }
 
-export default function ProjectCard({ project, index }: ProjectCardProps) {
+export default function ProjectCard({ project, index, lang = 'en' }: ProjectCardProps) {
+  const detailHref = localizePathname(`/projects/${project.slug}`, lang);
+
   return (
     <motion.a
-      href={project.hasDetailPage ? `/projects/${project.slug}` : project.githubUrl}
+      href={project.hasDetailPage ? detailHref : project.githubUrl}
       target={project.hasDetailPage ? undefined : '_blank'}
       rel={project.hasDetailPage ? undefined : 'noopener noreferrer'}
       className="project-card group relative block overflow-hidden rounded-xl border border-border bg-white/5 dark:bg-black/5 backdrop-blur-md p-6 transition-all duration-300 ease-out hover:scale-[0.98] hover:border-primary/50"
@@ -29,7 +33,7 @@ export default function ProjectCard({ project, index }: ProjectCardProps) {
         shineColor={['#A07CFE', '#FE8FB5', '#FFBE7B']}
       />
       <div className="mb-4 flex items-center justify-between">
-        <StatusBadge status={project.status} />
+        <StatusBadge status={project.status} lang={lang} />
         <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
       </div>
 
