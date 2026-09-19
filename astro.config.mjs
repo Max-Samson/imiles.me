@@ -1,4 +1,5 @@
 // @ts-check
+import { appConfig } from './src/config/app';
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@astrojs/react';
@@ -9,7 +10,7 @@ import rehypeSlug from 'rehype-slug';
 import cloudflare from '@astrojs/cloudflare';
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://imiles.me',
+  site: appConfig.siteUrl,
   output: 'server',
   adapter: cloudflare(),
   i18n: {

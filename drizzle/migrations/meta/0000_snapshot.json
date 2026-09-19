@@ -1,0 +1,224 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "26aa8ccc-b99b-48f3-a79d-0acaf948202a",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "friend_links": {
+      "name": "friend_links",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "submitted_url": {
+          "name": "submitted_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "canonical_url": {
+          "name": "canonical_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "contact_email": {
+          "name": "contact_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "screenshot_key": {
+          "name": "screenshot_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "screenshot_mime": {
+          "name": "screenshot_mime",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "screenshot_bytes": {
+          "name": "screenshot_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "screenshot_sha256": {
+          "name": "screenshot_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "submission_key_hash": {
+          "name": "submission_key_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "submission_payload_hash": {
+          "name": "submission_payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "reviewed_by": {
+          "name": "reviewed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reviewed_at": {
+          "name": "reviewed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "friend_links_submission_key": {
+          "name": "friend_links_submission_key",
+          "columns": ["submission_key_hash"],
+          "isUnique": true
+        },
+        "friend_links_published_url": {
+          "name": "friend_links_published_url",
+          "columns": ["canonical_url"],
+          "isUnique": true,
+          "where": "\"friend_links\".\"status\" IN ('active', 'hidden')"
+        },
+        "friend_links_screenshot_key": {
+          "name": "friend_links_screenshot_key",
+          "columns": ["screenshot_key"],
+          "isUnique": true
+        },
+        "friend_links_admin_list": {
+          "name": "friend_links_admin_list",
+          "columns": ["status", "created_at", "id"],
+          "isUnique": false
+        },
+        "friend_links_public_list": {
+          "name": "friend_links_public_list",
+          "columns": ["status", "published_at", "id"],
+          "isUnique": false
+        },
+        "friend_links_url_history": {
+          "name": "friend_links_url_history",
+          "columns": ["canonical_url", "status"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "friend_links_status": {
+          "name": "friend_links_status",
+          "value": "\"friend_links\".\"status\" IN ('pending', 'active', 'rejected', 'hidden')"
+        },
+        "friend_links_version": {
+          "name": "friend_links_version",
+          "value": "\"friend_links\".\"version\" > 0"
+        },
+        "friend_links_description": {
+          "name": "friend_links_description",
+          "value": "length(\"friend_links\".\"description\") BETWEEN 1 AND 200"
+        },
+        "friend_links_email": {
+          "name": "friend_links_email",
+          "value": "\"friend_links\".\"contact_email\" IS NULL OR length(\"friend_links\".\"contact_email\") BETWEEN 3 AND 254"
+        },
+        "friend_links_review": {
+          "name": "friend_links_review",
+          "value": "(\"friend_links\".\"status\" = 'pending' AND \"friend_links\".\"reviewed_by\" IS NULL AND \"friend_links\".\"reviewed_at\" IS NULL AND \"friend_links\".\"updated_by\" IS NULL) OR (\"friend_links\".\"status\" != 'pending' AND \"friend_links\".\"reviewed_by\" IS NOT NULL AND \"friend_links\".\"reviewed_at\" IS NOT NULL AND \"friend_links\".\"updated_by\" IS NOT NULL)"
+        },
+        "friend_links_publication": {
+          "name": "friend_links_publication",
+          "value": "(\"friend_links\".\"status\" IN ('pending', 'rejected') AND \"friend_links\".\"published_at\" IS NULL) OR (\"friend_links\".\"status\" IN ('active', 'hidden') AND \"friend_links\".\"published_at\" IS NOT NULL)"
+        },
+        "friend_links_image": {
+          "name": "friend_links_image",
+          "value": "(\"friend_links\".\"screenshot_key\" IS NULL AND \"friend_links\".\"screenshot_mime\" IS NULL AND \"friend_links\".\"screenshot_bytes\" IS NULL AND \"friend_links\".\"screenshot_sha256\" IS NULL) OR (\"friend_links\".\"screenshot_key\" IS NOT NULL AND \"friend_links\".\"screenshot_mime\" IS NOT NULL AND \"friend_links\".\"screenshot_mime\" IN ('image/png', 'image/jpeg', 'image/webp') AND \"friend_links\".\"screenshot_bytes\" IS NOT NULL AND \"friend_links\".\"screenshot_bytes\" BETWEEN 1 AND 2097152 AND \"friend_links\".\"screenshot_sha256\" IS NOT NULL AND length(\"friend_links\".\"screenshot_sha256\") = 64)"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

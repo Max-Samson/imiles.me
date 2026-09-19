@@ -6,15 +6,15 @@ const path = 'src/worker-configuration.d.ts';
 execFileSync(
   'wrangler',
   ['types', path, '--env-interface', 'WorkerBindings', '--include-runtime', 'false'],
-  { stdio: 'inherit' },
+  { stdio: 'inherit', env: { ...process.env, CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: 'false' } },
 );
 // Astro 提供 Worker 入口；不让生成的 RPC 元数据引入 dist 下的打包产物。
 const generated = readFileSync(path, 'utf8').replace(
   /^declare namespace Cloudflare \{[\s\S]*?^\}\n/gm,
   '',
-);
+).replaceAll('Cloudflare.Env', 'WorkerBindings');
 writeFileSync(
   path,
-  `import type { D1Database, Fetcher, KVNamespace } from '@cloudflare/workers-types';\n${generated}\nexport type { WorkerBindings };\n`,
+  `import type { D1Database, Fetcher, KVNamespace, RateLimit } from '@cloudflare/workers-types';\n${generated}\nexport type { WorkerBindings };\n`,
 );
 execFileSync('biome', ['check', '--write', path], { stdio: 'inherit' });

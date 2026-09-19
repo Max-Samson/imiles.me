@@ -1,4 +1,5 @@
 import type { CloudflareEnv } from '../env.d';
+import { getSiteUrl } from './config';
 import { InternalServerError } from './errors';
 
 /** 优先使用请求绑定；无 runtime 时仅为本地脚本提供标量环境变量。 */
@@ -8,18 +9,25 @@ export function getServerEnv(locals: Partial<App.Locals>): CloudflareEnv {
   const environment =
     runtimeEnv?.ENVIRONMENT ??
     (processEnv.NODE_ENV === 'production' ? 'production' : 'development');
-  const siteUrl = runtimeEnv?.SITE_URL ?? processEnv.SITE_URL ?? 'https://imiles.me';
+  const siteUrl = getSiteUrl({
+    SITE_URL: runtimeEnv ? runtimeEnv.SITE_URL : processEnv.SITE_URL,
+  }).origin;
   if (!['development', 'staging', 'production'].includes(environment)) {
     throw new InternalServerError('ENVIRONMENT 配置无效');
-  }
-  try {
-    if (!['https:', 'http:'].includes(new URL(siteUrl).protocol)) throw new Error('Invalid scheme');
-  } catch {
-    throw new InternalServerError('SITE_URL 必须是有效的 HTTP(S) URL');
   }
   return {
     DB: runtimeEnv?.DB,
     KV: runtimeEnv?.KV,
+    FRIEND_LINK_RATE_LIMITER: runtimeEnv?.FRIEND_LINK_RATE_LIMITER,
+    ACCESS_ISSUER: runtimeEnv ? runtimeEnv.ACCESS_ISSUER : processEnv.ACCESS_ISSUER,
+    ACCESS_AUD: runtimeEnv ? runtimeEnv.ACCESS_AUD : processEnv.ACCESS_AUD,
+    ADMIN_EMAILS: runtimeEnv ? runtimeEnv.ADMIN_EMAILS : processEnv.ADMIN_EMAILS,
+    TURNSTILE_SECRET_KEY: runtimeEnv
+      ? runtimeEnv.TURNSTILE_SECRET_KEY
+      : processEnv.TURNSTILE_SECRET_KEY,
+    SUBMISSION_HMAC_SECRET: runtimeEnv
+      ? runtimeEnv.SUBMISSION_HMAC_SECRET
+      : processEnv.SUBMISSION_HMAC_SECRET,
     ENVIRONMENT: environment,
     SITE_URL: siteUrl,
     APP_SECRET: runtimeEnv ? runtimeEnv.APP_SECRET : processEnv.APP_SECRET,

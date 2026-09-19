@@ -6,10 +6,16 @@ import type { WorkerBindings } from './worker-configuration';
 /**
  * Cloudflare Worker environment bindings
  */
-export interface CloudflareEnv extends Partial<Pick<WorkerBindings, 'DB' | 'KV'>> {
+export interface CloudflareEnv
+  extends Partial<Pick<WorkerBindings, 'DB' | 'KV' | 'FRIEND_LINK_RATE_LIMITER'>> {
   // Environment variables / secrets
   ENVIRONMENT?: 'development' | 'staging' | 'production';
   APP_SECRET?: string;
+  ACCESS_ISSUER?: string;
+  ACCESS_AUD?: string;
+  ADMIN_EMAILS?: string;
+  TURNSTILE_SECRET_KEY?: string;
+  SUBMISSION_HMAC_SECRET?: string;
   SITE_URL?: string;
   SUPABASE_S3_ENDPOINT?: string;
   SUPABASE_S3_REGION?: string;

@@ -170,6 +170,7 @@ export function handleApiError(error: unknown, init?: ResponseInit): Response {
 
   if (isAppError(error) && error.statusCode >= 400 && error.statusCode < 500) {
     const headers = new Headers(init?.headers);
+    if (error instanceof RateLimitError) headers.set('Retry-After', '60');
     if (error instanceof MethodNotAllowedError) {
       headers.set('Allow', error.allowedMethods.join(', '));
     }

@@ -139,3 +139,10 @@ pnpm build
 详见 [数据库约定](../../docs/database-design.md) 与 [架构概览](../../docs/server-database-architecture.md)。
 
 Astro 自身的来源检查可能在路由执行前拒绝跨源表单 POST（403）；不要为统一 JSON 响应而关闭这层保护。路由封装覆盖进入业务处理器后的分支，JSON 客户端应发送正确的 Content-Type。
+
+
+## 友链与通用图片服务
+
+友链采用单表 `friend_links`，详见 [接口与迁移说明](../../docs/friend-links-design.md)。公开接口固定投影，不返回邮箱或审核元信息。
+
+[通用文件与图片服务](./media/README.md) 独立于友链，支持 S3 兼容存储、静态图片校验与完整性读取；业务模块负责权限和对象生命周期。
