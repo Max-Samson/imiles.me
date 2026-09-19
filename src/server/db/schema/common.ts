@@ -6,13 +6,13 @@ import { integer, text } from 'drizzle-orm/sqlite-core';
  * 【前端视角通俗解释】：
  * 在前端开发中，我们常用类似 `key={item.id}` 标识列表项。
  * 传统自增数字 ID（1, 2, 3...）容易被爬虫猜测并遍历全站数据。
- * 我们使用 16 位的十六进制随机字符串，并加上前缀（如 `art_xxx`、`react_xxx`），
+ * 我们保留完整 UUID 的随机性，并加上前缀（如 `art_xxx`、`react_xxx`），
  * 这样看日志或接口返回时一眼就能知道这是哪张表的数据。
  *
  * @param prefix 业务前缀（例如 "art" 代表文章、"view" 代表浏览、"react" 代表点赞）
  */
 export function generateEntityId(prefix = 'ent'): string {
-  const randomPart = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+  const randomPart = crypto.randomUUID().replace(/-/g, '');
   return `${prefix}_${randomPart}`;
 }
 
@@ -50,7 +50,8 @@ export function auditTimestamps() {
     /** 最近一次更新的毫秒时间戳 */
     updatedAt: integer('updated_at')
       .notNull()
-      .$defaultFn(() => Date.now()),
+      .$defaultFn(() => Date.now())
+      .$onUpdateFn(() => Date.now()),
   };
 }
 

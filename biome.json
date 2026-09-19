@@ -60,7 +60,16 @@
     }
   },
   "files": {
-    "includes": ["**/*.ts", "**/*.tsx", "**/*.css", "**/*.json", "!.astro", "!dist"],
+    "includes": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.css",
+      "**/*.json",
+      "!.astro",
+      "!dist",
+      "!.wrangler",
+      "!.pnpm-store"
+    ],
     "ignoreUnknown": true
   },
   "overrides": [

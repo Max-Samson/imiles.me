@@ -34,3 +34,4 @@ create-docs/
 
 # local development files
 temp/
+.pnpm-store/

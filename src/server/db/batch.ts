@@ -28,10 +28,10 @@ export async function executeD1Batch<T = unknown>(
     const results = await d1.batch<T>(statements);
     return results;
   } catch (error) {
-    console.error('[Cloudflare D1 批处理执行失败]:', error);
-    throw new InternalServerError(
-      `D1 批处理执行失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      { statementCount: statements.length },
-    );
+    const failure = new InternalServerError('D1 批处理执行失败', {
+      statementCount: statements.length,
+    });
+    failure.cause = error;
+    throw failure;
   }
 }

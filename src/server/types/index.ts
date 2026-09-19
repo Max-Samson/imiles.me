@@ -1,3 +1,7 @@
+import { formatEtag } from './etag';
+
+export * from './query';
+
 /**
  * API 错误详情载荷类型定义
  */
@@ -52,7 +56,6 @@ export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 export interface PaginationParams {
   page?: number;
   pageSize?: number;
-  cursor?: string;
 }
 
 /**
@@ -113,11 +116,11 @@ export function jsonSuccess<T>(
  * 【场景】：POST 成功创建了一条新的点赞或留言
  *
  * @param data 新创建的资源数据实体
- * @param location 可选的新建资源定位 URI
+ * @param location 新建资源定位 URI
  */
 export function jsonCreated<T>(
   data: T,
-  location?: string,
+  location: string,
   init?: ResponseInit,
   meta?: Record<string, unknown>,
 ): Response {
@@ -146,7 +149,7 @@ export function jsonNoContent(init?: ResponseInit): Response {
 export function jsonNotModified(etag?: string, init?: ResponseInit): Response {
   const headers = new Headers(init?.headers);
   if (etag) {
-    headers.set('ETag', etag.startsWith('"') ? etag : `"${etag}"`);
+    headers.set('ETag', formatEtag(etag));
   }
   return new Response(null, {
     ...init,
@@ -181,6 +184,9 @@ export function jsonError(
   status = 500,
   init?: ResponseInit,
 ): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('Cache-Control', 'no-store');
+  const requestId = headers.get('X-Request-Id');
   const payload: ApiErrorResponse = {
     success: false,
     error: {
@@ -190,10 +196,10 @@ export function jsonError(
     },
     meta: {
       timestamp: Date.now(),
+      ...(requestId ? { requestId } : {}),
     },
   };
 
-  const headers = new Headers(init?.headers);
   if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json; charset=utf-8');
   }

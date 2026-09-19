@@ -1,5 +1,4 @@
-import type { RestQueryParams } from '../rest/query';
-import type { PaginatedResult } from '../types';
+import type { ListQuery, PaginatedResult } from '../types';
 
 /**
  * 通用 CRUD 数据仓储（Repository / DAO）契约接口
@@ -29,7 +28,7 @@ export interface CrudRepository<TEntity, TCreateDTO, TUpdateDTO, TId = string> {
    * @param params 标准化查询入参对象
    * @returns 包含 items 列表与 pagination 统计信息的标准化分页对象
    */
-  findMany(params: RestQueryParams): Promise<PaginatedResult<TEntity>>;
+  findMany(params: ListQuery): Promise<PaginatedResult<TEntity>>;
 
   /**
    * 持久化创建一条新记录

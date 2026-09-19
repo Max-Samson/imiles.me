@@ -1,3 +1,5 @@
+import { formatEtag, matchesEtag } from '../types/etag';
+
 /**
  * HTTP 缓存控制（Cache-Control）配置选项
  *
@@ -7,10 +9,10 @@
  * 通过设置 `Cache-Control` 和 `ETag`：
  * 1. 读者第一次打开：服务端查询 D1 返回数据，并在响应头带上 `ETag: "hash123"`。
  * 2. 读者刷新页面：浏览器自动携带请求头 `If-None-Match: "hash123"`。
- * 3. 服务端发现数据没变，直接返回 `304 Not Modified`（无数据体），毫秒级完成响应，节省流量与数据库压力。
+ * 3. 服务端确认内容未变后返回 304（无实体），节省传输；数据库查询是否减少取决于校验方式。
  */
 export interface CacheControlOptions {
-  /** 允许公开共享缓存（让 Cloudflare 全球边缘 CDN 节点缓存该响应） */
+  /** 允许公开共享缓存（实际边缘缓存需配合 Cache API / 缓存规则） */
   public?: boolean;
   /** 终端浏览器的本地缓存最长有效期（秒） */
   maxAge?: number;
@@ -30,6 +32,14 @@ export interface CacheControlOptions {
  * 将配置对象转换为标准的 Cache-Control 标头字符串
  */
 export function buildCacheControlHeader(options: CacheControlOptions = {}): string {
+  for (const value of [options.maxAge, options.sMaxAge, options.staleWhileRevalidate]) {
+    if (value !== undefined && (!Number.isSafeInteger(value) || value < 0)) {
+      throw new TypeError('Cache duration must be a non-negative integer');
+    }
+  }
+  if (options.sMaxAge !== undefined && !options.public) {
+    throw new TypeError('sMaxAge requires an explicitly public response');
+  }
   if (options.noStore) {
     return 'no-store, no-cache, must-revalidate';
   }
@@ -76,10 +86,7 @@ export function checkEtagMatch(request: Request, etag: string): boolean {
   const ifNoneMatch = request.headers.get('if-none-match');
   if (!ifNoneMatch) return false;
 
-  const normalizedEtag = etag.startsWith('"') ? etag : `"${etag}"`;
-  const clientEtags = ifNoneMatch.split(',').map((e) => e.trim());
-
-  return clientEtags.includes('*') || clientEtags.includes(normalizedEtag);
+  return matchesEtag(ifNoneMatch, etag);
 }
 
 /**
@@ -93,7 +100,7 @@ export function checkEtagMatch(request: Request, etag: string): boolean {
  *   maxAge: 60,                // 浏览器缓存 60 秒
  *   sMaxAge: 3600,             // Cloudflare 边缘 CDN 缓存 1 小时
  *   staleWhileRevalidate: 86400,
- *   etag: String(article.updatedAt)
+ *   etag: `W/"${article.updatedAt}"`
  * });
  * ```
  */
@@ -109,8 +116,7 @@ export function withCache(
   }
 
   if (options.etag) {
-    const formattedEtag = options.etag.startsWith('"') ? options.etag : `"${options.etag}"`;
-    headers.set('ETag', formattedEtag);
+    headers.set('ETag', formatEtag(options.etag));
   }
 
   return new Response(response.body, {

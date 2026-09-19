@@ -2,103 +2,94 @@ import type { KVNamespace } from '@cloudflare/workers-types';
 import type { CloudflareEnv } from '../../env.d';
 import { requireBinding } from '../env';
 
-/**
- * 从环境变量中提取 Cloudflare Workers KV 命名空间句柄
- *
- * 【前端视角通俗解释】：
- * Workers KV 本质上是部署在 Cloudflare 全球数百个数据中心边缘节点上的分布式只读键值存储。
- * 它的读取速度极其恐怖（通常只需 1~5 毫秒），相当于前端的 `localStorage`，
- * 但它是跨全网共享的，非常适合做只读缓存、访问计数防刷拦截。
- *
- * @param env 环境变量聚合对象
- * @returns 原生 KV 命名空间实例
- */
 export function getKVNamespace(env: CloudflareEnv): KVNamespace {
   return requireBinding(env, 'KV');
 }
 
-/**
- * KV 缓存键名前缀统一定义（命名空间隔离）
- *
- * 【前端视角通俗解释】：
- * 就像我们在 localStorage 里存东西时，为了避免键名冲突，习惯加上前缀（如 `my_app_token`、`my_app_theme`）。
- * 服务端所有的 KV 缓存 key 统一在这里定义前缀，防止不同业务互相覆盖。
- */
-export const KV_PREFIXES = {
-  /** 接口限流计数器与令牌桶，Key 形如: "rate_limit:192.168.1.1" */
-  RATE_LIMIT: 'rate_limit:',
-  /** 通用业务只读缓存前缀，Key 形如: "cache:my_key" */
-  CACHE: 'cache:',
-  /** 临时会话与瞬态状态前缀，Key 形如: "session:token" */
-  SESSION: 'session:',
-} as const;
+/** KV 仅用于允许陈旧或丢失的缓存，不能充当原子计数器、会话撤销源或严格限流器。 */
+export const KV_PREFIXES = { CACHE: 'imiles:cache:' } as const;
+export const DEFAULT_CACHE_TTL = 300;
 
-/**
- * 从 Workers KV 中安全读取并自动反序列化 JSON 数据
- *
- * 【前端视角通俗解释】：
- * 类似于 `JSON.parse(localStorage.getItem(key))` 的安全异步包装版本。
- * 自带了 `try...catch` 异常保护，即便网络瞬时波动或格式损坏，也不会导致整个 HTTP 请求崩溃，而是优雅返回 null。
- *
- * @param kv KV 命名空间句柄
- * @param key 完整的缓存键名（建议使用 KV_PREFIXES 拼接）
- * @returns 解析后的 JavaScript 数据对象，未命中缓存或读取失败时返回 null
- */
-export async function safeCacheGet<T>(kv: KVNamespace, key: string): Promise<T | null> {
+export function cacheKey(module: string, identifier: string): string {
+  if (!/^[a-z][a-z0-9-]*$/.test(module) || !identifier) throw new TypeError('Invalid cache key');
+  const key = `${KV_PREFIXES.CACHE}${module}:${encodeURIComponent(identifier)}`;
+  if (new TextEncoder().encode(key).length > 512) throw new TypeError('Cache key is too long');
+  return key;
+}
+
+function cacheTtl(ttlSeconds: number): number {
+  if (!Number.isSafeInteger(ttlSeconds) || ttlSeconds <= 0) {
+    throw new TypeError('Cache TTL must be a positive integer');
+  }
+  return Math.max(ttlSeconds, 60);
+}
+
+export function safeCacheGet(kv: KVNamespace, key: string): Promise<unknown | null>;
+export function safeCacheGet<T>(
+  kv: KVNamespace,
+  key: string,
+  parse: (value: unknown) => T,
+): Promise<T | null>;
+export async function safeCacheGet(
+  kv: KVNamespace,
+  key: string,
+  parse?: (value: unknown) => unknown,
+): Promise<unknown | null> {
   try {
-    return await kv.get<T>(key, 'json');
-  } catch (error) {
-    console.warn(`[KV 缓存读取失败] 键名 "${key}":`, error);
+    const value = await kv.get<unknown>(key, 'json');
+    return value === null ? null : parse ? parse(value) : value;
+  } catch {
+    // 缓存故障/旧数据格式不影响权威数据读取，不输出可能包含敏感信息的 key。
+    console.warn('[cache.read_failed]');
     return null;
   }
 }
 
-/**
- * 安全地向 Workers KV 写入数据（自动序列化为 JSON，并支持配置有效时长 TTL）
- *
- * 【前端视角通俗解释】：
- * 类似于 `localStorage.setItem(key, JSON.stringify(value))`，但额外支持自动过期清理功能！
- * 传入 `ttlSeconds`（存活秒数），到达时间后 Cloudflare 会自动在后台将该键删除，不需要我们写定时任务清理。
- *
- * ⚠️ 注意点：Cloudflare 规定 KV 的最小过期时长为 60 秒（小于 60 秒会自动修正为 60 秒）。
- *
- * @param kv KV 命名空间句柄
- * @param key 缓存键名
- * @param value 需要缓存的任意 JavaScript 对象或基本类型
- * @param ttlSeconds 缓存有效期（单位：秒）。不传则永久保存直到被手动覆盖或删除
- */
+/** 默认五分钟；配置/序列化错误抛出，KV 网络写入失败返回 false。 */
 export async function safeCacheSet<T>(
   kv: KVNamespace,
   key: string,
   value: T,
-  ttlSeconds?: number,
-): Promise<void> {
+  ttlSeconds = DEFAULT_CACHE_TTL,
+): Promise<boolean> {
+  const expirationTtl = cacheTtl(ttlSeconds);
+  const serialized = JSON.stringify(value);
+  if (serialized === undefined) throw new TypeError('Cache value must be JSON serializable');
+  // 项目约束，不是 KV 平台的单值上限。
+  if (new TextEncoder().encode(serialized).length > 1024 * 1024) {
+    throw new TypeError('Cache value exceeds the project 1 MiB budget');
+  }
   try {
-    const options: KVNamespacePutOptions = {};
-    if (ttlSeconds && ttlSeconds > 0) {
-      // Cloudflare KV 强制限制最小过期时长不得小于 60 秒
-      options.expirationTtl = Math.max(ttlSeconds, 60);
-    }
-    await kv.put(key, JSON.stringify(value), options);
-  } catch (error) {
-    console.warn(`[KV 缓存写入失败] 键名 "${key}":`, error);
+    await kv.put(key, serialized, { expirationTtl });
+    return true;
+  } catch {
+    console.warn('[cache.write_failed]');
+    return false;
   }
 }
 
-/**
- * 从 Workers KV 中安全删除指定的缓存键
- *
- * 【前端视角通俗解释】：
- * 类似于 `localStorage.removeItem(key)` 的异步安全版本。
- * 常用于“缓存主动失效”场景（例如文章内容被编辑后，主动删掉老缓存，强制下次请求重新从 D1 数据库拉取最新的数据）。
- *
- * @param kv KV 命名空间句柄
- * @param key 需要清除的缓存键名
- */
-export async function safeCacheDelete(kv: KVNamespace, key: string): Promise<void> {
+/** 删除失败可被调用方观测；删除成功也不保证全球立即一致。 */
+export async function safeCacheDelete(kv: KVNamespace, key: string): Promise<boolean> {
   try {
     await kv.delete(key);
-  } catch (error) {
-    console.warn(`[KV 缓存删除失败] 键名 "${key}":`, error);
+    return true;
+  } catch {
+    console.warn('[cache.delete_failed]');
+    return false;
   }
+}
+
+/** Cache-Aside：解码缓存，未命中/失败回源；不缓存 null，不吞掉权威数据源错误。 */
+export async function getOrLoadCache<T>(
+  kv: KVNamespace,
+  key: string,
+  load: () => Promise<T | null>,
+  options: { parse: (value: unknown) => T; ttlSeconds?: number },
+): Promise<T | null> {
+  const ttl = cacheTtl(options.ttlSeconds ?? DEFAULT_CACHE_TTL);
+  const cached = await safeCacheGet(kv, key, options.parse);
+  if (cached !== null) return cached;
+  const value = await load();
+  if (value !== null) await safeCacheSet(kv, key, value, ttl);
+  return value;
 }

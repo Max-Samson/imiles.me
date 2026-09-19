@@ -17,7 +17,7 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "BLOG-DB"
-database_id = "BLOG-DB" # 如需本地 wrangler 强校验，可填入 CF 控制台 D1 概览中的 UUID
+database_id = "24e0cea3-52ed-4685-bf64-001bc0e01d5f"
 migrations_dir = "drizzle/migrations"
 
 # ----------------------------------------------------
@@ -25,4 +25,4 @@ migrations_dir = "drizzle/migrations"
 # ----------------------------------------------------
 [[kv_namespaces]]
 binding = "KV"
-id = "BOLG-KV" # 如需本地 wrangler 强校验，可填入 CF 控制台 KV 列表中的 Namespace ID
+id = "1bea21d899054b9eb223cb261f9b36c2"

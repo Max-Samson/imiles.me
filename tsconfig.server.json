@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/server/**/*.ts",
+    "src/pages/api/**/*.ts",
+    "src/env.d.ts",
+    "src/worker-configuration.d.ts",
+    "tests/server/**/*.ts",
+    "drizzle.config.ts"
+  ],
+  "exclude": ["dist", "node_modules"]
+}

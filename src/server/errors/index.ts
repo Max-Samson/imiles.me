@@ -1,3 +1,4 @@
+import { ZodError } from 'astro/zod';
 import { jsonError } from '../types';
 
 /**
@@ -150,99 +151,42 @@ export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError;
 }
 
-interface ZodIssueLike {
-  path: (string | number)[];
-  message: string;
-}
-
-interface ZodErrorLike {
-  name: 'ZodError';
-  issues: ZodIssueLike[];
-}
-
-function isZodError(error: unknown): error is ZodErrorLike {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'name' in error &&
-    error.name === 'ZodError' &&
-    'issues' in error &&
-    Array.isArray(error.issues)
-  );
-}
-
-/**
- * 全局统一异常处理器（API 路由统一错误出口）
- *
- * 【前端视角通俗解释】：
- * 类似于前端全局的 window.addEventListener('unhandledrejection') 或 Axios 响应拦截器。
- * 无论接口内抛出了什么类型的异常（Zod 校验报错、D1 报错、还是普通的 throw new Error），
- * 统一传入此函数，它会智能归一化为标准的 HTTP Response，保证：
- * 1. HTTP 状态码与业务语义一致（400/404/500）。
- * 2. 返回体永远符合 { success: false, error: { code, message, details } } 结构。
- * 3. 生产环境下自动脱敏内部 SQL 堆栈，杜绝黑客攻击面。
- *
- * @param error catch 捕获到的任意异常对象
- * @param init 可选的响应头设置（如注入 CORS 跨域头）
- * @returns 标准化的 HTTP JSON Response 实例
- */
+/** HTTP 错误出口：内部错误始终脱敏，与 NODE_ENV 无关。 */
 export function handleApiError(error: unknown, init?: ResponseInit): Response {
-  // 1. 自动识别并结构化处理 Zod 表单/入参校验错误
-  if (isZodError(error)) {
-    const details = error.issues.map((issue) => ({
-      field: issue.path.join('.'),
-      message: issue.message,
-    }));
+  if (error instanceof ZodError) {
     return jsonError(
       {
         code: 'VALIDATION_ERROR',
         message: '请求参数校验不通过',
-        details,
+        details: error.issues.map((issue) => ({
+          field: issue.path.join('.'),
+          message: issue.message,
+        })),
       },
       400,
       init,
     );
   }
-  // 2. 处理已知的业务领域异常（AppError）
-  if (isAppError(error)) {
+
+  if (isAppError(error) && error.statusCode >= 400 && error.statusCode < 500) {
     const headers = new Headers(init?.headers);
-    if (error instanceof MethodNotAllowedError && error.allowedMethods.length > 0) {
+    if (error instanceof MethodNotAllowedError) {
       headers.set('Allow', error.allowedMethods.join(', '));
     }
-
     return jsonError(
-      {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-      },
+      { code: error.code, message: error.message, details: error.details },
       error.statusCode,
       { ...init, headers },
     );
   }
 
-  // 3. 处理未捕获的原生 JavaScript Error
-  if (error instanceof Error) {
-    console.error('[未捕获的服务端异常]:', error.message, error.stack);
-    return jsonError(
-      {
-        code: 'INTERNAL_SERVER_ERROR',
-        // 生产环境下脱敏，不将内部代码报错直接暴露给前端
-        message:
-          process.env.NODE_ENV === 'production' ? '服务暂时不可用，请稍后重试' : error.message,
-      },
-      500,
-      init,
-    );
-  }
-
-  // 4. 处理未知类型（如 throw "string" 或 throw null）
-  console.error('[未捕获的非标准异常]:', error);
+  // 日志保留内部原因；响应只暴露稳定错误码和关联 ID。
+  console.error('[server.error]', {
+    requestId: new Headers(init?.headers).get('X-Request-Id'),
+    error,
+  });
   return jsonError(
-    {
-      code: 'UNKNOWN_ERROR',
-      message: '发生未知服务端异常',
-    },
+    { code: 'INTERNAL_SERVER_ERROR', message: '服务暂时不可用，请稍后重试' },
     500,
     init,
   );

@@ -1,34 +1,35 @@
-import type { PaginationParams } from '../types';
+import { ValidationError } from '../errors';
+import type { ListQuery, SortField } from '../types';
 
-export interface SortField {
-  field: string;
-  direction: 'asc' | 'desc';
-}
-
-export interface RestQueryParams extends PaginationParams {
-  page: number;
-  pageSize: number;
-  offset: number;
-  limit: number;
-  sort: SortField[];
-  search?: string;
-  filters: Record<string, string>;
-  fields?: string[];
-}
+export type { SortField } from '../types';
+export type RestQueryParams = ListQuery;
 
 export interface ParseRestQueryOptions {
   defaultPage?: number;
   defaultPageSize?: number;
   maxPageSize?: number;
-  allowedSortFields?: string[];
+  maxOffset?: number;
+  allowedSortFields?: readonly string[];
+  allowedFilterFields?: readonly string[];
+  allowedFields?: readonly string[];
   defaultSort?: SortField[];
 }
 
-/**
- * Parses and sanitizes RESTful query parameters from a URL or search params
- * Handles pagination (?page=1&pageSize=20), sorting (?sort=-created_at,views),
- * filtering, search (?q=keyword), and field selection (?fields=id,title)
- */
+function positiveInteger(value: string | null, fallback: number, field: string): number {
+  if (value === null) return fallback;
+  if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < 1) {
+    throw new ValidationError(`${field} 必须是正整数`);
+  }
+  return Number(value);
+}
+
+function assertAllowed(field: string, allowed: readonly string[], kind: string): void {
+  if (!allowed.includes(field) || ['__proto__', 'constructor', 'prototype'].includes(field)) {
+    throw new ValidationError(`不支持的${kind}: ${field}`);
+  }
+}
+
+/** 只解析页码分页；字段默认拒绝，路由必须显式提供业务白名单。 */
 export function parseRestQuery(
   input: URL | URLSearchParams | string,
   options: ParseRestQueryOptions = {},
@@ -37,120 +38,91 @@ export function parseRestQuery(
     defaultPage = 1,
     defaultPageSize = 20,
     maxPageSize = 100,
-    allowedSortFields,
+    maxOffset = 100_000,
+    allowedSortFields = ['createdAt'],
+    allowedFilterFields = [],
+    allowedFields = [],
     defaultSort = [{ field: 'createdAt', direction: 'desc' }],
   } = options;
-
-  let searchParams: URLSearchParams;
-  if (typeof input === 'string') {
-    searchParams = input.includes('?')
-      ? new URL(input, 'https://localhost').searchParams
-      : new URLSearchParams(input);
-  } else if (input instanceof URL) {
-    searchParams = input.searchParams;
-  } else {
-    searchParams = input;
+  if (
+    [defaultPage, defaultPageSize, maxPageSize].some((n) => !Number.isSafeInteger(n) || n < 1) ||
+    !Number.isSafeInteger(maxOffset) ||
+    maxOffset < 0 ||
+    defaultPageSize > maxPageSize
+  ) {
+    throw new TypeError('Invalid pagination configuration');
   }
-
-  // 1. Pagination
-  const rawPage = Number.parseInt(searchParams.get('page') ?? '', 10);
-  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : defaultPage;
-
-  const rawPageSize = Number.parseInt(
-    searchParams.get('pageSize') ?? searchParams.get('limit') ?? '',
-    10,
+  if (
+    defaultSort.some(
+      (s) => !allowedSortFields.includes(s.field) || !['asc', 'desc'].includes(s.direction),
+    )
+  ) {
+    throw new TypeError('defaultSort must use allowedSortFields');
+  }
+  const params =
+    typeof input === 'string'
+      ? input.includes('?') || /^https?:\/\//.test(input)
+        ? new URL(input, 'https://localhost').searchParams
+        : new URLSearchParams(input)
+      : input instanceof URL
+        ? input.searchParams
+        : input;
+  const seen = new Set<string>();
+  for (const [key] of params) {
+    if (seen.has(key)) throw new ValidationError(`参数不能重复: ${key}`);
+    seen.add(key);
+  }
+  if (params.has('cursor') || params.has('offset')) {
+    throw new ValidationError('此接口仅支持 page/pageSize 分页');
+  }
+  if (params.has('pageSize') && params.has('limit')) {
+    throw new ValidationError('pageSize 与 limit 不能同时使用');
+  }
+  const page = positiveInteger(params.get('page'), defaultPage, 'page');
+  const pageSize = Math.min(
+    positiveInteger(params.get('pageSize') ?? params.get('limit'), defaultPageSize, 'pageSize'),
+    maxPageSize,
   );
-  let pageSize = Number.isFinite(rawPageSize) && rawPageSize > 0 ? rawPageSize : defaultPageSize;
-  if (pageSize > maxPageSize) {
-    pageSize = maxPageSize;
-  }
-
   const offset = (page - 1) * pageSize;
-  const limit = pageSize;
-
-  // 2. Sorting (?sort=-created_at,views or ?sort=views:desc)
-  const rawSort = searchParams.get('sort');
-  let sort: SortField[] = [];
-
-  if (rawSort) {
-    const parts = rawSort.split(',').map((p) => p.trim());
-    for (const part of parts) {
-      if (!part) continue;
-      let field: string;
-      let direction: 'asc' | 'desc' = 'asc';
-
-      if (part.startsWith('-')) {
-        direction = 'desc';
-        field = part.slice(1);
-      } else if (part.startsWith('+')) {
-        direction = 'asc';
-        field = part.slice(1);
-      } else if (part.includes(':')) {
-        const [f, d] = part.split(':');
-        field = f;
-        direction = d?.toLowerCase() === 'desc' ? 'desc' : 'asc';
-      } else {
-        field = part;
-      }
-
-      if (allowedSortFields && !allowedSortFields.includes(field)) {
-        continue;
-      }
-
-      sort.push({ field, direction });
-    }
+  if (!Number.isSafeInteger(offset) || offset > maxOffset) {
+    throw new ValidationError('分页偏移量超出允许范围');
   }
-
-  if (sort.length === 0) {
-    sort = defaultSort;
-  }
-
-  // 3. Search query (?q=...)
-  const search = searchParams.get('q')?.trim() || undefined;
-
-  // 4. Sparse Fieldsets (?fields=id,title,views)
-  const rawFields = searchParams.get('fields');
-  const fields = rawFields
-    ? rawFields
-        .split(',')
-        .map((f) => f.trim())
-        .filter(Boolean)
+  const rawSort = params.get('sort');
+  const sort: SortField[] =
+    rawSort === null
+      ? defaultSort.map((s) => ({ ...s }))
+      : rawSort.split(',').map((part) => {
+          const match = /^([+-]?)([a-zA-Z_][\w]*)(?::(asc|desc))?$/.exec(part.trim());
+          if (!match || (match[1] && match[3])) throw new ValidationError('排序格式无效');
+          const [, prefix, field, direction] = match;
+          assertAllowed(field, allowedSortFields, '排序字段');
+          return { field, direction: prefix === '-' || direction === 'desc' ? 'desc' : 'asc' };
+        });
+  const fields = params.has('fields')
+    ? [
+        ...new Set(
+          params
+            .get('fields')
+            ?.split(',')
+            .map((f) => {
+              const field = f.trim();
+              assertAllowed(field, allowedFields, '返回字段');
+              return field;
+            }),
+        ),
+      ]
     : undefined;
-
-  // 5. Remaining filters (filter[key]=val or custom params)
+  const search = params.get('q')?.trim() || undefined;
+  if (search && search.length > 200) throw new ValidationError('搜索词过长');
   const filters: Record<string, string> = {};
-  const standardKeys: Record<string, true> = {
-    page: true,
-    pageSize: true,
-    limit: true,
-    offset: true,
-    sort: true,
-    q: true,
-    fields: true,
-    cursor: true,
-  };
-
-  for (const [key, value] of searchParams.entries()) {
-    if (standardKeys[key]) continue;
-
-    // Handle filter[category]=tech style
-    const bracketMatch = key.match(/^filter\[(.*)\]$/);
-    if (bracketMatch?.[1]) {
-      filters[bracketMatch[1]] = value.trim();
-    } else {
-      filters[key] = value.trim();
-    }
+  const standardKeys = new Set(['page', 'pageSize', 'limit', 'sort', 'q', 'fields']);
+  for (const [key, value] of params) {
+    if (standardKeys.has(key)) continue;
+    const field = /^filter\[([^\]]+)\]$/.exec(key)?.[1] ?? key;
+    assertAllowed(field, allowedFilterFields, '过滤字段');
+    if (Object.hasOwn(filters, field)) throw new ValidationError(`过滤字段不能重复: ${field}`);
+    if (value.length > 1000) throw new ValidationError('过滤值过长');
+    filters[field] = value.trim();
   }
-
-  return {
-    page,
-    pageSize,
-    offset,
-    limit,
-    sort,
-    search,
-    filters,
-    fields,
-    cursor: searchParams.get('cursor') || undefined,
-  };
+  return { page, pageSize, offset, limit: pageSize, sort, search, filters, fields };
 }
