@@ -11,6 +11,11 @@ export interface CloudflareEnv extends Partial<Pick<WorkerBindings, 'DB' | 'KV'>
   ENVIRONMENT?: 'development' | 'staging' | 'production';
   APP_SECRET?: string;
   SITE_URL?: string;
+  SUPABASE_S3_ENDPOINT?: string;
+  SUPABASE_S3_REGION?: string;
+  SUPABASE_STORAGE_BUCKET?: string;
+  SUPABASE_S3_ACCESS_KEY_ID?: string;
+  SUPABASE_S3_SECRET_ACCESS_KEY?: string;
 }
 
 declare global {

@@ -3,6 +3,11 @@ main = "./dist/_worker.js"
 compatibility_date = "2026-03-31"
 compatibility_flags = ["nodejs_compat"]
 
+[vars]
+SUPABASE_S3_ENDPOINT = "YOUR_SUPABASE_S3_ENDPOINT"
+SUPABASE_S3_REGION = "YOUR_SUPABASE_S3_REGION"
+SUPABASE_STORAGE_BUCKET = "YOUR_SUPABASE_STORAGE_BUCKET"
+
 [[routes]]
 pattern = "imiles.me"
 custom_domain = true

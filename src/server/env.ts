@@ -23,6 +23,19 @@ export function getServerEnv(locals: Partial<App.Locals>): CloudflareEnv {
     ENVIRONMENT: environment,
     SITE_URL: siteUrl,
     APP_SECRET: runtimeEnv ? runtimeEnv.APP_SECRET : processEnv.APP_SECRET,
+    SUPABASE_S3_ENDPOINT: runtimeEnv
+      ? runtimeEnv.SUPABASE_S3_ENDPOINT
+      : processEnv.SUPABASE_S3_ENDPOINT,
+    SUPABASE_S3_REGION: runtimeEnv ? runtimeEnv.SUPABASE_S3_REGION : processEnv.SUPABASE_S3_REGION,
+    SUPABASE_STORAGE_BUCKET: runtimeEnv
+      ? runtimeEnv.SUPABASE_STORAGE_BUCKET
+      : processEnv.SUPABASE_STORAGE_BUCKET,
+    SUPABASE_S3_ACCESS_KEY_ID: runtimeEnv
+      ? runtimeEnv.SUPABASE_S3_ACCESS_KEY_ID
+      : processEnv.SUPABASE_S3_ACCESS_KEY_ID,
+    SUPABASE_S3_SECRET_ACCESS_KEY: runtimeEnv
+      ? runtimeEnv.SUPABASE_S3_SECRET_ACCESS_KEY
+      : processEnv.SUPABASE_S3_SECRET_ACCESS_KEY,
   };
 }
 
