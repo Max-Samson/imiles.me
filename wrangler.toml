@@ -10,3 +10,19 @@ custom_domain = true
 [assets]
 directory = "./dist"
 binding = "ASSETS"
+
+# ----------------------------------------------------
+# Cloudflare D1 关系型数据库绑定 (对应控制台已绑定的 BLOG-DB)
+# ----------------------------------------------------
+[[d1_databases]]
+binding = "DB"
+database_name = "BLOG-DB"
+database_id = "BLOG-DB" # 如需本地 wrangler 强校验，可填入 CF 控制台 D1 概览中的 UUID
+migrations_dir = "drizzle/migrations"
+
+# ----------------------------------------------------
+# Cloudflare Workers KV 键值缓存绑定 (对应控制台已绑定的 BOLG-KV)
+# ----------------------------------------------------
+[[kv_namespaces]]
+binding = "KV"
+id = "BOLG-KV" # 如需本地 wrangler 强校验，可填入 CF 控制台 KV 列表中的 Namespace ID
