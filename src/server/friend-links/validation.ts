@@ -1,4 +1,3 @@
-import { isIP } from 'node:net';
 import { z } from 'astro/zod';
 import { friendLinkStatuses } from '../db/schema/friend-links';
 import { ValidationError } from '../errors';
@@ -21,7 +20,8 @@ export function canonicalizeUrl(input: string): string {
     !host.includes('.') ||
     host.endsWith('.') ||
     host.startsWith('[') ||
-    isIP(host) ||
+    // URL 会把十六进制、整数等 IPv4 写法规范化为点分十进制；IPv6 hostname 带方括号。
+    /^(?:\d{1,3}\.){3}\d{1,3}$/.test(host) ||
     /(?:^|\.)(localhost|local|internal|test|invalid|example|onion)$/.test(host)
   ) {
     throw new ValidationError('网站链接须为公开 HTTPS 域名，不含凭据、参数、片段或非默认端口');

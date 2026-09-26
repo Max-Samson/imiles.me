@@ -4,12 +4,12 @@
 
 ## 1. 核心使命与架构红线
 
-本项目组件库（`src/components/ui/`）与交互操场（`src/pages/playground/`）严格遵循**成熟开源组件库（如 shadcn/ui、Radix UI）的工程设计规范**。任何接手本项目的 AI Agent 必须坚守以下三大最高红线：
+本项目将自研 UI 原语维护在 `src/components/ui/`，将 shadcn/ui 组件维护在 `src/registry/shadcn/`，交互操场位于 `src/pages/playground/`。任何接手本项目的 AI Agent 必须坚守以下三大最高红线：
 
 ### 红线 1：职责绝对单一，严禁调试代码侵入 UI 原语
-- **`src/components/ui/` 仅负责纯粹的 UI 原语实现**：每一个组件必须是成熟、完整、自洽的生产级组件，**严禁在其中编写任何调试滑块、测试开关、演示场景或写死的测试假数据**。
+- **UI 原语目录仅负责纯粹实现**：`src/components/ui/` 与 `src/registry/shadcn/` 中严禁编写调试滑块、测试开关、演示场景或写死的测试假数据。
 - **展示、调试与参数试验全量移交 Astro 页面**：所有的交互测试台、参数滑块控制、多场景用例以及使用说明，一律在 `src/pages/playground/*.astro` 及对应的 playground 构件中实现。
-- **可移植性保障**：任何开发者均可直接拷贝 `src/components/ui/` 下的任意单个文件到其他全新的 React / Next.js / Astro 项目中直接使用，零修改成本。
+- **可移植性保障**：组件不依赖具体业务；shadcn/ui 组件通过 `@/registry/shadcn/*` 统一引用。
 
 ### 红线 2：兼顾 Astro 框架特质，杜绝死板照搬 Magic UI 的沉重胶水层
 - Magic UI 采用 Node 预编译脚本将所有组件生成一个 4000 多行的注册表字典 `__index__.tsx`，本质是受限于 Next.js 的 RSC 边界。
@@ -26,7 +26,8 @@
 
 ```
 [步骤 1] 编写纯 UI 原语
-         └─ 文件位置：src/components/ui/<kebab-name>.tsx
+         └─ 自研组件：src/components/ui/<kebab-name>.tsx
+         └─ shadcn/ui：src/registry/shadcn/<kebab-name>.tsx
          └─ 规范要求：纯组件实现、cva 变体声明、React.forwardRef、cn() 类名合并
 
 [步骤 2] 导出组件

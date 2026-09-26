@@ -1,7 +1,7 @@
 'use client';
 import { Mail } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/registry/shadcn/button';
 
 const DISMISSED_KEY = 'newsletter-dismissed';
 const SUBSCRIBED_KEY = 'newsletter-subscribed';

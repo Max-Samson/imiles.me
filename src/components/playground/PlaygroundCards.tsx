@@ -2,12 +2,12 @@
 
 import { Code, FolderGit2, Home, Laptop, Mail, Play, Sparkles, Terminal } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import ExpandingCarousel, { type ExpandingCarouselItem } from '@/components/ui/expanding-carousel';
 import { FloatingDock } from '@/components/ui/floating-dock';
 import { LinkPreview } from '@/components/ui/link-preview';
 import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
 import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
+import { Button } from '@/registry/shadcn/button';
 
 /**
  * 1. LiquidGlassButton 展卡微舞台

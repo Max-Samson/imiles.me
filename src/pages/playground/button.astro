@@ -1,12 +1,12 @@
 ---
 import PlaygroundDocsLayout from '@/layouts/PlaygroundDocsLayout.astro';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/registry/shadcn/button';
 import { ComponentPreview } from '@/components/playground/ComponentPreview';
 import PropsTable, { type PropItem } from '@/components/playground/PropsTable.astro';
 import ArchitectureFeatures from '@/components/playground/ArchitectureFeatures.astro';
 import { Sparkles, Trash2, Compass } from 'lucide-react';
 
-const codeSnippet = `import { Button } from '@/components/ui/button';
+const codeSnippet = `import { Button } from '@/registry/shadcn/button';
 import { Sparkles, Trash2, Compass } from 'lucide-react';
 
 export function ButtonDemo() {

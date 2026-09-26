@@ -25,6 +25,9 @@ export function getServerEnv(locals: Partial<App.Locals>): CloudflareEnv {
     ADMIN_SERVICE_TOKEN_IDS: runtimeEnv
       ? runtimeEnv.ADMIN_SERVICE_TOKEN_IDS
       : processEnv.ADMIN_SERVICE_TOKEN_IDS,
+    ADMIN_SERVICE_TOKEN_CAPABILITIES: runtimeEnv
+      ? runtimeEnv.ADMIN_SERVICE_TOKEN_CAPABILITIES
+      : processEnv.ADMIN_SERVICE_TOKEN_CAPABILITIES,
     TURNSTILE_SECRET_KEY: runtimeEnv
       ? runtimeEnv.TURNSTILE_SECRET_KEY
       : processEnv.TURNSTILE_SECRET_KEY,

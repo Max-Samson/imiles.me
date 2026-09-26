@@ -17,16 +17,16 @@ import {
   Terminal,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import ExpandingCarousel, { type ExpandingCarouselItem } from '@/components/ui/expanding-carousel';
 import { FloatingDock } from '@/components/ui/floating-dock';
 import { LinkPreview } from '@/components/ui/link-preview';
 import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
 import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
 import { cn } from '@/lib/utils';
+import { Button } from '@/registry/shadcn/button';
 
 /**
- * 1. 核心系统按钮组件交互展台 (src/components/ui/button.tsx)
+ * 1. 核心系统按钮组件交互展台 (src/registry/shadcn/button.tsx)
  */
 export function SystemButtonShowcase() {
   const [selectedVariant, setSelectedVariant] = useState<

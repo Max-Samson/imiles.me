@@ -28,6 +28,8 @@ pnpm-debug.log*
 .claude/
 .vscode/
 .env.*
+.dev.vars
+.dev.vars.*
 
 #create 
 create-docs/

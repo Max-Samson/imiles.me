@@ -3,9 +3,9 @@
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Button } from '@/components/ui/button';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { getLocaleFromPathname } from '@/lib/i18n';
+import { Button } from '@/registry/shadcn/button';
 import { getNavItems, isNavItemActive } from './NavigationMenu';
 
 function MenuPortal({

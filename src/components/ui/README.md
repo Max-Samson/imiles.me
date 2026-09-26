@@ -2,7 +2,7 @@
 # 组件库开发规范与架构设计指南
 
 > **适用对象**：AI 编码助手（Agents）、前端工程师及后续维护者。  
-> **核心原则**：本目录（`src/components/ui/`）存放全站核心的通用基础 UI 交互原语。组件必须遵循**成熟 UI 组件库（如 shadcn/ui、Radix UI、Magic UI）的设计标准**：**完全独立自洽、高度内聚、职责单一、零项目业务耦合**。
+> **核心原则**：本目录（`src/components/ui/`）存放项目自研的通用 UI 交互原语；shadcn/ui 组件统一维护在 `src/registry/shadcn/`。组件必须保持独立自洽、高度内聚、职责单一、零项目业务耦合。
 
 ---
 
@@ -25,7 +25,7 @@
 后续任何 AI 助手或开发者在新增、优化或重构 UI 组件时，**必须严格遵守以下 5 步标准作业程序**：
 
 ```
-[步骤 1] 在 src/components/ui/<kebab-name>.tsx 编写纯粹的 UI 原语组件
+[步骤 1] 自研原语放在 src/components/ui/；shadcn/ui 组件放在 src/registry/shadcn/
    │     (严禁包含任何调试滑块、测试按钮、外展说明或写死假数据)
    ▼
 [步骤 2] 在 src/components/index.tsx 导出该组件（命名导出，保持字母排序）

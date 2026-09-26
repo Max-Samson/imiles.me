@@ -3,7 +3,7 @@ import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { renderToString } from 'react-dom/server';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/registry/shadcn/button';
 
 interface Icon {
   x: number;

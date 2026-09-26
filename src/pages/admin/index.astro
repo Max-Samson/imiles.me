@@ -1,0 +1,8 @@
+---
+import AdminApp from '@/components/admin/AdminApp';
+import AdminLayout from '@/layouts/AdminLayout.astro';
+export const prerender = true;
+---
+<AdminLayout title="管理后台 · imiles.me">
+  <AdminApp client:only="react" />
+</AdminLayout>

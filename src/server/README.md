@@ -1,36 +1,49 @@
 # 服务端基础能力与开发约定
 
-当前是 Astro 5 + Cloudflare Workers 的基础设施层，已有 D1/KV 绑定、HTTP 工具、数据库字段构造器与本地集成测试。业务表、业务 Service、鉴权系统、严格限流和 R2 上传尚未实现，按实际功能需求增加。
+服务端运行在 Astro 5 + Cloudflare Workers，当前包含通用 HTTP 基础设施、D1/KV/S3 访问、Cloudflare Access 管理鉴权，以及友链申请和审核模块。代码按业务模块组织；共享目录只保留已有多个调用方或具有独立安全边界的能力。
 
 ## 当前结构
 
 ```text
 src/pages/api/v1/health.ts  存活探针
 src/server/
-  env.ts                   获取请求级绑定与校验标量配置
-  db/                      Drizzle 工厂、D1 原子批处理
-    schema/common.ts       ID、毫秒时间戳、软删除列构造器
-    schema/index.ts        业务表导出入口（当前无业务表）
-  repositories/            中性的 CRUD 契约
-  types/                   响应、分页、查询契约与 ETag 格式化
+  admin/session/           后台会话接口
+  db/                      请求级 Drizzle 客户端、批处理和表结构
   errors/                  领域异常与 HTTP 错误出口
-  rest/                    路由封装、参数解析、请求体、CORS、HTTP 缓存
-  kv/                      有限 TTL、数据解码、Cache-Aside
+  friend-links/            友链 Route、Service、Repository、上传与保护逻辑
+  kv/                      有限 TTL、数据解码与 Cache-Aside
+  media/                   通用图片验证和完整性读取
+  rest/                    路由封装、参数解析、请求体、CORS 与 HTTP 缓存
+  security/access/         Access JWT 验证、Actor 映射与能力授权
+  security/origin.ts       写请求同源校验
+  storage/                 对象存储接口与 S3 实现
+  types/                   响应、分页、查询契约与 ETag 格式化
+src/shared/admin/          服务端与后台 UI 共用的会话契约和能力常量
 src/worker-configuration.d.ts  从 Wrangler 配置生成的绑定类型
 ```
 
-`drizzle/migrations/` 保存已生成的 SQL 与元数据；当前 journal 为空。不要为填充目录而创建虚构的业务表或空 Service。
+`drizzle/migrations/` 保存已生成的 SQL 和 Drizzle 元数据。迁移文件必须与 `src/server/db/schema/` 的表结构同步。
 
 ## 分层边界
 
 业务链路为 `API Route → Service → Repository → D1`，Service 可协调 KV。
 
 - Route 负责 Request/Response、Zod 入参校验和 HTTP 缓存。
-- Service 接收业务 DTO 与依赖，不接收 Astro APIContext 或 HTTP Request/Response。
+- Service 接收业务 DTO 与显式依赖，不接收 Astro APIContext 或 Cloudflare 环境绑定。
 - Repository 封装 SQL，接收中性的查询类型或业务专属 DTO。不要把用户传入的字段字符串直接拼接为 SQL。
-- `CrudRepository` 是可选契约，不要求每个业务都实现全部 CRUD 方法。
 - 数据库、KV 来自当前请求；不要在模块顶层保存用户状态或创建绑定客户端。
+- Route 通过模块内工厂完成请求级依赖装配，不直接调用 Repository。
 - 正确性关键写入必须 await 完成后才能返回成功。后台任务只用于允许失败的辅助工作。
+
+## 管理身份与权限
+
+`security/access/` 负责验证 Cloudflare Access JWT，并映射为稳定的用户或服务 Actor。身份验证成功后仍需按 Route 检查 `admin:read`、`admin:write` 或 `admin:maintenance`。
+
+- 用户必须同时通过 Access Policy 和 `ADMIN_EMAILS` 精确白名单，当前拥有三项管理能力。
+- Service Token 的 Client ID 必须在 `ADMIN_SERVICE_TOKEN_IDS` 中，并通过 `ADMIN_SERVICE_TOKEN_CAPABILITIES` 显式授权；缺少能力配置时默认拒绝。
+- `ADMIN_SERVICE_TOKEN_CAPABILITIES` 是 JSON 对象，例如 `{"review-tool.access":["admin:read","admin:write"]}`。未知 Client ID、未知能力或无效 JSON 都按服务端配置错误处理。
+- 浏览器写请求必须通过同源校验；无 `Origin` 的机器请求只允许已验证并获授权的 Service Token。
+- 模块级只缓存 Remote JWK Set 的公开证书解析器，不缓存 JWT、Actor 或请求数据。
 
 ## 统一路由入口
 
@@ -134,7 +147,7 @@ pnpm build
 
 `test:server` 包含 HTTP 边界测试以及 D1/KV 本地集成测试。集成测试固定 `persist:false` 与 `remoteBindings:false`，不会修改线上资源或已有本地数据库。
 
-业务表落地：定义 schema → 导出 → `pnpm db:generate` → 检查 SQL → `pnpm db:migrate:local` → 测试 → 审查后应用远程迁移。不要把“Drizzle 元数据检查通过”当作 SQL 执行或业务正确性验证。
+业务表变更：修改 schema → 导出 → `pnpm db:generate` → 检查 SQL → `pnpm db:migrate:local` → 测试 → 审查后应用远程迁移。不要把“Drizzle 元数据检查通过”当作 SQL 执行或业务正确性验证。
 
 详见 [数据库约定](../../docs/database-design.md) 与 [架构概览](../../docs/server-database-architecture.md)。
 

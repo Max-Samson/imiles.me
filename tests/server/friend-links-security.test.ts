@@ -2,12 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { getServerEnv } from '../../src/server/env';
-import {
-  requireAdmin,
-  requireAdminMutation,
-  requireSameOrigin,
-  verifyTurnstile,
-} from '../../src/server/security/friend-links';
+import { verifyTurnstile } from '../../src/server/friend-links/protection';
+import { authorizeAdminMutation, getAdminAccess } from '../../src/server/security/access';
+import { requireSameOrigin } from '../../src/server/security/origin';
 
 test('Access 验证签名/issuer/audience/过期/邮箱；忽略裸邮箱头', async () => {
   const { privateKey, publicKey } = await generateKeyPair('RS256');
@@ -36,18 +33,24 @@ test('Access 验证签名/issuer/audience/过期/邮箱；忽略裸邮箱头', a
     new Request('https://imiles.me/api/v1/admin/friend-links', {
       headers: { 'Cf-Access-Jwt-Assertion': jwt },
     });
-  assert.equal(await requireAdmin(request(await token()), env, resolver), 'owner@real.net');
-  await assert.rejects(requireAdmin(request(await token('other')), env, resolver), {
+  assert.equal(
+    (await getAdminAccess(request(await token()), env, resolver)).actor.id,
+    'user:owner@real.net',
+  );
+  await assert.rejects(getAdminAccess(request(await token('other')), env, resolver), {
     statusCode: 401,
   });
   await assert.rejects(
-    requireAdmin(request(await token('app', 'owner@real.net', 1)), env, resolver),
+    getAdminAccess(request(await token('app', 'owner@real.net', 1)), env, resolver),
     { statusCode: 401 },
   );
-  await assert.rejects(requireAdmin(request(await token('app', 'other@real.net')), env, resolver), {
-    statusCode: 403,
-  });
-  await assert.rejects(requireAdmin(request('forged'), env, resolver), { statusCode: 401 });
+  await assert.rejects(
+    getAdminAccess(request(await token('app', 'other@real.net')), env, resolver),
+    {
+      statusCode: 403,
+    },
+  );
+  await assert.rejects(getAdminAccess(request('forged'), env, resolver), { statusCode: 401 });
   const serviceToken = await new SignJWT({ common_name: 'review-tool.access' })
     .setProtectedHeader({ alg: 'RS256', kid: 'test' })
     .setIssuer(env.ACCESS_ISSUER)
@@ -56,45 +59,54 @@ test('Access 验证签名/issuer/audience/过期/邮箱；忽略裸邮箱头', a
     .setIssuedAt()
     .setExpirationTime('1h')
     .sign(privateKey);
+  const serviceEnv = {
+    ...env,
+    ADMIN_SERVICE_TOKEN_IDS: 'review-tool.access',
+    ADMIN_SERVICE_TOKEN_CAPABILITIES: JSON.stringify({
+      'review-tool.access': ['admin:read', 'admin:write'],
+    }),
+  };
   assert.equal(
-    await requireAdmin(
-      request(serviceToken),
-      { ...env, ADMIN_SERVICE_TOKEN_IDS: 'review-tool.access' },
-      resolver,
-    ),
+    (await getAdminAccess(request(serviceToken), serviceEnv, resolver)).actor.id,
     'service:review-tool.access',
   );
-  const serviceEnv = { ...env, ADMIN_SERVICE_TOKEN_IDS: 'review-tool.access' };
   assert.equal(
-    await requireAdminMutation(request(serviceToken), serviceEnv, resolver),
+    (await authorizeAdminMutation(request(serviceToken), serviceEnv, 'admin:write', resolver)).id,
     'service:review-tool.access',
   );
   await assert.rejects(
-    requireAdminMutation(
+    authorizeAdminMutation(
       new Request('https://imiles.me', {
         headers: { 'Cf-Access-Jwt-Assertion': serviceToken, Origin: 'https://evil.net' },
       }),
       serviceEnv,
+      'admin:write',
       resolver,
     ),
     { statusCode: 403 },
   );
-  await assert.rejects(requireAdminMutation(request(await token()), env, resolver), {
-    statusCode: 403,
-  });
-  assert.equal(
-    await requireAdminMutation(
-      new Request('https://imiles.me', {
-        headers: { 'Cf-Access-Jwt-Assertion': await token(), Origin: 'https://imiles.me' },
-      }),
-      env,
-      resolver,
-    ),
-    'owner@real.net',
-  );
-  await assert.rejects(requireAdmin(request(serviceToken), env, resolver), { statusCode: 403 });
   await assert.rejects(
-    requireAdmin(
+    authorizeAdminMutation(request(await token()), env, 'admin:write', resolver),
+    {
+      statusCode: 403,
+    },
+  );
+  assert.equal(
+    (
+      await authorizeAdminMutation(
+        new Request('https://imiles.me', {
+          headers: { 'Cf-Access-Jwt-Assertion': await token(), Origin: 'https://imiles.me' },
+        }),
+        env,
+        'admin:write',
+        resolver,
+      )
+    ).id,
+    'user:owner@real.net',
+  );
+  await assert.rejects(getAdminAccess(request(serviceToken), env, resolver), { statusCode: 403 });
+  await assert.rejects(
+    getAdminAccess(
       request(serviceToken),
       { ...env, ADMIN_SERVICE_TOKEN_IDS: 'other-tool.access' },
       resolver,
@@ -102,7 +114,7 @@ test('Access 验证签名/issuer/audience/过期/邮箱；忽略裸邮箱头', a
     { statusCode: 403 },
   );
   await assert.rejects(
-    requireAdmin(
+    getAdminAccess(
       new Request('https://imiles.me', {
         headers: { 'Cf-Access-Authenticated-User-Email': 'owner@real.net' },
       }),

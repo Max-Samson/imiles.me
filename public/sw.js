@@ -34,6 +34,15 @@ self.addEventListener('fetch', (event) => {
 
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
+  // Access-protected pages, APIs, and private media must stay outside Cache API.
+  if (
+    url.pathname === '/admin' ||
+    url.pathname.startsWith('/admin/') ||
+    url.pathname === '/api/v1/admin' ||
+    url.pathname.startsWith('/api/v1/admin/')
+  )
+    return;
+
   // Let the browser handle every document request, including trailing-slash redirects.
   // An offline fallback must never replace a valid site navigation.
   if (request.mode === 'navigate' || request.destination === 'document') return;

@@ -52,7 +52,7 @@ export const PLAYGROUND_NAVIGATION: PlaygroundNavCategory[] = [
         name: 'Button',
         label: '通用系统按钮',
         href: '/playground/button',
-        componentPath: 'src/components/ui/button.tsx',
+        componentPath: 'src/registry/shadcn/button.tsx',
         description:
           '全站通用基础系统按钮基类。基于 class-variance-authority 构建，支持 default, secondary, outline, destructive, ghost, link 6 种语义化风格与多维尺寸。',
         badge: 'CVA & Radix Slot',

@@ -98,13 +98,18 @@ test('单表：幂等回执、公开字段隔离、审核并发、隐藏恢复',
     false,
   );
   const concurrent = await Promise.allSettled([
-    repo.transition(row.id, 'approve', 1, 'owner'),
-    repo.transition(row.id, 'approve', 1, 'owner'),
+    service.review(row.id, 'approve', 1, 'owner'),
+    service.review(row.id, 'approve', 1, 'owner'),
   ]);
   assert.equal(concurrent.filter((r) => r.status === 'fulfilled').length, 1);
   // 两次相同审批只有一次成功，结果不依赖请求执行顺序。
   const current = await repo.detail(row.id);
   assert.equal(current.status, 'active');
+  assert.equal((await service.adminDetail(row.id)).email, 'private@real-blog.net');
+  assert.equal(
+    (await service.listAdmin(1, 100, 'active')).items.some((item) => item.id === row.id),
+    true,
+  );
   const visible = (await service.listPublished(1, 100)).items.find((v) => v.id === row.id);
   assert.deepEqual(Object.keys(visible ?? {}).sort(), [
     'description',
@@ -176,12 +181,15 @@ test('图片审核门禁、摘要验证与拒绝/孤立对象清理', async () =
   const { images, files } = memoryImages();
   const service = friendLinkService(repo, images);
   const row = await service.submit(input('images', image), crypto.randomUUID(), noVerify);
-  await assert.rejects(service.screenshot(row.id, false), { code: 'NOT_FOUND' });
-  assert.equal((await service.screenshot(row.id, true)).headers.get('Cache-Control'), 'no-store');
+  await assert.rejects(service.screenshot(row.id, 'public'), { code: 'NOT_FOUND' });
+  assert.equal(
+    (await service.screenshot(row.id, 'admin')).headers.get('Cache-Control'),
+    'no-store',
+  );
   await repo.transition(row.id, 'approve', 1, 'owner');
-  assert.equal((await service.screenshot(row.id, false)).status, 200);
+  assert.equal((await service.screenshot(row.id, 'public')).status, 200);
   await repo.transition(row.id, 'hide', 2, 'owner');
-  await assert.rejects(service.screenshot(row.id, false), { code: 'NOT_FOUND' });
+  await assert.rejects(service.screenshot(row.id, 'public'), { code: 'NOT_FOUND' });
   const rejected = await service.submit(
     input('reject-image', image),
     crypto.randomUUID(),
@@ -200,7 +208,7 @@ test('图片审核门禁、摘要验证与拒绝/孤立对象清理', async () =
   const preserved = (await repo.detail(row.id)).screenshotKey;
   assert.ok(preserved);
   files.set(preserved, new Uint8Array([1]));
-  await assert.rejects(service.screenshot(row.id, true), { code: 'INTERNAL_SERVER_ERROR' });
+  await assert.rejects(service.screenshot(row.id, 'admin'), { code: 'INTERNAL_SERVER_ERROR' });
 });
 
 test('S3 写入失败不落库；D1 结果不明确时不删除已上传对象', async () => {
@@ -296,5 +304,22 @@ test('HTTP：公开列表不泄露邮箱，后台无 JWT 拒绝，限流返回 R
   );
   assert.equal(limited.status, 429);
   assert.equal(limited.headers.get('Retry-After'), '60');
+
+  env.FRIEND_LINK_RATE_LIMITER = {
+    async limit() {
+      return { success: true };
+    },
+  };
+  env.SUBMISSION_HMAC_SECRET = 'too-short';
+  const invalidSecret = await submit(
+    apiContext(
+      new Request('https://imiles.me/api/v1/friend-link-applications', {
+        method: 'POST',
+        headers: { Origin: 'https://imiles.me' },
+      }),
+      env,
+    ),
+  );
+  assert.equal(invalidSecret.status, 500);
   assert.equal(getServerEnv({ runtime: { env } } as Partial<App.Locals>).ACCESS_AUD, 'app');
 });
