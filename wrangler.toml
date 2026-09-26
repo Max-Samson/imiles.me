@@ -29,6 +29,11 @@ migrations_dir = "drizzle/migrations"
 binding = "KV"
 id = "1bea21d899054b9eb223cb261f9b36c2"
 
+# Astro Cloudflare adapter 的 Session 存储，和业务缓存隔离。
+[[kv_namespaces]]
+binding = "SESSION"
+id = "9ecf20071eab43278861b9945d6f33df"
+
 # 每个来源的近似限流，不作为全网精确配额。
 [[ratelimits]]
 name = "FRIEND_LINK_RATE_LIMITER"
