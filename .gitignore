@@ -37,3 +37,6 @@ create-docs/
 # local development files
 temp/
 .pnpm-store/
+
+# Temporary secret bulk file (wrangler secret bulk)
+.secrets.json

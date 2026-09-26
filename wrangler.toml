@@ -14,6 +14,38 @@ directory = "./dist"
 binding = "ASSETS"
 
 # ----------------------------------------------------
+# 非敏感元数据变量 (明文，无安全风险，可安全进入 git)
+# 敏感值（密钥、凭据）通过 wrangler secret put 单独写入，不在此处配置。
+# ----------------------------------------------------
+[vars]
+# Cloudflare 账号与 Worker 标识
+CLOUDFLARE_ACCOUNT_ID = "4e43dbdc3855c41ab85cb84837885775"
+CLOUDFLARE_WORKER_NAME = "imiles"
+
+# Cloudflare Zero Trust Access 应用元数据
+CLOUDFLARE_ACCESS_TEAM_NAME = "364475182"
+CLOUDFLARE_ACCESS_APPLICATION_ID = "c5775dce-9ea7-4254-a903-671943cc6458"
+
+# D1 数据库元数据（与下方 [[d1_databases]] 绑定保持一致）
+CLOUDFLARE_D1_DATABASE_NAME = "BLOG-DB"
+CLOUDFLARE_D1_DATABASE_ID = "24e0cea3-52ed-4685-bf64-001bc0e01d5f"
+
+# KV 命名空间元数据（与下方 [[kv_namespaces]] 绑定保持一致）
+CLOUDFLARE_KV_NAMESPACE_NAME = "BOLG-KV"
+CLOUDFLARE_KV_NAMESPACE_ID = "1bea21d899054b9eb223cb261f9b36c2"
+CLOUDFLARE_SESSION_KV_NAMESPACE_NAME = "imiles-session"
+CLOUDFLARE_SESSION_KV_NAMESPACE_ID = "9ecf20071eab43278861b9945d6f33df"
+
+# Turnstile 挂件名称（Site Key 本身通过 wrangler secret put 写入）
+CLOUDFLARE_TURNSTILE_WIDGET_NAME = "imiles-friend-link-application"
+
+# Supabase 项目元数据（凭据通过 wrangler secret put 写入）
+SUPABASE_PROJECT_REF = "ghdcvipfbkxjbglmvrfa"
+SUPABASE_S3_REGION = "ap-southeast-1"
+SUPABASE_STORAGE_BUCKET = "blog-bucket"
+SUPABASE_S3_ENDPOINT = "https://ghdcvipfbkxjbglmvrfa.storage.supabase.co/storage/v1/s3"
+
+# ----------------------------------------------------
 # Cloudflare D1 关系型数据库绑定 (对应控制台已绑定的 BLOG-DB)
 # ----------------------------------------------------
 [[d1_databases]]
