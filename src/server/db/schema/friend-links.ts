@@ -7,6 +7,7 @@ export const friendLinks = sqliteTable(
   'friend_links',
   {
     id: primaryKeyColumn('fl').notNull(),
+    name: text('name'),
     submittedUrl: text('submitted_url').notNull(),
     canonicalUrl: text('canonical_url').notNull(),
     description: text('description').notNull(),
@@ -36,6 +37,7 @@ export const friendLinks = sqliteTable(
     index('friend_links_url_history').on(t.canonicalUrl, t.status),
     check('friend_links_status', sql`${t.status} IN ('pending', 'active', 'rejected', 'hidden')`),
     check('friend_links_version', sql`${t.version} > 0`),
+    check('friend_links_name', sql`${t.name} IS NULL OR length(${t.name}) BETWEEN 1 AND 50`),
     check('friend_links_description', sql`length(${t.description}) BETWEEN 1 AND 200`),
     check(
       'friend_links_email',

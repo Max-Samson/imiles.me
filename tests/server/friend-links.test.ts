@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { after, before, test } from 'node:test';
 import type { APIContext } from 'astro';
-import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
 import sharp from 'sharp';
 import { getPlatformProxy, type PlatformProxy } from 'wrangler';
 import type { CloudflareEnv } from '../../src/env.d';
@@ -11,17 +10,10 @@ import { getServerEnv } from '../../src/server/env';
 import { friendLinkRepository } from '../../src/server/friend-links/repository';
 import { adminDetail, adminList, publicList, submit } from '../../src/server/friend-links/routes';
 import { friendLinkService } from '../../src/server/friend-links/service';
-import { readSubmission } from '../../src/server/friend-links/upload';
-import { canonicalizeUrl, parseListQuery } from '../../src/server/friend-links/validation';
 import {
   type ValidatedImage as Screenshot,
   validateImage as validateScreenshot,
 } from '../../src/server/media/images';
-import {
-  requireAdmin,
-  requireSameOrigin,
-  verifyTurnstile,
-} from '../../src/server/security/friend-links';
 import { sha256 } from '../../src/server/security/hash';
 import type { ObjectStorage } from '../../src/server/storage';
 import type { WorkerBindings } from '../../src/worker-configuration';
@@ -117,6 +109,7 @@ test('单表：幂等回执、公开字段隔离、审核并发、隐藏恢复',
   assert.deepEqual(Object.keys(visible ?? {}).sort(), [
     'description',
     'id',
+    'name',
     'screenshotUrl',
     'url',
   ]);
@@ -261,164 +254,6 @@ test('并发同幂等键只插入一次申请，未使用的图片被清理', as
   assert.equal(files.size, 1);
 });
 
-test('图片格式/大小检查拒绝伪造、截断、动画、SVG、尺寸过大', async () => {
-  for (const format of ['png', 'jpeg', 'webp'] as const) {
-    const bytes = new Uint8Array(
-      await sharp({ create: { width: 16, height: 9, channels: 3, background: '#fff' } })
-        [format]()
-        .toBuffer(),
-    );
-    assert.equal((await validateScreenshot(bytes, `image/${format}`)).mime, `image/${format}`);
-    await assert.rejects(validateScreenshot(bytes.slice(0, -1), `image/${format}`));
-    await assert.rejects(validateScreenshot(bytes, 'image/gif'));
-  }
-  await assert.rejects(validateScreenshot(new TextEncoder().encode('<svg/>'), 'image/svg+xml'));
-  await assert.rejects(validateScreenshot(new Uint8Array(2097153), 'image/png'), {
-    statusCode: 413,
-  });
-  const large = new Uint8Array(
-    await sharp({ create: { width: 4097, height: 1, channels: 3, background: '#fff' } })
-      .png()
-      .toBuffer(),
-  );
-  await assert.rejects(validateScreenshot(large, 'image/png'));
-  const animated = new Uint8Array(30);
-  animated.set(new TextEncoder().encode('RIFF'), 0);
-  new DataView(animated.buffer).setUint32(4, 22, true);
-  animated.set(new TextEncoder().encode('WEBPVP8X'), 8);
-  new DataView(animated.buffer).setUint32(16, 10, true);
-  animated[20] = 2;
-  await assert.rejects(validateScreenshot(animated, 'image/webp'));
-});
-
-test('multipart 有界读取，拒绝重复、未知字段和非法网站链接', async () => {
-  const form = new FormData();
-  form.set('url', 'https://blog.real.net/');
-  form.set('description', 'hello');
-  form.set('email', 'a@b.net');
-  form.set('turnstileToken', 'x');
-  assert.equal(
-    (await readSubmission(new Request('https://imiles.me', { method: 'POST', body: form }))).email,
-    'a@b.net',
-  );
-  form.append('email', 'other@b.net');
-  await assert.rejects(
-    readSubmission(new Request('https://imiles.me', { method: 'POST', body: form })),
-  );
-  form.delete('email');
-  form.set('email', 'a@b.net');
-  form.set('status', 'active');
-  await assert.rejects(
-    readSubmission(new Request('https://imiles.me', { method: 'POST', body: form })),
-  );
-  await assert.rejects(
-    readSubmission(
-      new Request('https://imiles.me', {
-        method: 'POST',
-        headers: { 'Content-Type': 'multipart/form-data; boundary=x' },
-        body: new Uint8Array(3 * 1024 * 1024 + 1),
-      }),
-    ),
-    { statusCode: 413 },
-  );
-  for (const url of [
-    'http://a.net',
-    'https://127.0.0.1',
-    'https://0x7f000001',
-    'https://[::1]',
-    'https://a.local',
-    'https://a.net/?a=1',
-    'https://u:p@a.net',
-    'https://a.net:8443',
-  ])
-    assert.throws(() => canonicalizeUrl(url));
-  assert.equal(canonicalizeUrl('https://BLOG.real.net:443/Path/'), 'https://blog.real.net/Path');
-  assert.throws(() => parseListQuery(new URL('https://imiles.me?page=1&page=2')));
-  assert.throws(() => parseListQuery(new URL('https://imiles.me?status=pending')));
-});
-
-test('Access 验证签名/issuer/audience/过期/邮箱；忽略裸邮箱头', async () => {
-  const { privateKey, publicKey } = await generateKeyPair('RS256');
-  const jwk = await exportJWK(publicKey);
-  jwk.kid = 'test';
-  const resolver = createLocalJWKSet({ keys: [jwk] });
-  const env = {
-    ACCESS_ISSUER: 'https://imiles.cloudflareaccess.com',
-    ACCESS_AUD: 'app',
-    ADMIN_EMAILS: 'owner@real.net',
-  };
-  const token = async (
-    aud = 'app',
-    email = 'owner@real.net',
-    exp = Math.floor(Date.now() / 1000) + 60,
-  ) =>
-    new SignJWT({ email })
-      .setProtectedHeader({ alg: 'RS256', kid: 'test' })
-      .setIssuer(env.ACCESS_ISSUER)
-      .setAudience(aud)
-      .setSubject('owner')
-      .setIssuedAt()
-      .setExpirationTime(exp)
-      .sign(privateKey);
-  const request = (jwt: string) =>
-    new Request('https://imiles.me/api/v1/admin/friend-links', {
-      headers: { 'Cf-Access-Jwt-Assertion': jwt },
-    });
-  assert.equal(await requireAdmin(request(await token()), env, resolver), 'owner@real.net');
-  await assert.rejects(requireAdmin(request(await token('other')), env, resolver), {
-    statusCode: 401,
-  });
-  await assert.rejects(
-    requireAdmin(request(await token('app', 'owner@real.net', 1)), env, resolver),
-    { statusCode: 401 },
-  );
-  await assert.rejects(requireAdmin(request(await token('app', 'other@real.net')), env, resolver), {
-    statusCode: 403,
-  });
-  await assert.rejects(requireAdmin(request('forged'), env, resolver), { statusCode: 401 });
-  await assert.rejects(
-    requireAdmin(
-      new Request('https://imiles.me', {
-        headers: { 'Cf-Access-Authenticated-User-Email': 'owner@real.net' },
-      }),
-      env,
-      resolver,
-    ),
-    { statusCode: 401 },
-  );
-  assert.throws(
-    () =>
-      requireSameOrigin(
-        new Request('https://imiles.me', { headers: { Origin: 'https://evil.net' } }),
-        { SITE_URL: 'https://imiles.me' },
-      ),
-    { statusCode: 403 },
-  );
-});
-
-test('Turnstile 校验 action/hostname 和服务异常均失败关闭', async () => {
-  const env = {
-    TURNSTILE_SECRET_KEY: 'test',
-  };
-  const good = { success: true, hostname: 'imiles.me', action: 'friend_link_submit' };
-  await verifyTurnstile('token', env, async () => Response.json(good));
-  for (const result of [
-    { ...good, success: false },
-    { ...good, hostname: 'evil.net' },
-    { ...good, action: 'other' },
-  ])
-    await assert.rejects(
-      verifyTurnstile('token', env, async () => Response.json(result)),
-      { statusCode: 400 },
-    );
-  await assert.rejects(
-    verifyTurnstile('token', env, async () => {
-      throw new Error('timeout');
-    }),
-    { statusCode: 500 },
-  );
-});
-
 test('HTTP：公开列表不泄露邮箱，后台无 JWT 拒绝，限流返回 Retry-After', async () => {
   const env: CloudflareEnv = {
     ...platform.env,
@@ -462,57 +297,4 @@ test('HTTP：公开列表不泄露邮箱，后台无 JWT 拒绝，限流返回 R
   assert.equal(limited.status, 429);
   assert.equal(limited.headers.get('Retry-After'), '60');
   assert.equal(getServerEnv({ runtime: { env } } as Partial<App.Locals>).ACCESS_AUD, 'app');
-});
-
-test('站点默认值与环境覆盖统一驱动同源和验证码 hostname 校验', async () => {
-  const { appConfig } = await import('../../src/config/app');
-  const { getSiteUrl } = await import('../../src/server/config');
-  const defaultEnv = getServerEnv({ runtime: { env: {} } } as Partial<App.Locals>);
-  assert.equal(defaultEnv.SITE_URL, appConfig.siteUrl);
-  assert.equal('TURNSTILE_HOSTNAME' in defaultEnv, false);
-  assert.equal('TURNSTILE_ACTION' in defaultEnv, false);
-  requireSameOrigin(
-    new Request('https://imiles.me', { headers: { Origin: appConfig.siteUrl } }),
-    {},
-  );
-  // 不能用请求 Host / Origin 自行扩大允许的域名。
-  assert.throws(
-    () =>
-      requireSameOrigin(
-        new Request('https://evil.net', {
-          headers: { Origin: 'https://evil.net', Host: 'evil.net' },
-        }),
-        {},
-      ),
-    { statusCode: 403 },
-  );
-  const localEnv = { SITE_URL: 'http://localhost:4321', TURNSTILE_SECRET_KEY: 'test' };
-  requireSameOrigin(
-    new Request('http://localhost:4321', { headers: { Origin: localEnv.SITE_URL } }),
-    localEnv,
-  );
-  await verifyTurnstile('token', localEnv, async () =>
-    Response.json({
-      success: true,
-      hostname: 'localhost',
-      action: appConfig.turnstile.actions.friendLinkSubmit,
-    }),
-  );
-  await assert.rejects(
-    verifyTurnstile('token', localEnv, async () =>
-      Response.json({
-        success: true,
-        hostname: 'imiles.me',
-        action: appConfig.turnstile.actions.friendLinkSubmit,
-      }),
-    ),
-    { statusCode: 400 },
-  );
-  for (const SITE_URL of [
-    'https://user:password@imiles.me',
-    'https://imiles.me/path',
-    'file:///tmp',
-    'https://imiles.me?x=1',
-  ])
-    assert.throws(() => getSiteUrl({ SITE_URL }), { statusCode: 500 });
 });

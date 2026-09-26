@@ -3,6 +3,7 @@ import { defineRestRoute, readJsonBody } from '../rest';
 import {
   limitSubmission,
   requireAdmin,
+  requireAdminMutation,
   requireSameOrigin,
   verifyTurnstile,
 } from '../security/friend-links';
@@ -63,6 +64,7 @@ export const adminDetail = defineRestRoute({
     const row = await friendLinkRepository(ctx.env).detail(entityIdSchema.parse(route.params.id));
     return jsonSuccess({
       id: row.id,
+      name: row.name,
       url: row.canonicalUrl,
       submittedUrl: row.submittedUrl,
       description: row.description,
@@ -79,8 +81,7 @@ export const adminDetail = defineRestRoute({
     });
   },
   PATCH: async (ctx, route) => {
-    requireSameOrigin(route.request, ctx.env);
-    const actor = await requireAdmin(route.request, ctx.env);
+    const actor = await requireAdminMutation(route.request, ctx.env);
     const id = entityIdSchema.parse(route.params.id);
     const input = await readJsonBody(route.request, reviewSchema, 2048);
     return jsonSuccess(
@@ -107,8 +108,7 @@ export function screenshotRoute(admin: boolean) {
 }
 export const cleanup = defineRestRoute({
   POST: async (ctx, route) => {
-    requireSameOrigin(route.request, ctx.env);
-    await requireAdmin(route.request, ctx.env);
+    await requireAdminMutation(route.request, ctx.env);
     const input = await readJsonBody(
       route.request,
       z.object({ cursor: z.string().min(1).max(4096).optional() }).strict(),

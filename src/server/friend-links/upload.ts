@@ -26,7 +26,7 @@ export async function readSubmission(request: Request) {
       screenshot = await validateImage(new Uint8Array(await value.arrayBuffer()), value.type);
     } else {
       if (
-        !['url', 'description', 'email', 'turnstileToken'].includes(key) ||
+        !['url', 'description', 'email', 'turnstileToken', 'name'].includes(key) ||
         typeof value !== 'string'
       )
         throw new ValidationError('表单包含未知字段');

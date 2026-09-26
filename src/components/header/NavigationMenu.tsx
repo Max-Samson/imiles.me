@@ -25,6 +25,7 @@ const NAV_CONFIG = [
   { key: 'Headerstories', path: '/stories' },
   { key: 'Headerprojects', path: '/projects' },
   { key: 'Headernotes', path: '/notes' },
+  { key: 'Headerfriends', path: '/friends' },
   { key: 'Headerabout', path: '/about' },
 ] as const;
 

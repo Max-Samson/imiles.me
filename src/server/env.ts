@@ -22,9 +22,13 @@ export function getServerEnv(locals: Partial<App.Locals>): CloudflareEnv {
     ACCESS_ISSUER: runtimeEnv ? runtimeEnv.ACCESS_ISSUER : processEnv.ACCESS_ISSUER,
     ACCESS_AUD: runtimeEnv ? runtimeEnv.ACCESS_AUD : processEnv.ACCESS_AUD,
     ADMIN_EMAILS: runtimeEnv ? runtimeEnv.ADMIN_EMAILS : processEnv.ADMIN_EMAILS,
+    ADMIN_SERVICE_TOKEN_IDS: runtimeEnv
+      ? runtimeEnv.ADMIN_SERVICE_TOKEN_IDS
+      : processEnv.ADMIN_SERVICE_TOKEN_IDS,
     TURNSTILE_SECRET_KEY: runtimeEnv
       ? runtimeEnv.TURNSTILE_SECRET_KEY
       : processEnv.TURNSTILE_SECRET_KEY,
+    TURNSTILE_SITE_KEY: runtimeEnv ? runtimeEnv.TURNSTILE_SITE_KEY : processEnv.TURNSTILE_SITE_KEY,
     SUBMISSION_HMAC_SECRET: runtimeEnv
       ? runtimeEnv.SUBMISSION_HMAC_SECRET
       : processEnv.SUBMISSION_HMAC_SECRET,

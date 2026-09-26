@@ -1,0 +1,24 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ContentFlickeringBackground from '@/components/layout/ContentFlickeringBackground';
+import { FriendsContainer } from '@/components/friends';
+import { getLocaleFromPathname, useTranslations } from '@/lib/i18n';
+import { getServerEnv } from '@/server/env';
+
+const lang = getLocaleFromPathname(Astro.url.pathname);
+const { t } = useTranslations(lang);
+const turnstileSiteKey = getServerEnv(Astro.locals).TURNSTILE_SITE_KEY ?? '';
+---
+
+<BaseLayout
+  title={t('PageFriendsTitle', { site: 'Miles' })}
+  description={t('PageFriendsDescription')}
+>
+  <div class="relative min-h-screen isolate overflow-hidden">
+    <ContentFlickeringBackground client:only="react" />
+
+    <main class="relative z-10 pt-20 pb-16">
+      <FriendsContainer client:load lang={lang} turnstileSiteKey={turnstileSiteKey} />
+    </main>
+  </div>
+</BaseLayout>

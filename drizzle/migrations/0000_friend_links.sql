@@ -1,5 +1,6 @@
 CREATE TABLE `friend_links` (
 	`id` text PRIMARY KEY NOT NULL,
+	`name` text,
 	`submitted_url` text NOT NULL,
 	`canonical_url` text NOT NULL,
 	`description` text NOT NULL,
@@ -20,6 +21,7 @@ CREATE TABLE `friend_links` (
 	`updated_at` integer NOT NULL,
 	CONSTRAINT "friend_links_status" CHECK("friend_links"."status" IN ('pending', 'active', 'rejected', 'hidden')),
 	CONSTRAINT "friend_links_version" CHECK("friend_links"."version" > 0),
+	CONSTRAINT "friend_links_name" CHECK("friend_links"."name" IS NULL OR length("friend_links"."name") BETWEEN 1 AND 50),
 	CONSTRAINT "friend_links_description" CHECK(length("friend_links"."description") BETWEEN 1 AND 200),
 	CONSTRAINT "friend_links_email" CHECK("friend_links"."contact_email" IS NULL OR length("friend_links"."contact_email") BETWEEN 3 AND 254),
 	CONSTRAINT "friend_links_review" CHECK(("friend_links"."status" = 'pending' AND "friend_links"."reviewed_by" IS NULL AND "friend_links"."reviewed_at" IS NULL AND "friend_links"."updated_by" IS NULL) OR ("friend_links"."status" != 'pending' AND "friend_links"."reviewed_by" IS NOT NULL AND "friend_links"."reviewed_at" IS NOT NULL AND "friend_links"."updated_by" IS NOT NULL)),

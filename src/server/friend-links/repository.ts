@@ -63,6 +63,7 @@ export function friendLinkRepository(env: CloudflareEnv) {
         db
           .select({
             id: t.id,
+            name: t.name,
             url: t.canonicalUrl,
             description: t.description,
             hasScreenshot: sql<boolean>`${t.screenshotKey} IS NOT NULL`.mapWith(Boolean),
@@ -79,6 +80,7 @@ export function friendLinkRepository(env: CloudflareEnv) {
         db
           .select({
             id: t.id,
+            name: t.name,
             url: t.canonicalUrl,
             description: t.description,
             email: t.contactEmail,

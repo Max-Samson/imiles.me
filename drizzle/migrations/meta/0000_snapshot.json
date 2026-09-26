@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "26aa8ccc-b99b-48f3-a79d-0acaf948202a",
+  "id": "32b6b925-3aa1-489f-ab41-8f8e6462d582",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "friend_links": {
@@ -12,6 +12,13 @@
           "type": "text",
           "primaryKey": true,
           "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "submitted_url": {
@@ -187,6 +194,10 @@
         "friend_links_version": {
           "name": "friend_links_version",
           "value": "\"friend_links\".\"version\" > 0"
+        },
+        "friend_links_name": {
+          "name": "friend_links_name",
+          "value": "\"friend_links\".\"name\" IS NULL OR length(\"friend_links\".\"name\") BETWEEN 1 AND 50"
         },
         "friend_links_description": {
           "name": "friend_links_description",

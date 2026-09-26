@@ -15,6 +15,7 @@ export function friendLinkService(repo: FriendLinkRepository, images: ObjectStor
       const keyHash = await sha256(idempotencyKey);
       const payloadHash = await sha256(
         JSON.stringify([
+          input.name ?? null,
           input.url,
           url,
           input.description,
@@ -36,6 +37,7 @@ export function friendLinkService(repo: FriendLinkRepository, images: ObjectStor
 
       const row = await repo.insert({
         id: generateEntityId('fl'),
+        name: input.name ?? null,
         submittedUrl: input.url,
         canonicalUrl: url,
         description: input.description,

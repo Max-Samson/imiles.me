@@ -14,7 +14,9 @@ export interface CloudflareEnv
   ACCESS_ISSUER?: string;
   ACCESS_AUD?: string;
   ADMIN_EMAILS?: string;
+  ADMIN_SERVICE_TOKEN_IDS?: string;
   TURNSTILE_SECRET_KEY?: string;
+  TURNSTILE_SITE_KEY?: string;
   SUBMISSION_HMAC_SECRET?: string;
   SITE_URL?: string;
   SUPABASE_S3_ENDPOINT?: string;

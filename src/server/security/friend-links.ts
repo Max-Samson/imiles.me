@@ -13,8 +13,14 @@ import {
 import type { RestContext } from '../rest/context';
 
 export function requireSameOrigin(request: Request, env: CloudflareEnv) {
+  const origin = request.headers.get('Origin');
   const allowed = getSiteUrl(env).origin;
-  if (request.headers.get('Origin') !== allowed) throw new ForbiddenError('请求来源不允许');
+
+  if (origin === allowed) {
+    return;
+  }
+
+  throw new ForbiddenError('请求来源不允许');
 }
 
 export async function requireAdmin(
@@ -27,6 +33,10 @@ export async function requireAdmin(
   const emails = requireBinding(env, 'ADMIN_EMAILS')
     .split(',')
     .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const serviceIds = (env.ADMIN_SERVICE_TOKEN_IDS ?? '')
+    .split(',')
+    .map((s) => s.trim())
     .filter(Boolean);
   if (!/^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/.test(issuer) || !emails.length)
     throw new InternalServerError('Access 配置无效');
@@ -42,21 +52,39 @@ export async function requireAdmin(
         issuer,
         audience,
         algorithms: ['RS256'],
-        requiredClaims: ['exp', 'iat', 'sub', 'email'],
+        requiredClaims: ['exp', 'iat', 'sub'],
       },
     ));
   } catch {
     throw new UnauthorizedError('管理员身份无效或已过期');
   }
-  if (typeof payload.email !== 'string' || !emails.includes(payload.email.toLowerCase()))
-    throw new ForbiddenError();
-  return payload.email.toLowerCase();
+  if (typeof payload.email === 'string' && emails.includes(payload.email.toLowerCase()))
+    return payload.email.toLowerCase();
+  if (
+    payload.sub === '' &&
+    typeof payload.common_name === 'string' &&
+    serviceIds.includes(payload.common_name)
+  )
+    return `service:${payload.common_name}`;
+  throw new ForbiddenError();
+}
+
+export async function requireAdminMutation(
+  request: Request,
+  env: CloudflareEnv,
+  verificationKey?: JWTVerifyGetKey,
+): Promise<string> {
+  const actor = await requireAdmin(request, env, verificationKey);
+  // Non-browser API clients do not send Origin. Only allow that for a verified service token.
+  if (!actor.startsWith('service:') || request.headers.has('Origin')) {
+    requireSameOrigin(request, env);
+  }
+  return actor;
 }
 
 export async function limitSubmission(context: RestContext) {
   const limiter = requireBinding(context.env, 'FRIEND_LINK_RATE_LIMITER');
   const secret = requireBinding(context.env, 'SUBMISSION_HMAC_SECRET');
-  if (secret.length < 32) throw new InternalServerError('限流密钥配置无效');
   if (!context.clientIp) throw new ValidationError('无法识别请求来源');
   const key = await crypto.subtle.importKey(
     'raw',
