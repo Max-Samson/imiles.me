@@ -1,37 +1,70 @@
 import { ArrowUpRight, ImageIcon } from 'lucide-react';
 import { Button } from '@/registry/shadcn/button';
+import { cn } from '../../../lib/utils';
 import type { AdminFriendLink, FriendLinkStatus } from './types';
-
+/** 友链状态对应的中文展示标签。 */
 export const statusLabels: Record<FriendLinkStatus, string> = {
   pending: '待审核',
   active: '已发布',
   hidden: '已隐藏',
   rejected: '已拒绝',
 };
-
+/** 各状态徽章在明暗模式下的背景、边框与文字配色。 */
 const statusClasses: Record<FriendLinkStatus, string> = {
-  pending: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  active: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-  hidden: 'border-slate-500/30 bg-slate-500/10 text-muted-foreground',
-  rejected: 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300',
+  pending:
+    'border-amber-500/30 dark:border-amber-400/30 bg-amber-500/10 dark:bg-amber-400/15 text-amber-800 dark:text-amber-300',
+  active:
+    'border-emerald-500/30 dark:border-emerald-400/30 bg-emerald-500/10 dark:bg-emerald-400/15 text-emerald-800 dark:text-emerald-300',
+  hidden:
+    'border-slate-500/30 dark:border-slate-500/40 bg-slate-500/10 dark:bg-slate-500/20 text-slate-700 dark:text-slate-300',
+  rejected:
+    'border-rose-500/30 dark:border-rose-400/30 bg-rose-500/10 dark:bg-rose-400/15 text-rose-800 dark:text-rose-300',
 };
-
+/** 状态徽章内置的状态语义小圆点颜色。 */
+const statusDotClasses: Record<FriendLinkStatus, string> = {
+  pending: 'bg-amber-500 dark:bg-amber-400',
+  active: 'bg-emerald-500 dark:bg-emerald-400',
+  hidden: 'bg-slate-400 dark:bg-slate-400',
+  rejected: 'bg-rose-500 dark:bg-rose-400',
+};
+/** 格式化毫秒时间戳为易读的年月日时间格式。 */
 export function formatDate(value: number | null) {
   return value
     ? new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(value)
     : '—';
 }
-
-export function FriendLinkStatusBadge({ status }: { status: FriendLinkStatus }) {
+/**
+ * 友链状态徽章组件。
+ * 带有语义色彩背景与内嵌指示小圆点。
+ */
+export function FriendLinkStatusBadge({
+  status,
+  className,
+}: {
+  status: FriendLinkStatus;
+  className?: string;
+}) {
   return (
     <span
-      className={`inline-flex shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusClasses[status]}`}
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+        statusClasses[status],
+        className,
+      )}
     >
+      <span
+        className={cn('size-1.5 shrink-0 rounded-full', statusDotClasses[status])}
+        aria-hidden="true"
+      />
       {statusLabels[status]}
     </span>
   );
 }
 
+/**
+ * 友链管理数据列表组件。
+ * 响应式布局：在移动端呈现卡片堆叠，在桌面端以数据表格呈现。
+ */
 export function FriendLinksTable({ items }: { items: AdminFriendLink[] }) {
   if (!items.length)
     return (

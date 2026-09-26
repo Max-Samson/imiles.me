@@ -1,13 +1,23 @@
-import { ArrowLeft, ExternalLink, RefreshCw } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  XCircle,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/registry/shadcn/button';
 import { adminApiRequest } from '../../../lib/admin/api-client';
 import { AdminApiError } from '../../../lib/admin/api-error';
+import { cn } from '../../../lib/utils';
 import type { AdminSession } from '../../../shared/admin/session-contract';
 import FriendCard from '../../friends/FriendCard';
 import { FriendLinkStatusBadge, formatDate, statusLabels } from './FriendLinksTable';
 import type { AdminFriendLinkDetail, FriendLinkStatus, ReviewAction } from './types';
 
+/** 各友链状态下允许执行的生命周期审核操作集合。 */
 const actions: Record<
   FriendLinkStatus,
   { action: ReviewAction; label: string; description: string }[]
@@ -22,7 +32,53 @@ const actions: Record<
   hidden: [{ action: 'restore', label: '恢复展示', description: '友链将重新出现在公开列表。' }],
   rejected: [],
 };
+/** 各审核操作对应的按钮图标、配色样式、确认按钮高亮与基础变体配置。 */
+const actionConfig: Record<
+  ReviewAction,
+  {
+    icon: typeof CheckCircle2;
+    buttonClass: string;
+    confirmClass: string;
+    variant: 'default' | 'outline' | 'destructive' | 'secondary';
+  }
+> = {
+  approve: {
+    icon: CheckCircle2,
+    buttonClass:
+      'bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs shadow-emerald-600/20',
+    confirmClass:
+      'bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500',
+    variant: 'default',
+  },
+  reject: {
+    icon: XCircle,
+    buttonClass:
+      'border-rose-500/40 text-rose-700 dark:border-rose-400/50 dark:text-rose-300 dark:bg-transparent hover:bg-rose-500/10 dark:hover:bg-rose-400/15 hover:border-rose-500/60 shadow-xs',
+    confirmClass: 'bg-destructive text-white hover:bg-destructive/90 dark:bg-destructive/80',
+    variant: 'outline',
+  },
+  hide: {
+    icon: EyeOff,
+    buttonClass:
+      'border-slate-500/40 text-slate-700 dark:border-slate-400/50 dark:text-slate-300 dark:bg-transparent hover:bg-slate-500/10 dark:hover:bg-slate-400/15 shadow-xs',
+    confirmClass:
+      'bg-slate-700 hover:bg-slate-800 text-white dark:bg-slate-700 dark:hover:bg-slate-600',
+    variant: 'outline',
+  },
+  restore: {
+    icon: Eye,
+    buttonClass:
+      'bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs shadow-emerald-600/20',
+    confirmClass:
+      'bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500',
+    variant: 'default',
+  },
+};
 
+/**
+ * 友链详情与审核页面组件。
+ * 展示申请表单详情、公开卡片实际渲染预览、并支持管理员执行批准、拒绝、隐藏与恢复等操作。
+ */
 export function FriendLinkDetailPage({ id, session }: { id: string; session: AdminSession }) {
   const [detail, setDetail] = useState<AdminFriendLinkDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +147,7 @@ export function FriendLinkDetailPage({ id, session }: { id: string; session: Adm
     : null;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <a
@@ -232,21 +288,25 @@ export function FriendLinkDetailPage({ id, session }: { id: string; session: Adm
               <section aria-label="审核操作" className="space-y-3 border-t pt-5">
                 <h3 className="text-sm font-semibold">审核操作</h3>
                 <div className="flex flex-wrap gap-2">
-                  {actions[detail.status].map((item) => (
-                    <Button
-                      key={item.action}
-                      variant={
-                        item.action === 'reject' || item.action === 'hide' ? 'outline' : 'default'
-                      }
-                      disabled={submitting}
-                      onClick={() => {
-                        setConfirmAction(item.action);
-                        setActionError(null);
-                      }}
-                    >
-                      {item.label}
-                    </Button>
-                  ))}
+                  {actions[detail.status].map((item) => {
+                    const cfg = actionConfig[item.action];
+                    const Icon = cfg.icon;
+                    return (
+                      <Button
+                        key={item.action}
+                        variant={cfg.variant}
+                        className={cn('gap-1.5', cfg.buttonClass)}
+                        disabled={submitting}
+                        onClick={() => {
+                          setConfirmAction(item.action);
+                          setActionError(null);
+                        }}
+                      >
+                        <Icon className="size-4" />
+                        {item.label}
+                      </Button>
+                    );
+                  })}
                 </div>
                 {chosenAction && (
                   <div className="space-y-3 rounded-lg border bg-muted/40 p-4 text-sm">
@@ -256,6 +316,7 @@ export function FriendLinkDetailPage({ id, session }: { id: string; session: Adm
                       <Button
                         size="sm"
                         disabled={submitting}
+                        className={actionConfig[chosenAction.action].confirmClass}
                         onClick={() => void review(chosenAction.action)}
                       >
                         {submitting ? '正在处理…' : '确认操作'}

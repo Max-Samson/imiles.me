@@ -45,7 +45,7 @@ export function SessionBoundary({
 }: {
   state: SessionState;
   onRetry: () => void;
-  section: 'dashboard' | 'friend-links';
+  section: string;
   friendLinkId?: string;
 }) {
   const error =
@@ -62,8 +62,8 @@ export function SessionBoundary({
     return (
       <div className="flex min-h-dvh">
         <div className="hidden w-60 border-r lg:block" />
-        <div className="flex-1 p-8">
-          <div className="mx-auto max-w-6xl space-y-5">
+        <div className="flex-1 p-4 md:p-6 lg:p-8">
+          <div className="space-y-5">
             <Skeleton className="h-8 w-56" />
             <Skeleton className="h-24 w-full" />
             <div className="grid gap-4 md:grid-cols-3">
@@ -78,44 +78,50 @@ export function SessionBoundary({
   if (error?.kind === 'session-expired')
     return (
       <StateCard
-        icon={<LogIn className="size-6 text-primary" />}
-        title="正在重新验证登录"
-        description="Cloudflare Access 会将你带回安全登录流程。"
+        icon={<LoaderCircle className="mb-2 size-6 animate-spin text-primary" />}
+        title="会话已过期"
+        description="正在重新建立安全会话，如果未自动跳转请点击重新验证。"
+        action={
+          <Button className="w-full" onClick={() => window.location.reload()}>
+            重新验证
+          </Button>
+        }
       />
     );
   if (error?.kind === 'forbidden')
     return (
       <StateCard
-        icon={<ShieldX className="size-6 text-destructive" />}
-        title="没有后台访问权限"
-        description="当前身份已通过验证，但不在应用管理员许可范围内。"
+        icon={<ShieldX className="mb-2 size-6 text-destructive" />}
+        title="无管理权限"
+        description="您的身份已通过 Cloudflare Access 验证，但未被授予此站点的管理权限。"
         action={
-          <a
-            className="text-sm font-medium text-primary underline underline-offset-4"
-            href="/cdn-cgi/access/logout"
-          >
-            退出并更换账号
-          </a>
+          <Button variant="outline" className="w-full" asChild>
+            <a href="/">返回博客首页</a>
+          </Button>
         }
       />
     );
   const requestId = error?.requestId;
   return (
     <StateCard
-      icon={<AlertTriangle className="size-6 text-destructive" />}
-      title="无法加载后台"
-      description={error?.message ?? '后台启动时发生未知错误。'}
+      icon={<AlertTriangle className="mb-2 size-6 text-destructive" />}
+      title="登录状态异常"
+      description={
+        requestId
+          ? `验证身份时发生错误（请求 ID: ${requestId}）。请重试或重新登录。`
+          : '无法建立与管理后台的安全会话。请重试或重新登录。'
+      }
       action={
-        <div className="space-y-3">
-          <Button onClick={onRetry}>
-            <LoaderCircle />
+        <div className="flex gap-2">
+          <Button className="flex-1" onClick={onRetry}>
             重试
           </Button>
-          {requestId && (
-            <p className="text-xs text-muted-foreground">
-              Request ID: <code>{requestId}</code>
-            </p>
-          )}
+          <Button variant="outline" className="flex-1" asChild>
+            <a href="/cdn-cgi/access/login">
+              <LogIn />
+              重新登录
+            </a>
+          </Button>
         </div>
       }
     />

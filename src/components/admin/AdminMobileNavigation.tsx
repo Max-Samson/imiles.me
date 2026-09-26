@@ -7,9 +7,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/registry/shadcn/sheet';
-import { adminNavigation } from './nav';
+import { cn } from '../../lib/utils';
+import { adminNavigation } from './config';
 
-export function AdminMobileNavigation({ section }: { section: 'dashboard' | 'friend-links' }) {
+/**
+ * 后台移动端抽屉导航组件。
+ * 在小屏幕设备上自适应展开导航列表，完全基于 nav.ts 配置动态渲染。
+ */
+export function AdminMobileNavigation({ section }: { section: string }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -30,19 +35,26 @@ export function AdminMobileNavigation({ section }: { section: 'dashboard' | 'fri
         <nav aria-label="移动端后台导航" className="space-y-1">
           {adminNavigation.map((item) => {
             const Icon = item.icon;
+            const isActive = section === item.key;
             return item.enabled ? (
               <a
                 key={item.href}
                 href={item.href}
-                aria-current={
-                  (section === 'dashboard' ? '/admin' : '/admin/friend-links') === item.href
-                    ? 'page'
-                    : undefined
-                }
-                className={`flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium ${(section === 'dashboard' ? '/admin' : '/admin/friend-links') === item.href ? 'bg-accent' : 'text-muted-foreground'}`}
+                aria-current={isActive ? 'page' : undefined}
+                className={cn(
+                  'flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-accent-foreground font-semibold'
+                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                )}
               >
                 <Icon className="size-4" />
                 {item.label}
+                {item.badge && (
+                  <span className="ml-auto rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                    {item.badge}
+                  </span>
+                )}
               </a>
             ) : (
               <span

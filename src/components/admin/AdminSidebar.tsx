@@ -2,9 +2,13 @@ import { ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/registry/shadcn/button';
 import { cn } from '../../lib/utils';
-import { adminNavigation } from './nav';
+import { adminNavigation } from './config';
 
-export function AdminSidebar({ section }: { section: 'dashboard' | 'friend-links' }) {
+/**
+ * 后台桌面端常驻左侧边栏导航组件。
+ * 根据 nav.ts 动态渲染导航列表，支持折叠与展开，并自动高亮当前激活功能。
+ */
+export function AdminSidebar({ section }: { section: string }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -23,25 +27,27 @@ export function AdminSidebar({ section }: { section: 'dashboard' | 'friend-links
       <nav aria-label="后台主导航" className="flex-1 space-y-1 p-3">
         {adminNavigation.map((item) => {
           const Icon = item.icon;
+          const isActive = section === item.key;
           return item.enabled ? (
             <a
               key={item.href}
               href={item.href}
               title={collapsed ? item.label : undefined}
-              aria-current={
-                (section === 'dashboard' ? '/admin' : '/admin/friend-links') === item.href
-                  ? 'page'
-                  : undefined
-              }
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
                 'flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-                (section === 'dashboard' ? '/admin' : '/admin/friend-links') === item.href
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                isActive
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold'
                   : 'text-muted-foreground hover:bg-sidebar-accent/60',
               )}
             >
               <Icon className="size-4 shrink-0" aria-hidden="true" />
               {!collapsed && item.label}
+              {!collapsed && item.badge && (
+                <span className="ml-auto rounded bg-sidebar-accent/80 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                  {item.badge}
+                </span>
+              )}
             </a>
           ) : (
             <span
