@@ -25,6 +25,22 @@ export interface CloudflareEnv
   SUPABASE_STORAGE_BUCKET?: string;
   SUPABASE_S3_ACCESS_KEY_ID?: string;
   SUPABASE_S3_SECRET_ACCESS_KEY?: string;
+
+  // Cloudflare resource metadata (local only; do not commit secrets)
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  CLOUDFLARE_WORKER_NAME?: string;
+  CLOUDFLARE_ACCESS_TEAM_NAME?: string;
+  CLOUDFLARE_ACCESS_APPLICATION_ID?: string;
+  CLOUDFLARE_D1_DATABASE_NAME?: string;
+  CLOUDFLARE_D1_DATABASE_ID?: string;
+  CLOUDFLARE_KV_NAMESPACE_NAME?: string;
+  CLOUDFLARE_KV_NAMESPACE_ID?: string;
+  CLOUDFLARE_SESSION_KV_NAMESPACE_NAME?: string;
+  CLOUDFLARE_SESSION_KV_NAMESPACE_ID?: string;
+  CLOUDFLARE_TURNSTILE_WIDGET_NAME?: string;
+
+  // Supabase project metadata
+  SUPABASE_PROJECT_REF?: string;
 }
 
 declare global {

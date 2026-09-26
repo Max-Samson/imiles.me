@@ -15,42 +15,45 @@ export function getServerEnv(locals: Partial<App.Locals>): CloudflareEnv {
   if (!['development', 'staging', 'production'].includes(environment)) {
     throw new InternalServerError('ENVIRONMENT 配置无效');
   }
+
+  /** 从 runtime 或 process.env 中读取标量值的辅助函数 */
+  const scalar = (key: keyof CloudflareEnv): string | undefined =>
+    runtimeEnv ? (runtimeEnv[key] as string | undefined) : (processEnv[key] as string | undefined);
+
   return {
     DB: runtimeEnv?.DB,
     KV: runtimeEnv?.KV,
     FRIEND_LINK_RATE_LIMITER: runtimeEnv?.FRIEND_LINK_RATE_LIMITER,
-    ACCESS_ISSUER: runtimeEnv ? runtimeEnv.ACCESS_ISSUER : processEnv.ACCESS_ISSUER,
-    ACCESS_AUD: runtimeEnv ? runtimeEnv.ACCESS_AUD : processEnv.ACCESS_AUD,
-    ADMIN_EMAILS: runtimeEnv ? runtimeEnv.ADMIN_EMAILS : processEnv.ADMIN_EMAILS,
-    ADMIN_SERVICE_TOKEN_IDS: runtimeEnv
-      ? runtimeEnv.ADMIN_SERVICE_TOKEN_IDS
-      : processEnv.ADMIN_SERVICE_TOKEN_IDS,
-    ADMIN_SERVICE_TOKEN_CAPABILITIES: runtimeEnv
-      ? runtimeEnv.ADMIN_SERVICE_TOKEN_CAPABILITIES
-      : processEnv.ADMIN_SERVICE_TOKEN_CAPABILITIES,
-    TURNSTILE_SECRET_KEY: runtimeEnv
-      ? runtimeEnv.TURNSTILE_SECRET_KEY
-      : processEnv.TURNSTILE_SECRET_KEY,
-    TURNSTILE_SITE_KEY: runtimeEnv ? runtimeEnv.TURNSTILE_SITE_KEY : processEnv.TURNSTILE_SITE_KEY,
-    SUBMISSION_HMAC_SECRET: runtimeEnv
-      ? runtimeEnv.SUBMISSION_HMAC_SECRET
-      : processEnv.SUBMISSION_HMAC_SECRET,
+    ACCESS_ISSUER: scalar('ACCESS_ISSUER'),
+    ACCESS_AUD: scalar('ACCESS_AUD'),
+    ADMIN_EMAILS: scalar('ADMIN_EMAILS'),
+    ADMIN_SERVICE_TOKEN_IDS: scalar('ADMIN_SERVICE_TOKEN_IDS'),
+    ADMIN_SERVICE_TOKEN_CAPABILITIES: scalar('ADMIN_SERVICE_TOKEN_CAPABILITIES'),
+    TURNSTILE_SECRET_KEY: scalar('TURNSTILE_SECRET_KEY'),
+    TURNSTILE_SITE_KEY: scalar('TURNSTILE_SITE_KEY'),
+    SUBMISSION_HMAC_SECRET: scalar('SUBMISSION_HMAC_SECRET'),
     ENVIRONMENT: environment,
     SITE_URL: siteUrl,
-    APP_SECRET: runtimeEnv ? runtimeEnv.APP_SECRET : processEnv.APP_SECRET,
-    SUPABASE_S3_ENDPOINT: runtimeEnv
-      ? runtimeEnv.SUPABASE_S3_ENDPOINT
-      : processEnv.SUPABASE_S3_ENDPOINT,
-    SUPABASE_S3_REGION: runtimeEnv ? runtimeEnv.SUPABASE_S3_REGION : processEnv.SUPABASE_S3_REGION,
-    SUPABASE_STORAGE_BUCKET: runtimeEnv
-      ? runtimeEnv.SUPABASE_STORAGE_BUCKET
-      : processEnv.SUPABASE_STORAGE_BUCKET,
-    SUPABASE_S3_ACCESS_KEY_ID: runtimeEnv
-      ? runtimeEnv.SUPABASE_S3_ACCESS_KEY_ID
-      : processEnv.SUPABASE_S3_ACCESS_KEY_ID,
-    SUPABASE_S3_SECRET_ACCESS_KEY: runtimeEnv
-      ? runtimeEnv.SUPABASE_S3_SECRET_ACCESS_KEY
-      : processEnv.SUPABASE_S3_SECRET_ACCESS_KEY,
+    APP_SECRET: scalar('APP_SECRET'),
+    SUPABASE_S3_ENDPOINT: scalar('SUPABASE_S3_ENDPOINT'),
+    SUPABASE_S3_REGION: scalar('SUPABASE_S3_REGION'),
+    SUPABASE_STORAGE_BUCKET: scalar('SUPABASE_STORAGE_BUCKET'),
+    SUPABASE_S3_ACCESS_KEY_ID: scalar('SUPABASE_S3_ACCESS_KEY_ID'),
+    SUPABASE_S3_SECRET_ACCESS_KEY: scalar('SUPABASE_S3_SECRET_ACCESS_KEY'),
+    // Cloudflare resource metadata
+    CLOUDFLARE_ACCOUNT_ID: scalar('CLOUDFLARE_ACCOUNT_ID'),
+    CLOUDFLARE_WORKER_NAME: scalar('CLOUDFLARE_WORKER_NAME'),
+    CLOUDFLARE_ACCESS_TEAM_NAME: scalar('CLOUDFLARE_ACCESS_TEAM_NAME'),
+    CLOUDFLARE_ACCESS_APPLICATION_ID: scalar('CLOUDFLARE_ACCESS_APPLICATION_ID'),
+    CLOUDFLARE_D1_DATABASE_NAME: scalar('CLOUDFLARE_D1_DATABASE_NAME'),
+    CLOUDFLARE_D1_DATABASE_ID: scalar('CLOUDFLARE_D1_DATABASE_ID'),
+    CLOUDFLARE_KV_NAMESPACE_NAME: scalar('CLOUDFLARE_KV_NAMESPACE_NAME'),
+    CLOUDFLARE_KV_NAMESPACE_ID: scalar('CLOUDFLARE_KV_NAMESPACE_ID'),
+    CLOUDFLARE_SESSION_KV_NAMESPACE_NAME: scalar('CLOUDFLARE_SESSION_KV_NAMESPACE_NAME'),
+    CLOUDFLARE_SESSION_KV_NAMESPACE_ID: scalar('CLOUDFLARE_SESSION_KV_NAMESPACE_ID'),
+    CLOUDFLARE_TURNSTILE_WIDGET_NAME: scalar('CLOUDFLARE_TURNSTILE_WIDGET_NAME'),
+    // Supabase project metadata
+    SUPABASE_PROJECT_REF: scalar('SUPABASE_PROJECT_REF'),
   };
 }
 
