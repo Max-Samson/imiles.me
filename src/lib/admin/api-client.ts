@@ -14,12 +14,18 @@ export async function adminApiRequest<T>(
   path: string,
   signal?: AbortSignal,
   fetcher: typeof fetch = fetch,
+  options?: { method: 'PATCH'; body: unknown },
 ): Promise<T> {
   let response: Response;
   try {
     response = await fetcher(path, {
       credentials: 'same-origin',
-      headers: { Accept: 'application/json' },
+      method: options?.method ?? 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...(options ? { 'Content-Type': 'application/json' } : {}),
+      },
+      ...(options ? { body: JSON.stringify(options.body) } : {}),
       redirect: 'follow',
       signal,
     });

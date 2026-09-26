@@ -40,3 +40,20 @@ test('admin API client treats redirects, HTML, 401, and 403 as identity failures
     );
   }
 });
+
+test('admin API client sends versioned review as same-origin JSON PATCH', async () => {
+  let received: RequestInit | undefined;
+  await adminApiRequest(
+    '/api/v1/admin/friend-links/fl_11111111111111111111111111111111',
+    undefined,
+    async (_input, init) => {
+      received = init;
+      return Response.json({ success: true, data: { id: 'fl_1', status: 'active', version: 2 } });
+    },
+    { method: 'PATCH', body: { action: 'approve', expectedVersion: 1 } },
+  );
+  assert.equal(received?.method, 'PATCH');
+  assert.equal(received?.credentials, 'same-origin');
+  assert.equal(new Headers(received?.headers).get('Content-Type'), 'application/json');
+  assert.deepEqual(JSON.parse(String(received?.body)), { action: 'approve', expectedVersion: 1 });
+});

@@ -37,7 +37,17 @@ function StateCard({
   );
 }
 
-export function SessionBoundary({ state, onRetry }: { state: SessionState; onRetry: () => void }) {
+export function SessionBoundary({
+  state,
+  onRetry,
+  section,
+  friendLinkId,
+}: {
+  state: SessionState;
+  onRetry: () => void;
+  section: 'dashboard' | 'friend-links';
+  friendLinkId?: string;
+}) {
   const error =
     state.status === 'error' && state.error instanceof AdminApiError ? state.error : null;
   useEffect(() => {
@@ -46,7 +56,8 @@ export function SessionBoundary({ state, onRetry }: { state: SessionState; onRet
     return () => window.clearTimeout(timer);
   }, [error]);
 
-  if (state.status === 'ready') return <AdminShell session={state.session} />;
+  if (state.status === 'ready')
+    return <AdminShell session={state.session} section={section} friendLinkId={friendLinkId} />;
   if (state.status === 'loading')
     return (
       <div className="flex min-h-dvh">

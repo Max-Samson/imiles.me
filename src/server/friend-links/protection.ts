@@ -1,6 +1,6 @@
 import { appConfig } from '../../config/app';
 import type { CloudflareEnv } from '../../env.d';
-import { getSiteUrl } from '../config';
+import { getRuntimeConfig } from '../config';
 import { requireBinding } from '../env';
 import { InternalServerError, RateLimitError, ValidationError } from '../errors';
 import { readBoundedBytes } from '../rest/body';
@@ -39,8 +39,10 @@ export async function verifyTurnstile(
   fetcher: typeof fetch = fetch,
 ) {
   const secret = requireBinding(env, 'TURNSTILE_SECRET_KEY');
-  const hostname = getSiteUrl(env).hostname;
+  const runtime = getRuntimeConfig(env);
+  const hostname = runtime.siteUrl.hostname;
   const action = appConfig.turnstile.actions.friendLinkSubmit;
+  const usesOfficialTestSecret = runtime.services.turnstileValidation === 'official-test';
   let result: unknown;
   try {
     const response = await fetcher('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
@@ -54,15 +56,25 @@ export async function verifyTurnstile(
   } catch {
     throw new InternalServerError('验证码服务不可用');
   }
+  const isOfficialTestResult =
+    usesOfficialTestSecret &&
+    typeof result === 'object' &&
+    result !== null &&
+    'metadata' in result &&
+    typeof result.metadata === 'object' &&
+    result.metadata !== null &&
+    'result_with_testing_key' in result.metadata &&
+    result.metadata.result_with_testing_key === true;
   if (
     typeof result !== 'object' ||
     result === null ||
     !('success' in result) ||
     result.success !== true ||
-    !('hostname' in result) ||
-    result.hostname !== hostname ||
-    !('action' in result) ||
-    result.action !== action
+    (!isOfficialTestResult &&
+      (!('hostname' in result) ||
+        result.hostname !== hostname ||
+        !('action' in result) ||
+        result.action !== action))
   )
     throw new ValidationError('验证码校验失败，请重新验证');
 }

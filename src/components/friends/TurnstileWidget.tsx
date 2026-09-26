@@ -7,6 +7,7 @@ interface TurnstileApi {
     options: {
       sitekey: string;
       action: string;
+      appearance: 'interaction-only';
       callback: (token: string) => void;
       'expired-callback': () => void;
       'error-callback': () => void;
@@ -66,6 +67,7 @@ export default function TurnstileWidget({
         widgetId.current = api.render(container.current, {
           sitekey: siteKey,
           action: appConfig.turnstile.actions.friendLinkSubmit,
+          appearance: 'interaction-only',
           callback: (token) => onTokenRef.current(token),
           'expired-callback': () => onTokenRef.current(''),
           'error-callback': () => onTokenRef.current(''),

@@ -450,7 +450,7 @@ export default function FriendApplyModal({
                   </div>
 
                   {/* 验证码只在表单可见时加载；服务端仍会验证 token。 */}
-                  <div className="min-h-16">
+                  <div>
                     {turnstileSiteKey ? (
                       <TurnstileWidget
                         siteKey={turnstileSiteKey}

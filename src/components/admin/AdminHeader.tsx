@@ -34,16 +34,24 @@ function ThemeButton() {
   );
 }
 
-export function AdminHeader({ actor }: { actor: AdminSessionActor }) {
+export function AdminHeader({
+  actor,
+  section,
+}: {
+  actor: AdminSessionActor;
+  section: 'dashboard' | 'friend-links';
+}) {
   const label = actor.kind === 'user' ? actor.email : actor.clientId;
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur md:px-6">
-      <AdminMobileNavigation />
+      <AdminMobileNavigation section={section} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>管理后台</span>
           <span aria-hidden="true">/</span>
-          <span className="font-medium text-foreground">概览</span>
+          <span className="font-medium text-foreground">
+            {section === 'dashboard' ? '概览' : '友链'}
+          </span>
         </div>
       </div>
       <ThemeButton />

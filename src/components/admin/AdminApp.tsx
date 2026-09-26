@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
+import { adminApiRequest } from '../../lib/admin/api-client';
+import type { AdminSession } from '../../shared/admin/session-contract';
 import { AdminErrorBoundary } from './AdminErrorBoundary';
-import { createAdminDataSource } from './data-source';
 import { SessionBoundary, type SessionState } from './SessionBoundary';
 
-export default function AdminApp() {
+export default function AdminApp({
+  section = 'dashboard',
+  friendLinkId,
+}: {
+  section?: 'dashboard' | 'friend-links';
+  friendLinkId?: string;
+}) {
   const [state, setState] = useState<SessionState>({ status: 'loading' });
   const retry = useCallback(() => {
     setState({ status: 'loading' });
@@ -12,8 +19,7 @@ export default function AdminApp() {
   useEffect(() => {
     if (state.status !== 'loading') return;
     const controller = new AbortController();
-    void createAdminDataSource()
-      .then((source) => source.getSession(controller.signal))
+    void adminApiRequest<AdminSession>('/api/v1/admin/session', controller.signal)
       .then((session) => setState({ status: 'ready', session }))
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
@@ -24,7 +30,12 @@ export default function AdminApp() {
 
   return (
     <AdminErrorBoundary>
-      <SessionBoundary state={state} onRetry={retry} />
+      <SessionBoundary
+        state={state}
+        onRetry={retry}
+        section={section}
+        friendLinkId={friendLinkId}
+      />
     </AdminErrorBoundary>
   );
 }

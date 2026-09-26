@@ -156,6 +156,48 @@ test('Turnstile 校验 action/hostname 和服务异常均失败关闭', async ()
   );
 });
 
+test('Turnstile 官方测试响应仅在开发环境接受测试标记', async () => {
+  const testSecret = '1x0000000000000000000000000000000AA';
+  const result = {
+    success: true,
+    hostname: 'example.com',
+    metadata: { result_with_testing_key: true },
+  };
+  await verifyTurnstile(
+    'XXXX.DUMMY.TOKEN.XXXX',
+    {
+      ENVIRONMENT: 'development',
+      SITE_URL: 'http://localhost:4321',
+      TURNSTILE_SECRET_KEY: testSecret,
+    },
+    async () => Response.json(result),
+  );
+  await assert.rejects(
+    verifyTurnstile(
+      'XXXX.DUMMY.TOKEN.XXXX',
+      {
+        ENVIRONMENT: 'production',
+        SITE_URL: 'http://localhost:4321',
+        TURNSTILE_SECRET_KEY: testSecret,
+      },
+      async () => Response.json(result),
+    ),
+    { statusCode: 400 },
+  );
+  await assert.rejects(
+    verifyTurnstile(
+      'XXXX.DUMMY.TOKEN.XXXX',
+      {
+        ENVIRONMENT: 'development',
+        SITE_URL: 'http://localhost:4321',
+        TURNSTILE_SECRET_KEY: testSecret,
+      },
+      async () => Response.json({ success: true }),
+    ),
+    { statusCode: 400 },
+  );
+});
+
 test('站点默认值与环境覆盖统一驱动同源和验证码 hostname 校验', async () => {
   const { appConfig } = await import('../../src/config/app');
   const { getSiteUrl } = await import('../../src/server/config');

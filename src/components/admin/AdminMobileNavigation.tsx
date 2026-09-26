@@ -9,7 +9,7 @@ import {
 } from '@/registry/shadcn/sheet';
 import { adminNavigation } from './nav';
 
-export function AdminMobileNavigation() {
+export function AdminMobileNavigation({ section }: { section: 'dashboard' | 'friend-links' }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -34,7 +34,12 @@ export function AdminMobileNavigation() {
               <a
                 key={item.href}
                 href={item.href}
-                className="flex h-11 items-center gap-3 rounded-md bg-accent px-3 text-sm font-medium"
+                aria-current={
+                  (section === 'dashboard' ? '/admin' : '/admin/friend-links') === item.href
+                    ? 'page'
+                    : undefined
+                }
+                className={`flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium ${(section === 'dashboard' ? '/admin' : '/admin/friend-links') === item.href ? 'bg-accent' : 'text-muted-foreground'}`}
               >
                 <Icon className="size-4" />
                 {item.label}

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
+import { getRuntimeConfig } from '../../src/server/config';
 import {
   authorizeAdmin,
   authorizeAdminMutation,
@@ -115,4 +116,46 @@ test('Service Token 权限配置严格校验并默认拒绝', async () => {
       { statusCode: 500 },
     );
   }
+});
+
+test('本地开发会话仅允许配置一致的 loopback 来源', async () => {
+  const env = {
+    ENVIRONMENT: 'development' as const,
+    SITE_URL: 'http://localhost:4321',
+  };
+  const request = new Request('http://localhost:4321/api/v1/admin/session');
+  assert.deepEqual(getRuntimeConfig(env).services, {
+    adminAuth: 'local-development',
+    turnstileValidation: 'strict',
+  });
+  const session = await getAdminAccess(request, env);
+  assert.equal(session.actor.id, 'user:local-admin@example.com');
+  assert.deepEqual(session.capabilities, ['admin:read', 'admin:write', 'admin:maintenance']);
+  assert.equal((await authorizeAdmin(request, env, 'admin:read')).id, session.actor.id);
+  assert.equal(
+    (
+      await authorizeAdminMutation(
+        new Request('http://localhost:4321/api/v1/admin/friend-links/id', {
+          method: 'PATCH',
+          headers: { Origin: 'http://localhost:4321' },
+        }),
+        env,
+        'admin:write',
+      )
+    ).id,
+    session.actor.id,
+  );
+  await assert.rejects(getAdminAccess(new Request('http://evil.test/api/v1/admin/session'), env), {
+    statusCode: 500,
+  });
+  await assert.rejects(getAdminAccess(request, { ...env, ENVIRONMENT: 'production' as const }), {
+    statusCode: 500,
+  });
+  assert.equal(
+    getRuntimeConfig({
+      ...env,
+      TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
+    }).services.turnstileValidation,
+    'official-test',
+  );
 });

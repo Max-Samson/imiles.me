@@ -9,5 +9,5 @@ export interface AdminNavItem {
 
 export const adminNavigation: AdminNavItem[] = [
   { label: '概览', href: '/admin', icon: LayoutDashboard, enabled: true },
-  { label: '友链', href: '/admin/friend-links', icon: UsersRound, enabled: false },
+  { label: '友链', href: '/admin/friend-links', icon: UsersRound, enabled: true },
 ];

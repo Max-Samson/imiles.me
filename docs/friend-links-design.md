@@ -1,6 +1,6 @@
 # 友链：单表数据模型与服务端实现
 
-状态：单表 schema、迁移、服务端 API、公开友链页和申请表已实现；审批使用受保护 API，第三方审核工具尚待接入。未执行生产迁移或部署。申请表需要配置 Turnstile site key，图片写入和删除尚未在真实 Bucket 验证。配置步骤见 [Supabase Storage](./supabase-storage-setup.md)。
+状态：单表 schema、迁移、服务端 API、公开友链页和申请表已实现；站内后台 `/admin/friend-links` 已接入受保护 API，列表支持状态筛选和分页，独立详情页 `/admin/friend-links/:id` 提供卡片与截图预览，以及审批、拒绝、隐藏和恢复。未执行生产迁移或部署。申请表需要配置 Turnstile site key，图片写入和删除尚未在真实 Bucket 验证。配置步骤见 [Supabase Storage](./supabase-storage-setup.md)。
 
 ## 1. 流程与边界
 
@@ -155,6 +155,6 @@ Access 应用需覆盖 `/api/v1/admin/*`。前端 Turnstile action 复用 `appCo
 
 公开页 `/friends`（中文 `/zh/friends`）调用公开列表 API，显示全部已通过审核的友链，并提供名称、网址和简介搜索。申请弹窗提交站点信息及可选截图，使用浏览器端 Turnstile token；缺少 `TURNSTILE_SITE_KEY` 时禁用提交。该公开 site key 由当前请求的 Worker 环境提供，`TURNSTILE_SECRET_KEY` 仅用于服务端校验。两者均需在目标环境配置，且 site key 对应的 Turnstile Widget 需允许站点域名。
 
-第三方审核工具应通过现有管理 API 展示待审记录、申请截图和联系邮箱，使用 `expectedVersion` 执行批准、拒绝、隐藏或恢复，不直接修改 D1。Cloudflare Access 和 API 自身的 JWT 验证仍要生效。对托管工具，可在 Access 为管理 API 建立专用 Service Auth 策略，将工具的 Service Token Client ID 放入 `ADMIN_SERVICE_TOKEN_IDS`，再通过 `ADMIN_SERVICE_TOKEN_CAPABILITIES` 授予所需的最小能力，例如 `{"review-tool.access":["admin:read","admin:write"]}`。服务端仅接受签名有效、受众匹配、Client ID 在白名单且拥有对应能力的服务令牌，审核人记录为 `service:<Client ID>`。Client Secret 只能配置在第三方工具的私密凭据中。当前没有邮件服务或自动通知，需要联系申请人时手动发送邮件。
+站内审核列表 `/admin/friend-links` 展示记录摘要与状态，详情子路由 `/admin/friend-links/:id` 通过管理 API 展示申请截图和联系邮箱，使用 `expectedVersion` 执行批准、拒绝、隐藏或恢复，不直接修改 D1。Cloudflare Access 和 API 自身的 JWT 验证仍要生效。若后续接入第三方托管工具，可在 Access 为管理 API 建立专用 Service Auth 策略，将工具的 Service Token Client ID 放入 `ADMIN_SERVICE_TOKEN_IDS`，再通过 `ADMIN_SERVICE_TOKEN_CAPABILITIES` 授予所需的最小能力，例如 `{"review-tool.access":["admin:read","admin:write"]}`。服务端仅接受签名有效、受众匹配、Client ID 在白名单且拥有对应能力的服务令牌，审核人记录为 `service:<Client ID>`。Client Secret 只能配置在第三方工具的私密凭据中。当前没有邮件服务或自动通知，需要联系申请人时手动发送邮件。
 
 验证命令：`pnpm test:server`、`pnpm check:server`、`pnpm db:check`、`pnpm build`。绑定变化运行 `pnpm cf:types`。实际开发库迁移使用 `pnpm db:migrate:local`，正式库迁移与部署另行执行。先配置测试环境并验证 Bucket 私有权限、Access 和 Turnstile，再正式上线。

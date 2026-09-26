@@ -4,7 +4,7 @@ import { Button } from '@/registry/shadcn/button';
 import { cn } from '../../lib/utils';
 import { adminNavigation } from './nav';
 
-export function AdminSidebar() {
+export function AdminSidebar({ section }: { section: 'dashboard' | 'friend-links' }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -28,8 +28,17 @@ export function AdminSidebar() {
               key={item.href}
               href={item.href}
               title={collapsed ? item.label : undefined}
-              aria-current={item.href === '/admin' ? 'page' : undefined}
-              className="flex h-10 items-center gap-3 rounded-md bg-sidebar-accent px-3 text-sm font-medium text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+              aria-current={
+                (section === 'dashboard' ? '/admin' : '/admin/friend-links') === item.href
+                  ? 'page'
+                  : undefined
+              }
+              className={cn(
+                'flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                (section === 'dashboard' ? '/admin' : '/admin/friend-links') === item.href
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-muted-foreground hover:bg-sidebar-accent/60',
+              )}
             >
               <Icon className="size-4 shrink-0" aria-hidden="true" />
               {!collapsed && item.label}

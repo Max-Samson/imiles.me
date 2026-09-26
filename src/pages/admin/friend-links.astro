@@ -1,0 +1,8 @@
+---
+import AdminApp from '@/components/admin/AdminApp';
+import AdminLayout from '@/layouts/AdminLayout.astro';
+export const prerender = true;
+---
+<AdminLayout title="友链管理 · imiles.me">
+  <AdminApp section="friend-links" client:only="react" />
+</AdminLayout>
