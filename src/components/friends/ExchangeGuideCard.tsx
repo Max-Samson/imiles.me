@@ -13,7 +13,7 @@ interface ExchangeGuideCardProps {
 const MY_SITE = {
   name: "Miles's Digital Garden",
   url: 'https://imiles.me',
-  avatar: 'https://imiles.me/images/avatar.png',
+  logo: 'https://imiles.me/images/weblogo.jpeg',
 };
 
 type CodeFormat = 'yaml' | 'json' | 'markdown' | 'html';
@@ -51,17 +51,17 @@ export default function ExchangeGuideCard({ lang }: ExchangeGuideCardProps) {
     const desc = t('FriendsMySiteBio');
     switch (f) {
       case 'yaml':
-        return `- name: "${MY_SITE.name}"\n  url: "${MY_SITE.url}"\n  avatar: "${MY_SITE.avatar}"\n  description: "${desc}"`;
+        return `- name: "${MY_SITE.name}"\n  url: "${MY_SITE.url}"\n  logo: "${MY_SITE.logo}"\n  description: "${desc}"`;
       case 'json':
         return JSON.stringify(
-          { name: MY_SITE.name, url: MY_SITE.url, avatar: MY_SITE.avatar, description: desc },
+          { name: MY_SITE.name, url: MY_SITE.url, logo: MY_SITE.logo, description: desc },
           null,
           2,
         );
       case 'markdown':
-        return `[![${MY_SITE.name}](${MY_SITE.avatar})](${MY_SITE.url} "${desc}")`;
+        return `[![${MY_SITE.name}](${MY_SITE.logo})](${MY_SITE.url} "${desc}")`;
       case 'html':
-        return `<a href="${MY_SITE.url}" target="_blank" rel="noopener noreferrer" title="${desc}">\n  <img src="${MY_SITE.avatar}" alt="${MY_SITE.name}" width="32" height="32" />\n  <span>${MY_SITE.name}</span>\n</a>`;
+        return `<a href="${MY_SITE.url}" target="_blank" rel="noopener noreferrer" title="${desc}">\n  <img src="${MY_SITE.logo}" alt="${MY_SITE.name}" width="32" height="32" />\n  <span>${MY_SITE.name}</span>\n</a>`;
     }
   };
 
@@ -76,6 +76,7 @@ export default function ExchangeGuideCard({ lang }: ExchangeGuideCardProps) {
       value: MY_SITE.url,
       color: 'text-sky-600 dark:text-[#83a9b9]',
     },
+    { key: 'logo', label: 'Logo', value: MY_SITE.logo },
     { key: 'bio', label: t('FriendsMySiteDescLabel'), value: t('FriendsMySiteBio') },
   ];
 
@@ -91,7 +92,7 @@ export default function ExchangeGuideCard({ lang }: ExchangeGuideCardProps) {
           size="large"
           name={MY_SITE.name}
           url={MY_SITE.url}
-          avatarUrl={MY_SITE.avatar}
+          logoUrl={MY_SITE.logo}
           description={t('FriendsMySiteBio')}
           interactive
           className="w-full shadow-md hover:shadow-xl"

@@ -19,7 +19,8 @@ export interface FriendCardProps {
   name?: string;
   url?: string;
   description?: string;
-  avatarUrl?: string | null;
+  /** 站点 Logo 地址（未提供时本站使用 weblogo.jpeg，外部站点自动尝试获取其高分辨率 Favicon） */
+  logoUrl?: string | null;
   screenshotUrl?: string | null;
   size?: 'default' | 'large';
   lang?: Locale;
@@ -41,7 +42,7 @@ export default function FriendCard({
   name,
   url,
   description,
-  avatarUrl,
+  logoUrl,
   screenshotUrl,
   size = 'default',
   lang,
@@ -53,14 +54,13 @@ export default function FriendCard({
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgErr, setImgErr] = useState(false);
   const [favErr, setFavErr] = useState(false);
-  const [avatarErr, setAvatarErr] = useState(false);
+  const [logoErr, setLogoErr] = useState(false);
 
   const isLarge = size === 'large';
 
   const targetUrl = item?.url || url || '';
   const targetName = name || item?.name || '';
   const targetDesc = description ?? item?.description ?? '';
-  const targetAvatar = avatarUrl ?? null;
   const targetScreenshot =
     screenshotUrl !== undefined ? screenshotUrl : (item?.screenshotUrl ?? null);
 
@@ -88,6 +88,10 @@ export default function FriendCard({
   const displayName = targetName.trim() || hostname || 'Friend';
   const initial = displayName.charAt(0).toUpperCase();
 
+  // 站点 Logo 识别：优先显式传入 logoUrl，本站 imiles.me 自动使用 weblogo.jpeg
+  const isMiles = hostname === 'imiles.me';
+  const targetLogo = logoUrl ?? (isMiles ? '/images/weblogo.jpeg' : null);
+
   const grad = useMemo(() => {
     let h = 0;
     const s = hostname || displayName;
@@ -101,43 +105,47 @@ export default function FriendCard({
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
   const canClick = interactive && Boolean(href);
 
-  // ─── 头像渲染 ───
-  const avatar =
-    targetAvatar && !avatarErr ? (
-      <img
-        src={targetAvatar}
-        alt={displayName}
+  // ─── 站点 Logo 渲染（现代应用图标 squircle 风格） ───
+  const siteLogo =
+    targetLogo && !logoErr ? (
+      <div
         className={cn(
-          'rounded-full object-cover ring-2 ring-border/60 dark:ring-white/8',
-          isLarge ? 'size-14' : 'size-11',
+          'rounded-xl border border-border/70 dark:border-white/10 bg-muted/20 dark:bg-white/5 overflow-hidden flex items-center justify-center shadow-xs shrink-0',
+          isLarge ? 'size-13 sm:size-14' : 'size-10 sm:size-11',
         )}
-        onError={() => setAvatarErr(true)}
-      />
+      >
+        <img
+          src={targetLogo}
+          alt={`${displayName} logo`}
+          className="size-full object-cover"
+          onError={() => setLogoErr(true)}
+        />
+      </div>
     ) : !favErr && hostname ? (
       <div
         className={cn(
-          'rounded-full bg-muted/60 dark:bg-white/5 border border-border/60 dark:border-white/8 flex items-center justify-center',
-          isLarge ? 'size-14 p-2.5' : 'size-11 p-2',
+          'rounded-xl border border-border/70 dark:border-white/10 bg-muted/40 dark:bg-white/5 overflow-hidden flex items-center justify-center shadow-xs shrink-0',
+          isLarge ? 'size-13 sm:size-14 p-2.5' : 'size-10 sm:size-11 p-2',
         )}
       >
         <img
           src={faviconUrl}
           alt=""
-          className={cn('rounded-full object-contain', isLarge ? 'size-8' : 'size-6')}
+          className={cn('object-contain', isLarge ? 'size-8' : 'size-6')}
           onError={() => setFavErr(true)}
         />
       </div>
     ) : (
       <div
         className={cn(
-          'rounded-full bg-gradient-to-br from-amber-500/15 to-sky-500/10 dark:from-[#2a2418] dark:to-[#17171a] border border-amber-500/20 dark:border-white/8 flex items-center justify-center',
-          isLarge ? 'size-14' : 'size-11',
+          'rounded-xl bg-gradient-to-br from-amber-500/15 to-sky-500/10 dark:from-[#2a2418] dark:to-[#17171a] border border-amber-500/20 dark:border-white/10 flex items-center justify-center shadow-xs shrink-0',
+          isLarge ? 'size-13 sm:size-14' : 'size-10 sm:size-11',
         )}
       >
         <span
           className={cn(
             'font-bold font-mono text-amber-600 dark:text-[#d4a958]',
-            isLarge ? 'text-xl' : 'text-base',
+            isLarge ? 'text-lg sm:text-xl' : 'text-sm sm:text-base',
           )}
         >
           {initial}
@@ -148,10 +156,10 @@ export default function FriendCard({
   // ─── 卡片内容 ───
   const content = (
     <>
-      {/* 头部：头像 + 名称 + 跳转 */}
+      {/* 头部：站点 Logo + 名称 + 访问按钮 */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="shrink-0">{avatar}</div>
+          <div className="shrink-0">{siteLogo}</div>
           <div className="min-w-0 flex-1">
             <h4
               className={cn(
@@ -205,7 +213,7 @@ export default function FriendCard({
         )}
       </div>
 
-      {/* 描述 */}
+      {/* 站点描述 */}
       <p
         className={cn(
           'text-foreground/80 leading-relaxed break-words',
@@ -218,7 +226,7 @@ export default function FriendCard({
 
       {/* 截图 / 占位 */}
       <div className="relative w-full rounded-xl overflow-hidden border border-border/60 dark:border-white/8 bg-muted/30 dark:bg-[#0d0d10] transition-colors group-hover:border-amber-500/25 dark:group-hover:border-white/15 mt-auto">
-        {/* 浏览器栏 */}
+        {/* 浏览器顶栏装饰 */}
         <div
           className={cn(
             'flex items-center justify-between border-b border-border/40 dark:border-white/5 bg-muted/50 dark:bg-[#141417] text-muted-foreground/60 select-none',
@@ -316,7 +324,10 @@ export default function FriendCard({
   const mp = {
     initial: { opacity: 0, y: 12 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.3, delay: index !== undefined ? Math.min(index * 0.035, 0.25) : 0 },
+    transition: {
+      duration: 0.3,
+      delay: index !== undefined ? Math.min(index * 0.035, 0.25) : 0,
+    },
     className: cls,
   };
 
