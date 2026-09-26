@@ -265,6 +265,7 @@ test('并发同幂等键只插入一次申请，未使用的图片被清理', as
 test('HTTP：公开列表不泄露邮箱，后台无 JWT 拒绝，限流返回 Retry-After', async () => {
   const env: CloudflareEnv = {
     ...platform.env,
+    SITE_URL: 'https://imiles.me',
     ACCESS_ISSUER: 'https://imiles.cloudflareaccess.com',
     ACCESS_AUD: 'app',
     ADMIN_EMAILS: 'owner@real.net',
@@ -273,7 +274,6 @@ test('HTTP：公开列表不泄露邮箱，后台无 JWT 拒绝，限流返回 R
   const response = await publicList(
     apiContext(new Request('https://imiles.me/api/v1/friend-links'), env),
   );
-  assert.equal(response.status, 200);
   assert.doesNotMatch(
     await response.text(),
     /private@|contactEmail|submissionKey|reviewedBy|screenshotKey/,

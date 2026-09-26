@@ -1,6 +1,6 @@
 'use client';
 
-import { ExternalLink, Globe } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { type Locale, useTranslations } from '@/lib/i18n';
@@ -16,24 +16,24 @@ export interface FriendLinkItem {
 
 export interface FriendCardProps {
   item?: FriendLinkItem;
-  name?: string; // 博客名称
-  url?: string; // 博客地址
-  description?: string; // 个人 / 博客介绍
-  avatarUrl?: string | null; // 用户头像
-  screenshotUrl?: string | null; // 站点首页图片
-  size?: 'default' | 'large'; // 显示尺寸级别（large 用于英雄展位/名片放大）
+  name?: string;
+  url?: string;
+  description?: string;
+  avatarUrl?: string | null;
+  screenshotUrl?: string | null;
+  size?: 'default' | 'large';
   lang?: Locale;
   index?: number;
-  interactive?: boolean; // 是否可点击跳转访问（默认 true）
+  interactive?: boolean;
   className?: string;
 }
 
-// 算法几何渐变背景调色板
-const MESH_GRADIENT_PALETTES = [
-  'from-amber-500/10 via-amber-500/5 to-transparent dark:from-[#1e1e21] dark:via-[#2a2418] dark:to-[#121214]',
-  'from-sky-500/10 via-sky-500/5 to-transparent dark:from-[#121214] dark:via-[#152328] dark:to-[#1e1e21]',
-  'from-emerald-500/10 via-emerald-500/5 to-transparent dark:from-[#1a201c] dark:via-[#1e1e21] dark:to-[#141b17]',
-  'from-purple-500/10 via-purple-500/5 to-transparent dark:from-[#221c24] dark:via-[#1e1e21] dark:to-[#1c1822]',
+const PALETTE = [
+  'from-amber-500/8 via-transparent to-transparent dark:from-[#2a2418]/60 dark:via-[#1e1e21] dark:to-[#121214]',
+  'from-sky-500/8 via-transparent to-transparent dark:from-[#152328]/60 dark:via-[#1e1e21] dark:to-[#121214]',
+  'from-emerald-500/8 via-transparent to-transparent dark:from-[#1a201c]/60 dark:via-[#1e1e21] dark:to-[#121214]',
+  'from-violet-500/8 via-transparent to-transparent dark:from-[#221c28]/60 dark:via-[#1e1e21] dark:to-[#121214]',
+  'from-rose-500/8 via-transparent to-transparent dark:from-[#241c1c]/60 dark:via-[#1e1e21] dark:to-[#121214]',
 ];
 
 export default function FriendCard({
@@ -50,31 +50,26 @@ export default function FriendCard({
   className,
 }: FriendCardProps) {
   const { t } = useTranslations(lang || 'en');
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  const [faviconError, setFaviconError] = useState(false);
-  const [avatarError, setAvatarError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgErr, setImgErr] = useState(false);
+  const [favErr, setFavErr] = useState(false);
+  const [avatarErr, setAvatarErr] = useState(false);
 
   const isLarge = size === 'large';
 
-  // 统一字段提取
   const targetUrl = item?.url || url || '';
   const targetName = name || item?.name || '';
-  const targetDescription = description ?? item?.description ?? '';
+  const targetDesc = description ?? item?.description ?? '';
   const targetAvatar = avatarUrl ?? null;
   const targetScreenshot =
     screenshotUrl !== undefined ? screenshotUrl : (item?.screenshotUrl ?? null);
 
-  // 提取主机名（例如: "imiles.me"）
   const hostname = useMemo(() => {
     if (!targetUrl) return '';
     try {
-      const parsed = new URL(
-        targetUrl.startsWith('http://') || targetUrl.startsWith('https://')
-          ? targetUrl
-          : `https://${targetUrl}`,
-      );
-      return parsed.hostname.replace(/^www\./, '');
+      return new URL(
+        targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`,
+      ).hostname.replace(/^www\./, '');
     } catch {
       return (
         targetUrl
@@ -85,235 +80,223 @@ export default function FriendCard({
     }
   }, [targetUrl]);
 
-  // 格式化跳转目标链接
-  const formattedUrl = useMemo(() => {
-    if (!targetUrl) return '';
-    return targetUrl.startsWith('http://') || targetUrl.startsWith('https://')
-      ? targetUrl
-      : `https://${targetUrl}`;
-  }, [targetUrl]);
+  const href = useMemo(
+    () => (targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`),
+    [targetUrl],
+  );
 
-  // 博客名称与首字母展示
   const displayName = targetName.trim() || hostname || 'Friend';
   const initial = displayName.charAt(0).toUpperCase();
 
-  // 算法网格渐变色彩
-  const gradientClass = useMemo(() => {
-    let hash = 0;
-    const seed = hostname || displayName;
-    for (let i = 0; i < seed.length; i++) {
-      hash = (hash << 5) - hash + seed.charCodeAt(i);
-      hash |= 0;
+  const grad = useMemo(() => {
+    let h = 0;
+    const s = hostname || displayName;
+    for (let i = 0; i < s.length; i++) {
+      h = (h << 5) - h + s.charCodeAt(i);
+      h |= 0;
     }
-    const idx = Math.abs(hash) % MESH_GRADIENT_PALETTES.length;
-    return MESH_GRADIENT_PALETTES[idx];
+    return PALETTE[Math.abs(h) % PALETTE.length];
   }, [hostname, displayName]);
 
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
-  const isInteractive = interactive && Boolean(formattedUrl);
+  const canClick = interactive && Boolean(href);
 
-  // 卡片内部核心结构
-  const innerContent = (
+  // ─── 头像渲染 ───
+  const avatar =
+    targetAvatar && !avatarErr ? (
+      <img
+        src={targetAvatar}
+        alt={displayName}
+        className={cn(
+          'rounded-full object-cover ring-2 ring-border/60 dark:ring-white/8',
+          isLarge ? 'size-14' : 'size-11',
+        )}
+        onError={() => setAvatarErr(true)}
+      />
+    ) : !favErr && hostname ? (
+      <div
+        className={cn(
+          'rounded-full bg-muted/60 dark:bg-white/5 border border-border/60 dark:border-white/8 flex items-center justify-center',
+          isLarge ? 'size-14 p-2.5' : 'size-11 p-2',
+        )}
+      >
+        <img
+          src={faviconUrl}
+          alt=""
+          className={cn('rounded-full object-contain', isLarge ? 'size-8' : 'size-6')}
+          onError={() => setFavErr(true)}
+        />
+      </div>
+    ) : (
+      <div
+        className={cn(
+          'rounded-full bg-gradient-to-br from-amber-500/15 to-sky-500/10 dark:from-[#2a2418] dark:to-[#17171a] border border-amber-500/20 dark:border-white/8 flex items-center justify-center',
+          isLarge ? 'size-14' : 'size-11',
+        )}
+      >
+        <span
+          className={cn(
+            'font-bold font-mono text-amber-600 dark:text-[#d4a958]',
+            isLarge ? 'text-xl' : 'text-base',
+          )}
+        >
+          {initial}
+        </span>
+      </div>
+    );
+
+  // ─── 卡片内容 ───
+  const content = (
     <>
-      {/* 1. 顶部 Header：用户头像 + 博客名称 + 博客地址 + 右上角跳转图标 */}
+      {/* 头部：头像 + 名称 + 跳转 */}
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3.5 min-w-0">
-          {/* 用户圆形头像 */}
-          <div className="relative flex-shrink-0">
-            {targetAvatar && !avatarError ? (
-              <img
-                key={targetAvatar}
-                src={targetAvatar}
-                alt={displayName}
-                className={cn(
-                  'rounded-full object-cover ring-2 ring-border/80 dark:ring-white/10 shadow-sm',
-                  isLarge ? 'w-13 h-13 sm:w-14 sm:h-14' : 'w-11 h-11 sm:w-12 sm:h-12',
-                )}
-                onError={() => setAvatarError(true)}
-              />
-            ) : !faviconError && hostname ? (
-              <div
-                className={cn(
-                  'rounded-full bg-muted/70 dark:bg-white/5 border border-border dark:border-white/10 flex items-center justify-center p-2 shadow-sm',
-                  isLarge ? 'w-13 h-13 sm:w-14 sm:h-14' : 'w-11 h-11 sm:w-12 sm:h-12',
-                )}
-              >
-                <img
-                  key={faviconUrl}
-                  src={faviconUrl}
-                  alt=""
-                  className={cn(
-                    'rounded-full object-contain',
-                    isLarge ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-6 h-6',
-                  )}
-                  onError={() => setFaviconError(true)}
-                />
-              </div>
-            ) : (
-              <div
-                className={cn(
-                  'rounded-full bg-gradient-to-br from-amber-500/20 via-sky-500/10 to-transparent dark:from-[#2a2418] dark:to-[#17171a] border border-amber-500/30 dark:border-white/10 flex items-center justify-center shadow-sm',
-                  isLarge ? 'w-13 h-13 sm:w-14 sm:h-14' : 'w-11 h-11 sm:w-12 sm:h-12',
-                )}
-              >
-                <span
-                  className={cn(
-                    'font-bold font-mono text-amber-600 dark:text-[#d4a958]',
-                    isLarge ? 'text-lg sm:text-xl' : 'text-base',
-                  )}
-                >
-                  {initial}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* 博客名称与博客地址 */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="shrink-0">{avatar}</div>
           <div className="min-w-0 flex-1">
             <h4
               className={cn(
                 'font-bold text-foreground tracking-tight truncate',
-                isLarge ? 'text-base sm:text-lg md:text-xl' : 'text-sm sm:text-base',
+                isLarge ? 'text-base sm:text-lg' : 'text-sm',
               )}
             >
               {displayName}
             </h4>
             <p
               className={cn(
-                'text-muted-foreground font-mono truncate mt-0.5',
-                isLarge ? 'text-xs sm:text-sm' : 'text-xs',
+                'text-muted-foreground/70 font-mono truncate mt-0.5',
+                isLarge ? 'text-xs' : 'text-[11px]',
               )}
             >
-              @{hostname}
+              {hostname}
             </p>
           </div>
         </div>
 
-        {/* 右上角显示一个图标，点击后可以跳转访问对应的博客页 */}
-        {isInteractive ? (
+        {canClick ? (
           <a
-            href={formattedUrl}
+            href={href}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              'flex-shrink-0 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted dark:hover:bg-white/10 border border-transparent hover:border-border dark:hover:border-white/10 transition-all duration-200',
-              isLarge ? 'p-2.5' : 'p-2',
+              'shrink-0 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 dark:hover:bg-white/5 transition-all',
+              isLarge ? 'p-2' : 'p-1.5',
             )}
             title={`Visit ${hostname}`}
             aria-label={`Visit ${displayName}`}
           >
-            <ExternalLink size={isLarge ? 18 : 16} />
+            <Icon
+              icon="ph:arrow-up-right-bold"
+              width={isLarge ? 16 : 14}
+              height={isLarge ? 16 : 14}
+            />
           </a>
         ) : (
           <span
-            className={cn(
-              'flex-shrink-0 rounded-xl text-muted-foreground/40 border border-transparent',
-              isLarge ? 'p-2.5' : 'p-2',
-            )}
-            aria-hidden="true"
+            className={cn('shrink-0 text-muted-foreground/20', isLarge ? 'p-2' : 'p-1.5')}
+            aria-hidden
           >
-            <ExternalLink size={isLarge ? 18 : 16} />
+            <Icon
+              icon="ph:arrow-up-right-bold"
+              width={isLarge ? 16 : 14}
+              height={isLarge ? 16 : 14}
+            />
           </span>
         )}
       </div>
 
-      {/* 2. 博客或个人介绍 */}
+      {/* 描述 */}
       <p
         className={cn(
-          'text-foreground/85 leading-relaxed font-normal break-words',
-          isLarge
-            ? 'text-sm sm:text-[14.5px] my-3.5 line-clamp-4'
-            : 'text-xs sm:text-[13.5px] my-3 line-clamp-3',
+          'text-foreground/80 leading-relaxed break-words',
+          isLarge ? 'text-sm my-3.5 line-clamp-4' : 'text-xs my-3 line-clamp-3',
         )}
-        title={targetDescription}
+        title={targetDesc}
       >
-        {targetDescription || t('FriendsModalPreviewDescPlaceholder')}
+        {targetDesc || t('FriendsModalPreviewDescPlaceholder')}
       </p>
 
-      {/* 3. 站点首页图片展示（带浏览器窗口外框） */}
-      <div className="relative w-full rounded-xl overflow-hidden border border-border/80 dark:border-white/10 bg-muted/40 dark:bg-[#0d0d10] transition-all group-hover:border-amber-500/30 dark:group-hover:border-white/20 shadow-inner mt-1">
-        {/* 浏览器窗口顶栏装饰 */}
+      {/* 截图 / 占位 */}
+      <div className="relative w-full rounded-xl overflow-hidden border border-border/60 dark:border-white/8 bg-muted/30 dark:bg-[#0d0d10] transition-colors group-hover:border-amber-500/25 dark:group-hover:border-white/15 mt-auto">
+        {/* 浏览器栏 */}
         <div
           className={cn(
-            'flex items-center justify-between border-b border-border/50 dark:border-white/5 bg-muted/70 dark:bg-[#141417] text-muted-foreground select-none',
-            isLarge ? 'px-3.5 py-2 text-xs' : 'px-3 py-1.5 text-[10px]',
+            'flex items-center justify-between border-b border-border/40 dark:border-white/5 bg-muted/50 dark:bg-[#141417] text-muted-foreground/60 select-none',
+            isLarge ? 'px-3.5 py-1.5' : 'px-3 py-1',
           )}
         >
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-red-500/70" />
-            <span className="w-2 h-2 rounded-full bg-amber-500/70" />
-            <span className="w-2 h-2 rounded-full bg-emerald-500/70" />
+            <span className="size-2 rounded-full bg-red-400/60" />
+            <span className="size-2 rounded-full bg-amber-400/60" />
+            <span className="size-2 rounded-full bg-emerald-400/60" />
           </div>
-          <span className="font-mono text-muted-foreground/60 truncate max-w-[220px]">
-            {hostname}
-          </span>
-          <div className="w-8" />
+          <span className="font-mono text-[10px] truncate max-w-[200px]">{hostname}</span>
+          <div className="w-6" />
         </div>
 
-        {/* 站点首页图片主体展示 */}
+        {/* 截图主体 */}
         <div
           className={cn(
-            'relative w-full overflow-hidden bg-background/50 dark:bg-[#0a0a0c]',
-            isLarge ? 'h-64 sm:h-72 md:h-80 lg:h-96' : 'h-44 sm:h-52',
+            'relative w-full overflow-hidden bg-background/40 dark:bg-[#0a0a0c]',
+            isLarge ? 'h-60 sm:h-72 md:h-80' : 'h-40 sm:h-48',
           )}
         >
-          {targetScreenshot && !imageError ? (
+          {targetScreenshot && !imgErr ? (
             <>
-              {!imageLoaded && (
+              {!imgLoaded && (
                 <div className="absolute inset-0 bg-muted dark:bg-[#16161a] animate-pulse" />
               )}
               <img
-                key={targetScreenshot}
                 src={targetScreenshot}
                 alt={`${displayName} homepage`}
                 loading="lazy"
-                onLoad={() => setImageLoaded(true)}
-                onError={() => setImageError(true)}
+                onLoad={() => setImgLoaded(true)}
+                onError={() => setImgErr(true)}
                 className={cn(
                   'w-full h-full object-cover object-top transition-transform duration-500',
-                  isInteractive && 'group-hover:scale-[1.02]',
-                  imageLoaded ? 'opacity-100' : 'opacity-0',
+                  canClick && 'group-hover:scale-[1.02]',
+                  imgLoaded ? 'opacity-100' : 'opacity-0',
                 )}
               />
             </>
           ) : (
-            /* 极简深色科技感 Linear 风格首页兜底预览 */
             <div
               className={cn(
                 'w-full h-full flex flex-col items-center justify-center p-6 relative bg-gradient-to-br select-none',
-                gradientClass,
+                grad,
               )}
             >
-              <div className="absolute inset-0 bg-[radial-gradient(#d4a958_1px,transparent_1px)] [background-size:16px_16px] opacity-15 dark:opacity-20" />
-              <div className="relative z-10 flex flex-col items-center text-center max-w-sm space-y-2.5">
+              <div className="absolute inset-0 bg-[radial-gradient(#d4a958_0.5px,transparent_0.5px)] [background-size:12px_12px] opacity-[0.08]" />
+              <div className="relative z-10 flex flex-col items-center text-center space-y-2">
                 <span
                   className={cn(
-                    'font-black font-mono tracking-tight text-foreground/25 dark:text-white/20',
-                    isLarge ? 'text-4xl sm:text-5xl md:text-6xl' : 'text-3xl sm:text-4xl',
+                    'font-black font-mono tracking-tight text-foreground/15 dark:text-white/12',
+                    isLarge ? 'text-4xl sm:text-5xl' : 'text-3xl',
                   )}
                 >
                   {displayName}
                 </span>
                 <span
                   className={cn(
-                    'font-mono text-muted-foreground/80 tracking-wider',
-                    isLarge ? 'text-xs sm:text-sm' : 'text-[11px]',
+                    'font-mono text-muted-foreground/50 tracking-wider',
+                    isLarge ? 'text-xs' : 'text-[10px]',
                   )}
                 >
                   {targetUrl}
                 </span>
-                <div className="pt-2">
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-full font-medium bg-foreground/5 dark:bg-white/10 text-muted-foreground border border-border/40 dark:border-white/10',
-                      isLarge ? 'px-3.5 py-1.5 text-xs' : 'px-3 py-1 text-[10px]',
-                    )}
-                  >
-                    <Globe size={isLarge ? 13 : 11} />
-                    <span>Explore Website</span>
-                  </span>
-                </div>
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full bg-foreground/3 dark:bg-white/5 text-muted-foreground/60 border border-border/30 dark:border-white/5',
+                    isLarge ? 'px-3.5 py-1.5 text-xs' : 'px-3 py-1 text-[10px]',
+                  )}
+                >
+                  <Icon
+                    icon="ph:globe-duotone"
+                    width={isLarge ? 13 : 11}
+                    height={isLarge ? 13 : 11}
+                  />
+                  <span>Explore</span>
+                </span>
               </div>
             </div>
           )}
@@ -322,31 +305,27 @@ export default function FriendCard({
     </>
   );
 
-  const containerClasses = cn(
-    'group relative flex flex-col rounded-2xl bg-card dark:bg-[#121214] border border-border dark:border-white/10 transition-all duration-300 shadow-sm overflow-hidden',
-    isLarge ? 'p-6 sm:p-7 md:p-8 shadow-md' : 'p-5 sm:p-6',
-    isInteractive &&
-      'hover:border-amber-500/40 dark:hover:border-white/20 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-[0_16px_40px_rgba(0,0,0,0.5)] cursor-pointer',
+  const cls = cn(
+    'group relative flex flex-col rounded-2xl bg-card dark:bg-[#121214] border border-border/80 dark:border-white/8 transition-all duration-300 shadow-sm overflow-hidden',
+    isLarge ? 'p-6 sm:p-7 shadow-md' : 'p-4 sm:p-5',
+    canClick &&
+      'hover:border-amber-500/30 dark:hover:border-white/15 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/3 dark:hover:shadow-[0_12px_32px_rgba(0,0,0,0.4)] cursor-pointer',
     className,
   );
 
-  const motionProps = {
-    initial: { opacity: 0, y: 15 },
+  const mp = {
+    initial: { opacity: 0, y: 12 },
     animate: { opacity: 1, y: 0 },
-    transition: {
-      duration: 0.35,
-      delay: index !== undefined ? Math.min(index * 0.04, 0.3) : 0,
-    },
-    className: containerClasses,
+    transition: { duration: 0.3, delay: index !== undefined ? Math.min(index * 0.035, 0.25) : 0 },
+    className: cls,
   };
 
-  if (isInteractive) {
+  if (canClick) {
     return (
-      <motion.a href={formattedUrl} target="_blank" rel="noopener noreferrer" {...motionProps}>
-        {innerContent}
+      <motion.a href={href} target="_blank" rel="noopener noreferrer" {...mp}>
+        {content}
       </motion.a>
     );
   }
-
-  return <motion.div {...motionProps}>{innerContent}</motion.div>;
+  return <motion.div {...mp}>{content}</motion.div>;
 }
