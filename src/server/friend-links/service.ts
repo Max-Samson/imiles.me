@@ -111,6 +111,21 @@ export function friendLinkService(repo: FriendLinkRepository, images: ObjectStor
     review(id: string, action: ReviewAction, expectedVersion: number, actorId: string) {
       return repo.transition(id, action, expectedVersion, actorId);
     },
+    async delete(id: string) {
+      const deleted = await repo.delete(id);
+      if (deleted.screenshotKey) {
+        try {
+          await images.remove(deleted.screenshotKey);
+        } catch {
+          // 对象存储删除失败不阻塞数据删除，残留对象交由 cleanup 任务清理
+        }
+      }
+      return {
+        id: deleted.id,
+        name: deleted.name,
+        url: deleted.canonicalUrl,
+      };
+    },
     async screenshot(id: string, scope: ScreenshotScope) {
       const row = await repo.detail(id);
       if (

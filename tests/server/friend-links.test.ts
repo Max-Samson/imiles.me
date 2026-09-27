@@ -145,6 +145,39 @@ test('待审同网址可重复，已收录/隐藏网址唯一且冲突不改变�
   await assert.rejects(repo.transition(b.id, 'approve', 2, 'owner'), { code: 'CONFLICT' });
 });
 
+test('管理员可删除友链记录，删除后释放规范网址可重新审批二次提交', async () => {
+  const { images } = memoryImages();
+  const service = friendLinkService(repo, images);
+  const bytes = new Uint8Array(
+    await sharp({ create: { width: 16, height: 9, channels: 3, background: '#0f0' } })
+      .png()
+      .toBuffer(),
+  );
+  const screenshot = await validateScreenshot(bytes, 'image/png');
+  const a = await service.submit(input('resubmit-del', screenshot), crypto.randomUUID(), noVerify);
+  const b = await service.submit(input('resubmit-del'), crypto.randomUUID(), noVerify);
+
+  // a 审批通过入库
+  await repo.transition(a.id, 'approve', 1, 'owner');
+
+  // 此时 b 审批冲突
+  await assert.rejects(repo.transition(b.id, 'approve', 1, 'owner'), { code: 'CONFLICT' });
+
+  // 删除 a 记录
+  const deleted = await service.delete(a.id);
+  assert.equal(deleted.id, a.id);
+
+  // 删除后再查 a 应抛出 NotFoundError
+  await assert.rejects(repo.detail(a.id), { code: 'NOT_FOUND' });
+
+  // 重复删除抛出 NotFoundError
+  await assert.rejects(service.delete(a.id), { code: 'NOT_FOUND' });
+
+  // 现在 b 可以成功审批通过！
+  const approvedB = await repo.transition(b.id, 'approve', 1, 'owner');
+  assert.equal(approvedB.status, 'active');
+});
+
 test('数据库 CHECK 阻止无审核人直接发布和不完整图片元数据', async () => {
   const id = generateEntityId('fl');
   await assert.rejects(

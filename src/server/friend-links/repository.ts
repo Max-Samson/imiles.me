@@ -14,6 +14,9 @@ async function databaseCall<T>(call: () => Promise<T>): Promise<T> {
   try {
     return await call();
   } catch (error) {
+    if (error instanceof NotFoundError || error instanceof ConflictError) {
+      throw error;
+    }
     let current: unknown = error;
     for (let depth = 0; depth < 4 && current instanceof Error; depth++) {
       if (/UNIQUE constraint failed: friend_links.canonical_url/.test(current.message)) {
@@ -118,7 +121,14 @@ export function friendLinkRepository(env: CloudflareEnv) {
             ...(action === 'approve' ? { publishedAt: now } : {}),
           })
           .where(and(eq(t.id, id), eq(t.status, from), eq(t.version, version)))
-          .returning({ id: t.id, status: t.status, version: t.version }),
+          .returning({
+            id: t.id,
+            status: t.status,
+            version: t.version,
+            name: t.name,
+            contactEmail: t.contactEmail,
+            canonicalUrl: t.canonicalUrl,
+          }),
       );
       if (!rows[0]) throw new ConflictError('记录已处理或版本已变化，请刷新');
       return rows[0];
@@ -161,6 +171,19 @@ export function friendLinkRepository(env: CloudflareEnv) {
           )
           .returning({ id: t.id }),
       );
+    },
+    async delete(id: string) {
+      const row = await databaseCall(async () => {
+        const rows = await db.delete(t).where(eq(t.id, id)).returning({
+          id: t.id,
+          name: t.name,
+          canonicalUrl: t.canonicalUrl,
+          screenshotKey: t.screenshotKey,
+        });
+        return rows[0];
+      });
+      if (!row) throw new NotFoundError('友链记录不存在');
+      return row;
     },
   };
 }

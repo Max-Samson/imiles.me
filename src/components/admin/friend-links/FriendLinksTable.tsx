@@ -1,5 +1,7 @@
-import { ArrowUpRight, ImageIcon } from 'lucide-react';
+import { ArrowUpRight, ImageIcon, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/registry/shadcn/button';
+import { adminApiRequest } from '../../../lib/admin/api-client';
 import { cn } from '../../../lib/utils';
 import type { AdminFriendLink, FriendLinkStatus } from './types';
 /** 友链状态对应的中文展示标签。 */
@@ -65,7 +67,40 @@ export function FriendLinkStatusBadge({
  * 友链管理数据列表组件。
  * 响应式布局：在移动端呈现卡片堆叠，在桌面端以数据表格呈现。
  */
-export function FriendLinksTable({ items }: { items: AdminFriendLink[] }) {
+export function FriendLinksTable({
+  items,
+  canWrite = true,
+  onDeleted,
+}: {
+  items: AdminFriendLink[];
+  canWrite?: boolean;
+  onDeleted?: () => void;
+}) {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [actionError, setActionError] = useState<{ id: string; message: string } | null>(null);
+
+  async function handleDelete(id: string) {
+    setIsDeleting(true);
+    setActionError(null);
+    try {
+      await adminApiRequest(
+        `/api/v1/admin/friend-links/${encodeURIComponent(id)}`,
+        undefined,
+        undefined,
+        { method: 'DELETE' },
+      );
+      setDeletingId(null);
+      onDeleted?.();
+    } catch (err) {
+      setActionError({
+        id,
+        message: err instanceof Error ? err.message : '删除失败，请稍后重试',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  }
   if (!items.length)
     return (
       <p className="rounded-lg border border-dashed py-14 text-center text-sm text-muted-foreground">
@@ -89,14 +124,68 @@ export function FriendLinksTable({ items }: { items: AdminFriendLink[] }) {
               {item.email || '未提供邮箱'} · {formatDate(item.createdAt)}
               {item.hasScreenshot ? ' · 有截图' : ''}
             </p>
-            <Button size="sm" variant="outline" className="w-full" asChild>
-              <a
-                href={`/admin/friend-links/${encodeURIComponent(item.id)}`}
-                aria-label={`查看 ${item.name || item.url} 详情`}
-              >
-                查看详情
-              </a>
-            </Button>
+            {deletingId === item.id ? (
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-destructive">确认删除此友链记录？</span>
+                  <div className="flex gap-1.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      disabled={isDeleting}
+                      className="h-7 px-2.5 text-xs"
+                      onClick={() => void handleDelete(item.id)}
+                    >
+                      {isDeleting ? '删除中…' : '确认删除'}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={isDeleting}
+                      className="h-7 px-2.5 text-xs"
+                      onClick={() => {
+                        setDeletingId(null);
+                        setActionError(null);
+                      }}
+                    >
+                      取消
+                    </Button>
+                  </div>
+                </div>
+                {actionError?.id === item.id && (
+                  <p className="mt-1.5 text-destructive">{actionError.message}</p>
+                )}
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="flex-1" asChild>
+                  <a
+                    href={`/admin/friend-links/${encodeURIComponent(item.id)}`}
+                    aria-label={`查看 ${item.name || item.url} 详情`}
+                  >
+                    查看详情
+                  </a>
+                </Button>
+                {canWrite && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="gap-1 text-destructive hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => {
+                      setDeletingId(item.id);
+                      setActionError(null);
+                    }}
+                    aria-label={`删除 ${item.name || item.url} 友链记录`}
+                  >
+                    <Trash2 className="size-3.5" />
+                    <span>删除</span>
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -161,14 +250,66 @@ export function FriendLinksTable({ items }: { items: AdminFriendLink[] }) {
                   {formatDate(item.createdAt)}
                 </td>
                 <td className="px-4 py-3 text-right align-top">
-                  <Button size="sm" variant="outline" asChild>
-                    <a
-                      href={`/admin/friend-links/${encodeURIComponent(item.id)}`}
-                      aria-label={`查看 ${item.name || item.url} 详情`}
-                    >
-                      查看详情
-                    </a>
-                  </Button>
+                  {deletingId === item.id ? (
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span className="text-xs font-medium text-destructive">确认删除？</span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        disabled={isDeleting}
+                        className="h-7 px-2 text-xs"
+                        onClick={() => void handleDelete(item.id)}
+                      >
+                        {isDeleting ? '删除中…' : '确认'}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={isDeleting}
+                        className="h-7 px-2 text-xs"
+                        onClick={() => {
+                          setDeletingId(null);
+                          setActionError(null);
+                        }}
+                      >
+                        取消
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-end gap-2">
+                      <Button size="sm" variant="outline" asChild>
+                        <a
+                          href={`/admin/friend-links/${encodeURIComponent(item.id)}`}
+                          aria-label={`查看 ${item.name || item.url} 详情`}
+                        >
+                          查看详情
+                        </a>
+                      </Button>
+                      {canWrite && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="gap-1 text-destructive hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => {
+                            setDeletingId(item.id);
+                            setActionError(null);
+                          }}
+                          aria-label={`删除 ${item.name || item.url} 友链记录`}
+                        >
+                          <Trash2 className="size-3.5" />
+                          <span>删除</span>
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {actionError?.id === item.id && (
+                    <p className="mt-1 text-right text-xs text-destructive">
+                      {actionError.message}
+                    </p>
+                  )}
                 </td>
               </tr>
             ))}

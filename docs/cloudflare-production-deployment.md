@@ -30,7 +30,7 @@ imiles.me
 | --- | --- | --- | --- |
 | **绑定资源（Binding）** | `DB`、`KV`、`SESSION`、`FRIEND_LINK_RATE_LIMITER` | `wrangler.toml` `[[bindings]]` | ✅ 是 |
 | **非敏感元数据（Vars）** | `CLOUDFLARE_ACCOUNT_ID`、`CLOUDFLARE_D1_DATABASE_ID`、`SUPABASE_PROJECT_REF` 等资源标识符 | `wrangler.toml` `[vars]` | ✅ 是 |
-| **敏感凭据（Secrets）** | `ACCESS_ISSUER`、`ACCESS_AUD`、`ADMIN_EMAILS`、`SUPABASE_S3_ACCESS_KEY_ID` 等 | `wrangler secret put` / `wrangler secret bulk` | ❌ 否，仅存在于 Cloudflare 加密存储 |
+| **敏感凭据（Secrets）** | `ACCESS_ISSUER`、`ACCESS_AUD`、`ADMIN_EMAILS`、`RESEND_API_KEY`、`SUPABASE_S3_ACCESS_KEY_ID` 等 | `wrangler secret put` / `wrangler secret bulk` | ❌ 否，仅存在于 Cloudflare 加密存储 |
 
 **原则：**
 - 资源 ID（Account ID、Database ID、Namespace ID、Project Ref）不是密钥，泄露不会直接导致数据被篡改，可以进入 `[vars]`。
@@ -156,6 +156,8 @@ Worker 会继续验证 `Cf-Access-Jwt-Assertion` 的签名、issuer、audience�
 | `ACCESS_ISSUER` | `https://<team-name>.cloudflareaccess.com`，不能有尾部 `/` |
 | `ACCESS_AUD` | Access Application 的 AUD tag |
 | `ADMIN_EMAILS` | 与 Access Allow Policy 一致的管理员邮箱，多个用逗号分隔 |
+| `RESEND_API_KEY` | Resend API Key，用于生产环境发送友链审核与管理员通知邮件 |
+| `EMAIL_FROM` | 可选，发件人展示（默认 `imiles <noreply@imiles.me>`） |
 | `TURNSTILE_SITE_KEY` | Widget 的公开 Site Key（虽非真正密钥，仍通过 Secret 管理以避免暴露） |
 | `TURNSTILE_SECRET_KEY` | Widget 的 Secret Key |
 | `SUBMISSION_HMAC_SECRET` | 至少 32 字符随机密钥，生成见下方 |
@@ -178,6 +180,7 @@ cat > .secrets.json << 'EOF'
   "ACCESS_ISSUER": "https://364475182.cloudflareaccess.com",
   "ACCESS_AUD": "<your-aud-tag>",
   "ADMIN_EMAILS": "maxshuai355@gmail.com,1809491420@qq.com",
+  "RESEND_API_KEY": "<your-resend-api-key>",
   "TURNSTILE_SITE_KEY": "<your-turnstile-site-key>",
   "TURNSTILE_SECRET_KEY": "<your-turnstile-secret-key>",
   "SUBMISSION_HMAC_SECRET": "<openssl-rand-output>",
@@ -200,6 +203,7 @@ pnpm exec wrangler secret put ENVIRONMENT
 pnpm exec wrangler secret put ACCESS_ISSUER
 pnpm exec wrangler secret put ACCESS_AUD
 pnpm exec wrangler secret put ADMIN_EMAILS
+pnpm exec wrangler secret put RESEND_API_KEY
 pnpm exec wrangler secret put TURNSTILE_SITE_KEY
 pnpm exec wrangler secret put TURNSTILE_SECRET_KEY
 pnpm exec wrangler secret put SUBMISSION_HMAC_SECRET
@@ -301,62 +305,6 @@ pnpm exec wrangler deploy --dry-run
 
 ```bash
 pnpm deploy
-```
-
-部署会使用当前配置：
-
-```text
-Worker name: imiles
-Custom Domain: imiles.me
-workers.dev: disabled
-Preview URLs: disabled
-```
-
-Custom Domain 会由 Wrangler/Cloudflare 管理 DNS 和证书；不要再为同一 hostname 配置冲突的 Worker route。官方说明见 [Workers Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)。
-
-## 11. 第三方审核工具（可选）
-
-站内后台登录不需要 Service Token。只有外部审核工具或无人值守客户端接入管理 API 时才配置：
-
-1. Zero Trust → **Access controls → Service credentials → Service Tokens**。
-2. 创建 `imiles-review-tool`，立即保存 Client ID 和 Client Secret。
-3. 在 `imiles-admin` Access Application 增加 Action 为 `Service Auth` 的 Policy，Include 该 Service Token。
-4. Worker 增加（通过 `wrangler secret put` 或 `secret bulk`）：
-
-   ```text
-   ADMIN_SERVICE_TOKEN_IDS=<Client ID>
-   ADMIN_SERVICE_TOKEN_CAPABILITIES={"<Client ID>":["admin:read","admin:write"]}
-   ```
-
-5. 外部工具发送：
-
-   ```text
-   CF-Access-Client-Id: <Client ID>
-   CF-Access-Client-Secret: <Client Secret>
-   ```
-
-默认不要授予 `admin:maintenance`。Client Secret 不能进入浏览器。Service Token 官方说明见 [Service Tokens](https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/) 和 [Service Auth Policy](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/common-policies/)。
-
-## 12. 上线验收
-
-按顺序检查：
-
-1. `https://imiles.me/` 和 `/friends` 可匿名访问，不跳转 Access。
-2. 未登录访问 `/admin`、`/admin/`、`/api/v1/admin/session` 均进入 Access 或返回身份错误。
-3. 管理员登录后 `/api/v1/admin/session` 返回 user Actor 和三项 capability，不返回 JWT 或配置。
-4. 管理员登录后 `/api/v1/admin/infra` 返回完整基础设施元数据（账号 ID、资源 ID、项目 Ref 等）。
-5. 非 `ADMIN_EMAILS` 用户即使通过 IdP，也无法进入 Worker 管理接口。
-6. `/friends` 能加载 Turnstile；提交后返回 201，重复幂等请求返回 200。
-7. D1 中产生 `pending` 申请；待审截图只有管理接口可读。
-8. 审核通过后公开列表和公开截图可见；隐藏后公开截图返回 404。
-9. 连续提交触发限流时返回 429 和 `Retry-After: 60`。
-10. `https://<worker>.workers.dev` 与 Preview URL 无法作为旁路入口。
-11. Zero Trust Access logs 和 Workers Logs 中没有 JWT、Cookie、S3 密钥或完整请求正文。
-
-退出地址：
-
-```text
-https://imiles.me/cdn-cgi/access/logout
 ```
 
 出现问题时优先检查：Access 应用路径、AUD、issuer 是否有尾部斜杠、管理员邮箱两处是否一致、`SESSION` binding、Turnstile hostname/action、D1 迁移状态和 Supabase Bucket 名称。

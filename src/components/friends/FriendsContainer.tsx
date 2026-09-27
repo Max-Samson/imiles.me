@@ -1,7 +1,6 @@
 'use client';
 
 import { Icon } from '@iconify/react';
-import { X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type Locale, useTranslations } from '@/lib/i18n';
 import ExchangeGuideCard from './ExchangeGuideCard';
@@ -112,7 +111,7 @@ export default function FriendsContainer({ lang, turnstileSiteKey }: FriendsCont
               className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground cursor-pointer"
               aria-label="Clear"
             >
-              <X size={12} />
+              <Icon icon="ph:x-bold" width={12} height={12} />
             </button>
           )}
         </div>

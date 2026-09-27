@@ -50,6 +50,11 @@ export const adminInfraRoute = defineRestRoute({
         // 仅暴露端点 host，隐藏完整路径
         s3EndpointHost: safeHost(env.SUPABASE_S3_ENDPOINT),
       },
+      resend: {
+        configured: Boolean(env.RESEND_API_KEY),
+        emailFrom: env.EMAIL_FROM ?? 'imiles <noreply@imiles.me>',
+        verifiedDomain: 'imiles.me',
+      },
       environment: env.ENVIRONMENT ?? 'development',
       adminEmails: parseEmails(env.ADMIN_EMAILS),
     };

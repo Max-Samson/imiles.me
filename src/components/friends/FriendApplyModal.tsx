@@ -1,10 +1,10 @@
 'use client';
 
 import { Icon } from '@iconify/react';
-import { Loader2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { type Locale, useTranslations } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 import FriendCard from './FriendCard';
 import TurnstileWidget from './TurnstileWidget';
 
@@ -34,6 +34,7 @@ export default function FriendApplyModal({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successReceipt, setSuccessReceipt] = useState<string | null>(null);
+  const [receiptId, setReceiptId] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
@@ -43,6 +44,7 @@ export default function FriendApplyModal({
       setIdempotencyKey(crypto.randomUUID());
       setErrorMsg(null);
       setSuccessReceipt(null);
+      setReceiptId(null);
       setActiveTab('form');
       setTurnstileToken('');
     }
@@ -77,6 +79,18 @@ export default function FriendApplyModal({
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
     }
+  };
+
+  const getLocalizedError = (raw: string) => {
+    if (/已收录/.test(raw)) return t('FriendsModalErrDuplicateUrl');
+    if (/人机|验证码/.test(raw)) return t('FriendsModalErrVerifyFailed');
+    if (/频繁|限流/.test(raw)) return t('FriendsModalErrRateLimit');
+    if (/HTTPS|网址|链接/.test(raw)) return t('FriendsModalErrHttps');
+    if (/介绍|描述|字以内|200/.test(raw)) return t('FriendsModalErrDesc');
+    if (/邮箱/.test(raw)) return t('FriendsModalErrEmail');
+    if (/格式|PNG|JPEG|WebP/.test(raw)) return t('FriendsModalErrImageFormat');
+    if (/体积|2MB|过大/.test(raw)) return t('FriendsModalErrImageSize');
+    return raw || t('FriendsModalErrFailed');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,14 +134,18 @@ export default function FriendApplyModal({
       });
       const data = (await res.json()) as {
         success?: boolean;
-        error?: { message?: string };
-        data?: { message?: string };
+        error?: { message?: string; code?: string };
+        data?: { id?: string; message?: string };
       };
-      if (!res.ok || !data.success)
-        throw new Error(data.error?.message || t('FriendsModalErrFailed'));
-      setSuccessReceipt(data.data?.message || t('FriendsModalSuccessDefault'));
+      if (!res.ok || !data.success) {
+        const raw = data.error?.message || t('FriendsModalErrFailed');
+        throw new Error(getLocalizedError(raw));
+      }
+      setReceiptId(data.data?.id || null);
+      setSuccessReceipt(t('FriendsModalSuccessDefault'));
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : t('FriendsModalErrNetwork'));
+      const msg = err instanceof Error ? err.message : t('FriendsModalErrNetwork');
+      setErrorMsg(getLocalizedError(msg));
       setTurnstileToken('');
       setTurnstileResetKey((v) => v + 1);
     } finally {
@@ -146,39 +164,71 @@ export default function FriendApplyModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/70 backdrop-blur-md"
+          className="fixed inset-0 bg-black/70 backdrop-blur-md transition-opacity"
         />
 
-        {/* 弹窗 */}
+        {/* 弹窗卡片 */}
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 12 }}
-          className="relative w-full max-w-xl rounded-2xl bg-card border border-border/80 dark:bg-[#1e1e21] dark:border-white/8 shadow-2xl p-6 sm:p-7 z-10 my-8 text-foreground"
+          transition={{ type: 'spring', duration: 0.3, bounce: 0 }}
+          className="relative w-full max-w-xl rounded-2xl bg-card border border-border/80 shadow-2xl p-6 sm:p-7 z-10 my-8 text-foreground overflow-hidden"
         >
+          {/* 顶部品牌金色渐变装饰线 */}
+          <div
+            className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#d4a958]/70 to-transparent"
+            aria-hidden="true"
+          />
+
+          {/* 关闭按钮 */}
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 dark:hover:bg-white/5 transition-colors cursor-pointer"
-            aria-label="Close"
+            className="absolute top-4 right-4 p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a958]/50"
+            aria-label={t('FriendsModalCloseAria')}
           >
-            <X size={16} />
+            <Icon icon="ph:x-bold" width={16} height={16} />
           </button>
 
           {successReceipt ? (
-            <div className="py-10 text-center space-y-4">
-              <div className="size-14 rounded-full bg-emerald-500/15 text-emerald-500 mx-auto flex items-center justify-center">
-                <Icon icon="ph:check-circle-duotone" width={32} height={32} />
+            <div className="py-8 text-center space-y-4">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', damping: 15 }}
+                className="size-16 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 text-emerald-500 dark:text-emerald-400 mx-auto flex items-center justify-center shadow-xs"
+              >
+                <Icon icon="ph:check-circle-duotone" width={38} height={38} />
+              </motion.div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-xl font-bold text-foreground tracking-tight">
+                  {t('FriendsModalSuccessTitle')}
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                  {successReceipt}
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-foreground">{t('FriendsModalSuccessTitle')}</h3>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                {successReceipt}
+
+              {receiptId && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted/60 border border-border/60 text-xs font-mono text-muted-foreground select-all">
+                  <Icon icon="ph:hash-bold" width={12} height={12} className="text-[#d4a958]" />
+                  <span>
+                    {t('FriendsModalReceiptLabel')}: {receiptId}
+                  </span>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground/80 leading-relaxed max-w-xs mx-auto">
+                {t('FriendsModalReceiptNotice')}
               </p>
-              <div className="pt-4">
+
+              <div className="pt-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-6 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-[#d4a958] to-[#b88c3e] text-[#121214] transition-colors cursor-pointer"
+                  className="px-7 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-[#d4a958] to-[#b88c3e] text-[#121214] shadow-sm hover:shadow-[0_0_24px_rgba(212,169,88,0.35)] hover:brightness-105 active:scale-[0.98] transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a958]/50"
                 >
                   {t('FriendsModalDoneBtn')}
                 </button>
@@ -203,48 +253,64 @@ export default function FriendApplyModal({
                   </p>
                 </div>
 
-                <div className="flex items-center gap-0.5 bg-muted/50 dark:bg-[#17171a] p-0.5 rounded-lg border border-border/50 dark:border-white/5 text-xs">
+                <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border border-border/60 text-xs">
                   <button
                     type="button"
                     onClick={() => setActiveTab('form')}
-                    className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
+                    className={cn(
+                      'px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer font-medium',
                       activeTab === 'form'
-                        ? 'bg-[#d4a958] text-[#121214] font-bold'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                        ? 'bg-gradient-to-r from-[#d4a958] to-[#b88c3e] text-[#121214] font-semibold shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                    )}
                   >
-                    {t('FriendsModalTabForm')}
+                    <Icon icon="ph:note-pencil-duotone" width={13} height={13} />
+                    <span>{t('FriendsModalTabForm')}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab('preview')}
-                    className={`px-3 py-1 rounded-md flex items-center gap-1 transition-colors cursor-pointer ${
+                    className={cn(
+                      'px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer font-medium',
                       activeTab === 'preview'
-                        ? 'bg-[#d4a958] text-[#121214] font-bold'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                        ? 'bg-gradient-to-r from-[#d4a958] to-[#b88c3e] text-[#121214] font-semibold shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                    )}
                   >
-                    <Icon icon="ph:eye-duotone" width={12} height={12} />
+                    <Icon icon="ph:eye-duotone" width={13} height={13} />
                     <span>{t('FriendsModalTabPreview')}</span>
                   </button>
                 </div>
               </div>
 
+              {/* 错误提示 */}
               {errorMsg && (
-                <div className="mb-4 p-3 rounded-xl bg-red-500/8 border border-red-500/15 text-red-500 text-xs leading-relaxed flex items-start gap-2">
+                <div
+                  role="alert"
+                  className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/25 text-destructive dark:text-rose-400 text-xs leading-relaxed flex items-start gap-2.5 shadow-xs"
+                >
                   <Icon
                     icon="ph:warning-circle-duotone"
-                    width={15}
-                    height={15}
-                    className="shrink-0 mt-0.5"
+                    width={16}
+                    height={16}
+                    className="shrink-0 mt-0.5 text-destructive dark:text-rose-400"
                   />
-                  <span>{errorMsg}</span>
+                  <span className="font-medium">{errorMsg}</span>
                 </div>
               )}
 
+              {/* 卡片预览 Tab */}
               {activeTab === 'preview' ? (
                 <div className="py-4 space-y-4">
-                  <p className="text-xs text-muted-foreground">{t('FriendsModalPreviewTip')}</p>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Icon
+                      icon="ph:info-duotone"
+                      width={14}
+                      height={14}
+                      className="text-[#d4a958]"
+                    />
+                    <span>{t('FriendsModalPreviewTip')}</span>
+                  </div>
                   <div className="max-w-sm mx-auto">
                     <FriendCard
                       lang={lang}
@@ -260,14 +326,15 @@ export default function FriendApplyModal({
                     <button
                       type="button"
                       onClick={() => setActiveTab('form')}
-                      className="text-xs text-[#d4a958] hover:underline cursor-pointer inline-flex items-center gap-1"
+                      className="text-xs text-[#d4a958] hover:text-[#b88c3e] hover:underline cursor-pointer inline-flex items-center gap-1 font-medium transition-colors"
                     >
-                      <Icon icon="ph:arrow-left" width={12} height={12} />
-                      {t('FriendsModalBackToForm')}
+                      <Icon icon="ph:arrow-left-bold" width={12} height={12} />
+                      <span>{t('FriendsModalBackToForm')}</span>
                     </button>
                   </div>
                 </div>
               ) : (
+                /* 申请表单 Tab */
                 <form onSubmit={handleSubmit} className="space-y-3.5">
                   {/* 博客名称 */}
                   <div>
@@ -291,12 +358,12 @@ export default function FriendApplyModal({
                         placeholder={t('FriendsModalNamePlaceholder')}
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-muted/30 border border-border/60 dark:bg-[#17171a] dark:border-white/8 text-xs text-foreground focus:outline-none focus:border-amber-500/60 dark:focus:border-[#d4a958]/50 transition-colors"
+                        className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-muted/40 border border-border/70 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[#d4a958] focus:ring-1 focus:ring-[#d4a958]/30 transition-all"
                       />
                     </div>
                   </div>
 
-                  {/* URL */}
+                  {/* 网站链接 */}
                   <div>
                     <label
                       htmlFor="m-url"
@@ -318,20 +385,20 @@ export default function FriendApplyModal({
                         placeholder="https://example.com"
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
-                        className="w-full pl-9 pr-8 py-2 rounded-xl bg-muted/30 border border-border/60 dark:bg-[#17171a] dark:border-white/8 text-xs text-foreground focus:outline-none focus:border-amber-500/60 dark:focus:border-[#d4a958]/50 transition-colors"
+                        className="w-full pl-9 pr-8 py-2 rounded-xl bg-muted/40 border border-border/70 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[#d4a958] focus:ring-1 focus:ring-[#d4a958]/30 transition-all"
                       />
                       {url.startsWith('https://') && (
                         <Icon
-                          icon="ph:check-bold"
-                          width={14}
-                          height={14}
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500"
+                          icon="ph:check-circle-fill"
+                          width={15}
+                          height={15}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"
                         />
                       )}
                     </div>
                   </div>
 
-                  {/* 描述 */}
+                  {/* 网站描述 */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label
@@ -341,7 +408,12 @@ export default function FriendApplyModal({
                         {t('FriendsModalLabelDesc')}
                       </label>
                       <span
-                        className={`text-[10px] font-mono tabular-nums ${description.length > 180 ? 'text-amber-500' : 'text-muted-foreground/40'}`}
+                        className={cn(
+                          'text-[10px] font-mono tabular-nums transition-colors',
+                          description.length > 180
+                            ? 'text-amber-500 font-semibold'
+                            : 'text-muted-foreground/50',
+                        )}
                       >
                         {description.length}/200
                       </span>
@@ -361,7 +433,7 @@ export default function FriendApplyModal({
                         placeholder={t('FriendsModalDescPlaceholder')}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-muted/30 border border-border/60 dark:bg-[#17171a] dark:border-white/8 text-xs text-foreground focus:outline-none focus:border-amber-500/60 dark:focus:border-[#d4a958]/50 transition-colors resize-none"
+                        className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-muted/40 border border-border/70 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[#d4a958] focus:ring-1 focus:ring-[#d4a958]/30 transition-all resize-none"
                       />
                     </div>
                   </div>
@@ -388,36 +460,41 @@ export default function FriendApplyModal({
                         placeholder="yourname@domain.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-muted/30 border border-border/60 dark:bg-[#17171a] dark:border-white/8 text-xs text-foreground focus:outline-none focus:border-amber-500/60 dark:focus:border-[#d4a958]/50 transition-colors"
+                        className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-muted/40 border border-border/70 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[#d4a958] focus:ring-1 focus:ring-[#d4a958]/30 transition-all"
                       />
                     </div>
                   </div>
 
-                  {/* 截图 */}
+                  {/* 截图上传 */}
                   <div>
                     <span className="block text-xs font-medium text-muted-foreground mb-1">
                       {t('FriendsModalLabelScreenshot')}
                     </span>
                     {previewUrl ? (
-                      <div className="relative w-full h-24 rounded-xl overflow-hidden border border-border/60 dark:border-white/8 group">
+                      <div className="relative w-full h-24 rounded-xl overflow-hidden border border-border/70 group shadow-xs">
                         <img
                           src={previewUrl}
-                          alt="Preview"
+                          alt="Screenshot Preview"
                           className="w-full h-full object-cover"
                         />
                         <button
                           type="button"
                           onClick={removeScreenshot}
-                          className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white/80 hover:text-white transition-colors cursor-pointer"
-                          aria-label="Remove"
+                          className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 text-white/80 hover:text-white hover:bg-black/90 transition-all cursor-pointer shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+                          aria-label={t('FriendsModalRemoveScreenshotAria')}
                         >
-                          <X size={12} />
+                          <Icon icon="ph:x-bold" width={12} height={12} />
                         </button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center w-full h-20 rounded-xl border border-dashed border-border/60 dark:border-white/10 hover:border-amber-500/30 dark:hover:border-[#d4a958]/30 bg-muted/20 hover:bg-muted/40 dark:bg-[#17171a]/30 dark:hover:bg-[#17171a]/60 transition-all cursor-pointer">
-                        <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                          <Icon icon="ph:image-duotone" width={16} height={16} />
+                      <label className="flex flex-col items-center justify-center w-full h-20 rounded-xl border border-dashed border-border/80 hover:border-[#d4a958]/50 bg-muted/20 hover:bg-muted/40 transition-all cursor-pointer group">
+                        <div className="flex items-center gap-2 text-muted-foreground group-hover:text-foreground text-xs transition-colors">
+                          <Icon
+                            icon="ph:image-duotone"
+                            width={18}
+                            height={18}
+                            className="text-[#d4a958]"
+                          />
                           <span>{t('FriendsModalUploadHint')}</span>
                         </div>
                         <input
@@ -430,7 +507,7 @@ export default function FriendApplyModal({
                     )}
                   </div>
 
-                  {/* Turnstile */}
+                  {/* Turnstile 人机验证 */}
                   <div>
                     {turnstileSiteKey ? (
                       <TurnstileWidget
@@ -445,21 +522,26 @@ export default function FriendApplyModal({
                     )}
                   </div>
 
-                  {/* 提交 */}
+                  {/* 提交按钮 */}
                   <div className="pt-2">
                     <button
                       type="submit"
                       disabled={loading || !turnstileToken}
-                      className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs bg-gradient-to-r from-[#d4a958] to-[#b88c3e] text-[#121214] hover:shadow-[0_0_20px_rgba(212,169,88,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs bg-gradient-to-r from-[#d4a958] to-[#b88c3e] text-[#121214] shadow-sm hover:shadow-[0_0_24px_rgba(212,169,88,0.3)] hover:brightness-105 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a958]/50"
                     >
                       {loading ? (
                         <>
-                          <Loader2 size={14} className="animate-spin" />
+                          <Icon
+                            icon="ph:spinner-gap-bold"
+                            width={15}
+                            height={15}
+                            className="animate-spin"
+                          />
                           <span>{t('FriendsModalSubmitting')}</span>
                         </>
                       ) : (
                         <>
-                          <Icon icon="ph:paper-plane-tilt-fill" width={14} height={14} />
+                          <Icon icon="ph:paper-plane-tilt-fill" width={15} height={15} />
                           <span>{t('FriendsModalSubmitBtn')}</span>
                         </>
                       )}

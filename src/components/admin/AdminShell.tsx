@@ -270,6 +270,7 @@ function DashboardView({ session }: { session: AdminSession }) {
     brandColor: string;
     description: string;
     status: string;
+    statusColor?: 'emerald' | 'amber' | 'slate';
     dashLink: string | null;
     dashLabel: string;
     specs: SpecItem[];
@@ -518,6 +519,44 @@ function DashboardView({ session }: { session: AdminSession }) {
             },
           ],
         },
+
+        // 7. Resend 邮件通知
+        {
+          id: 'resend-email',
+          name: 'Resend 邮件通知',
+          type: '事务邮件网关',
+          iconSlug: 'resend',
+          brandColor: '#000000',
+          description: infra.resend?.configured
+            ? '基于 Resend HTTP API 的事务邮件服务，支持友链审批通知、管理员新申请提醒等自动化邮件。零 SDK 依赖，纯 Fetch 实现，适配 Edge Runtime。'
+            : '邮件服务尚未配置 RESEND_API_KEY，审批通过通知与新申请提醒将自动跳过。请在 Cloudflare Secrets 中配置密钥以启用。',
+          status: infra.resend?.configured ? '发信就绪' : '未配置',
+          statusColor: infra.resend?.configured ? 'emerald' : 'amber',
+          dashLink: 'https://resend.com/domains',
+          dashLabel: '打开 Resend 控制台',
+          specs: [
+            {
+              label: '服务状态',
+              value: infra.resend?.configured ? 'API 密钥已配置' : 'RESEND_API_KEY 未设置',
+              mono: false,
+            },
+            {
+              label: '发件地址',
+              value: infra.resend?.emailFrom ?? 'imiles <noreply@imiles.me>',
+              mono: false,
+            },
+            {
+              label: '已验证域名',
+              value: infra.resend?.verifiedDomain ?? 'imiles.me',
+              mono: false,
+            },
+            {
+              label: '通知类型',
+              value: '审批通知 · 新申请提醒',
+              mono: false,
+            },
+          ],
+        },
       ]
     : [];
 
@@ -555,6 +594,15 @@ function DashboardView({ session }: { session: AdminSession }) {
       sub: infra?.supabase.s3Region ?? '—',
       icon: <Icon icon="simple-icons:supabase" width={16} height={16} color="#3fcf8e" />,
       link: sb?.storage,
+    },
+    {
+      id: 'email',
+      label: '事务邮件',
+      value: infra?.resend?.configured ? 'Resend' : '未配置',
+      sub: infra?.resend?.emailFrom ?? 'noreply@imiles.me',
+      icon: <Icon icon="simple-icons:resend" width={16} height={16} color="#000000" />,
+      link: 'https://resend.com/domains',
+      statusOk: infra?.resend?.configured ?? false,
     },
   ];
 
@@ -606,7 +654,7 @@ function DashboardView({ session }: { session: AdminSession }) {
       </div>
 
       {/* ── 四格概览卡片 ── */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {summaryCards.map((c) => (
           <Card key={c.id} className="shadow-xs">
             <CardHeader className="pb-2">
@@ -619,8 +667,15 @@ function DashboardView({ session }: { session: AdminSession }) {
             <CardContent>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span className="truncate">{c.sub}</span>
-                <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
-                  <Dot />
+                <span
+                  className={cn(
+                    'flex items-center gap-1 font-medium',
+                    c.statusOk === false
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-emerald-600 dark:text-emerald-400',
+                  )}
+                >
+                  <Dot color={c.statusOk === false ? 'amber' : 'emerald'} />
                   {c.link ? (
                     <a
                       href={c.link}
@@ -628,8 +683,10 @@ function DashboardView({ session }: { session: AdminSession }) {
                       rel="noopener noreferrer"
                       className="hover:underline underline-offset-2"
                     >
-                      就绪
+                      {c.statusOk === false ? '待配置' : '就绪'}
                     </a>
+                  ) : c.statusOk === false ? (
+                    '待配置'
                   ) : (
                     '就绪'
                   )}
@@ -664,7 +721,7 @@ function DashboardView({ session }: { session: AdminSession }) {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {infraLoading
             ? // 骨架屏：与真实卡片等数量
-              Array.from({ length: 6 }).map((_, i) => (
+              Array.from({ length: 7 }).map((_, i) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
                 <Card key={i} className="animate-pulse shadow-xs">
                   <CardHeader className="pb-3">
@@ -715,8 +772,17 @@ function DashboardView({ session }: { session: AdminSession }) {
 
                       {/* 状态徽章 + 跳转链接 */}
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
-                          <Dot color="emerald" />
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium',
+                            svc.statusColor === 'amber'
+                              ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                              : svc.statusColor === 'slate'
+                                ? 'border-slate-500/30 bg-slate-500/10 text-slate-700 dark:text-slate-300'
+                                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+                          )}
+                        >
+                          <Dot color={svc.statusColor ?? 'emerald'} />
                           {svc.status}
                         </span>
                         {svc.dashLink && (
@@ -850,7 +916,7 @@ export function AdminShell({
             friendLinkId ? (
               <FriendLinkDetailPage id={friendLinkId} session={session} />
             ) : (
-              <FriendLinksAdmin />
+              <FriendLinksAdmin session={session} />
             )
           ) : section === 'dashboard' ? (
             <DashboardView session={session} />

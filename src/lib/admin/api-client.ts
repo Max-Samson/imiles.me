@@ -14,7 +14,7 @@ export async function adminApiRequest<T>(
   path: string,
   signal?: AbortSignal,
   fetcher: typeof fetch = fetch,
-  options?: { method: 'PATCH'; body: unknown },
+  options?: { method: 'POST' | 'PATCH' | 'PUT' | 'DELETE'; body?: unknown },
 ): Promise<T> {
   let response: Response;
   try {

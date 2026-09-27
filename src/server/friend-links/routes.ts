@@ -1,4 +1,7 @@
 import { z } from 'astro/zod';
+import { getSiteUrl } from '../config';
+import { createEmailService } from '../email';
+import { InternalServerError, ValidationError } from '../errors';
 import { defineRestRoute, readJsonBody } from '../rest';
 import { authorizeAdmin, authorizeAdminMutation } from '../security/access';
 import { requireSameOrigin } from '../security/origin';
@@ -8,7 +11,13 @@ import { limitSubmission, verifyTurnstile } from './protection';
 import { friendLinkRepository } from './repository';
 import { friendLinkService } from './service';
 import { readSubmission } from './upload';
-import { entityIdSchema, idempotencySchema, parseListQuery, reviewSchema } from './validation';
+import {
+  entityIdSchema,
+  idempotencySchema,
+  notifySchema,
+  parseListQuery,
+  reviewSchema,
+} from './validation';
 
 /** 请求级装配：绑定来自当前 Worker 请求，Service 本身不依赖 Astro 或 Cloudflare 环境。 */
 function createFriendLinks(env: Parameters<typeof friendLinkRepository>[0]) {
@@ -21,6 +30,7 @@ export const publicList = defineRestRoute({
     return jsonSuccess(await createFriendLinks(ctx.env).listPublished(query.page, query.pageSize));
   },
 });
+
 export const submit = defineRestRoute({
   POST: async (ctx, route) => {
     requireSameOrigin(route.request, ctx.env);
@@ -30,12 +40,32 @@ export const submit = defineRestRoute({
     const { created, ...receipt } = await createFriendLinks(ctx.env).submit(input, key, () =>
       verifyTurnstile(input.turnstileToken, ctx.env),
     );
+
+    // 新申请提交时，异步通知管理员（若已配置发信）
+    if (created) {
+      await ctx.defer(async () => {
+        const emailService = createEmailService(ctx.env);
+        const resolved = getSiteUrl(ctx.env);
+        const isLoopback = ['localhost', '127.0.0.1', '::1'].includes(resolved.hostname);
+        const siteOrigin = isLoopback ? 'https://imiles.me' : resolved.origin;
+        const adminUrl = `${siteOrigin}/admin/friend-links/${receipt.id}`;
+        await emailService.sendAdminNewApplication({
+          applicantName: input.name,
+          applicantUrl: input.url,
+          applicantEmail: input.email,
+          description: input.description,
+          detailUrl: adminUrl,
+        });
+      });
+    }
+
     return jsonSuccess(receipt, {
       status: created ? 201 : 200,
       ...(created ? { headers: { Location: `/api/v1/admin/friend-links/${receipt.id}` } } : {}),
     });
   },
 });
+
 export const adminList = defineRestRoute({
   GET: async (ctx, route) => {
     await authorizeAdmin(route.request, ctx.env, 'admin:read');
@@ -45,6 +75,7 @@ export const adminList = defineRestRoute({
     );
   },
 });
+
 export const adminDetail = defineRestRoute({
   GET: async (ctx, route) => {
     await authorizeAdmin(route.request, ctx.env, 'admin:read');
@@ -56,11 +87,89 @@ export const adminDetail = defineRestRoute({
     const actor = await authorizeAdminMutation(route.request, ctx.env, 'admin:write');
     const id = entityIdSchema.parse(route.params.id);
     const input = await readJsonBody(route.request, reviewSchema, 2048);
-    return jsonSuccess(
-      await createFriendLinks(ctx.env).review(id, input.action, input.expectedVersion, actor.id),
+    const result = await createFriendLinks(ctx.env).review(
+      id,
+      input.action,
+      input.expectedVersion,
+      actor.id,
     );
+
+    // 默认在 approve 时通知申请人（若未明确指定 notifyApplicant: false）
+    const contactEmail = result.contactEmail;
+    const shouldNotify =
+      input.action === 'approve' && input.notifyApplicant !== false && Boolean(contactEmail);
+
+    if (shouldNotify && contactEmail) {
+      await ctx.defer(async () => {
+        const emailService = createEmailService(ctx.env);
+        const sendResult = await emailService.sendFriendLinkApproved(contactEmail, {
+          applicantName: result.name,
+          applicantUrl: result.canonicalUrl,
+          customMessage: input.customMessage,
+        });
+        if (!sendResult.success) {
+          console.error('[friend-link.email_failed]', {
+            requestId: ctx.requestId,
+            id: result.id,
+            email: contactEmail,
+            error: sendResult.error,
+          });
+        }
+      });
+    }
+
+    return jsonSuccess({
+      id: result.id,
+      status: result.status,
+      version: result.version,
+      emailSent: shouldNotify && createEmailService(ctx.env).isConfigured(),
+    });
+  },
+  DELETE: async (ctx, route) => {
+    await authorizeAdminMutation(route.request, ctx.env, 'admin:write');
+    const id = entityIdSchema.parse(route.params.id);
+    const result = await createFriendLinks(ctx.env).delete(id);
+    return jsonSuccess({
+      id: result.id,
+      deleted: true,
+    });
   },
 });
+
+export const adminNotify = defineRestRoute({
+  POST: async (ctx, route) => {
+    await authorizeAdminMutation(route.request, ctx.env, 'admin:write');
+    const id = entityIdSchema.parse(route.params.id);
+    const input = await readJsonBody(route.request, notifySchema, 2048);
+    const detail = await createFriendLinks(ctx.env).adminDetail(id);
+
+    if (!detail.email) {
+      throw new ValidationError('该友链申请未提供联系邮箱');
+    }
+
+    const emailService = createEmailService(ctx.env);
+    if (!emailService.isConfigured()) {
+      throw new ValidationError('邮件服务未配置 (RESEND_API_KEY 缺失)');
+    }
+
+    const sendResult = await emailService.sendFriendLinkApproved(detail.email, {
+      applicantName: detail.name,
+      applicantUrl: detail.url,
+      customMessage: input.customMessage,
+    });
+
+    if (!sendResult.success) {
+      throw new InternalServerError(sendResult.error || '邮件发送失败');
+    }
+
+    return jsonSuccess({
+      sent: true,
+      recipient: detail.email,
+      messageId: sendResult.id,
+    });
+  },
+});
+
 export function screenshotRoute(scope: 'public' | 'admin') {
   return defineRestRoute({
     GET: async (ctx, route) => {
@@ -70,6 +179,7 @@ export function screenshotRoute(scope: 'public' | 'admin') {
     },
   });
 }
+
 export const cleanup = defineRestRoute({
   POST: async (ctx, route) => {
     await authorizeAdminMutation(route.request, ctx.env, 'admin:maintenance');

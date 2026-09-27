@@ -24,6 +24,11 @@ export interface AdminInfraConfig {
     /** S3 端点 URL，截取 host 部分展示（不含路径），保护完整 URL 不在前端直接渲染。 */
     s3EndpointHost: string | null;
   };
+  resend?: {
+    configured: boolean;
+    emailFrom: string | null;
+    verifiedDomain: string;
+  };
   /** 环境标识：development | staging | production */
   environment: string;
   /** 管理员邮箱列表（从 ADMIN_EMAILS 解析） */

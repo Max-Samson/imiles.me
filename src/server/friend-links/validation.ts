@@ -51,9 +51,20 @@ export const reviewSchema = z
       .int()
       .positive()
       .max(Number.MAX_SAFE_INTEGER - 1),
+    /** 审核通过时是否发送邮件通知申请人（默认 true） */
+    notifyApplicant: z.boolean().optional(),
+    /** 站长自定义留言（附在通过邮件中，可选最多 500 字） */
+    customMessage: z.string().trim().max(500).optional(),
   })
   .strict();
 export type ReviewAction = z.infer<typeof reviewSchema>['action'];
+
+export const notifySchema = z
+  .object({
+    customMessage: z.string().trim().max(500).optional(),
+  })
+  .strict();
+
 const intQuery = (fallback: number, max: number) =>
   z
     .string()

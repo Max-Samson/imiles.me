@@ -4,6 +4,7 @@ import { Button } from '@/registry/shadcn/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/registry/shadcn/card';
 import { adminApiRequest } from '../../../lib/admin/api-client';
 import { cn } from '../../../lib/utils';
+import type { AdminSession } from '../../../shared/admin/session-contract';
 import { FriendLinksTable } from './FriendLinksTable';
 import type { AdminFriendLinkPage, FriendLinkStatus } from './types';
 
@@ -74,7 +75,8 @@ const filterStyles: Record<
  * 友链管理后台列表页组件。
  * 负责按状态筛选、分页浏览申请记录、列表刷新以及进入单条审核详情。
  */
-export function FriendLinksAdmin() {
+export function FriendLinksAdmin({ session }: { session?: AdminSession } = {}) {
+  const canWrite = session ? session.capabilities.includes('admin:write') : true;
   const [filter, setFilter] = useState<FriendLinkStatus | undefined>();
   const [page, setPage] = useState(1);
   const [list, setList] = useState<AdminFriendLinkPage | null>(null);
@@ -178,7 +180,9 @@ export function FriendLinksAdmin() {
           {loading ? (
             <p className="py-12 text-center text-sm text-muted-foreground">正在加载申请…</p>
           ) : (
-            !error && <FriendLinksTable items={list?.items ?? []} />
+            !error && (
+              <FriendLinksTable items={list?.items ?? []} canWrite={canWrite} onDeleted={refresh} />
+            )
           )}
           <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
             <span>

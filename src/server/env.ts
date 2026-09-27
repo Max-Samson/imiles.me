@@ -40,6 +40,10 @@ export function getServerEnv(locals: Partial<App.Locals>): CloudflareEnv {
     SUPABASE_STORAGE_BUCKET: scalar('SUPABASE_STORAGE_BUCKET'),
     SUPABASE_S3_ACCESS_KEY_ID: scalar('SUPABASE_S3_ACCESS_KEY_ID'),
     SUPABASE_S3_SECRET_ACCESS_KEY: scalar('SUPABASE_S3_SECRET_ACCESS_KEY'),
+    // Email service (Resend)
+    RESEND_API_KEY: scalar('RESEND_API_KEY'),
+    EMAIL_FROM: scalar('EMAIL_FROM'),
+    ADMIN_NOTIFICATION_EMAIL: scalar('ADMIN_NOTIFICATION_EMAIL'),
     // Cloudflare resource metadata
     CLOUDFLARE_ACCOUNT_ID: scalar('CLOUDFLARE_ACCOUNT_ID'),
     CLOUDFLARE_WORKER_NAME: scalar('CLOUDFLARE_WORKER_NAME'),

@@ -26,6 +26,11 @@ export interface CloudflareEnv
   SUPABASE_S3_ACCESS_KEY_ID?: string;
   SUPABASE_S3_SECRET_ACCESS_KEY?: string;
 
+  // Email service (Resend)
+  RESEND_API_KEY?: string;
+  EMAIL_FROM?: string;
+  ADMIN_NOTIFICATION_EMAIL?: string;
+
   // Cloudflare resource metadata (local only; do not commit secrets)
   CLOUDFLARE_ACCOUNT_ID?: string;
   CLOUDFLARE_WORKER_NAME?: string;
