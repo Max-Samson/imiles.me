@@ -1,13 +1,260 @@
 --- 
-import{resolveLocale, t, type Locale} from '@/lib/i18n';
+import { author } from '@/data/author';
+import { resolveLocale, t, localizePathname, type Locale } from '@/lib/i18n';
+
+interface Props {
+  class?: string;
+}
 
 const { class: className } = Astro.props;
-const year = new Date().getFullYear().toString();
 const lang = resolveLocale(Astro.currentLocale as Locale | undefined);
-const copyright = t('Headercopyright', { year }, lang);
+const path = (url: string) => localizePathname(url, lang);
 ---
-<footer class:list={["border-t border-border py-6 text-center text-sm text-muted-foreground", className]}>
-  <div class="container mx-auto px-4">
-    <p>{copyright}</p>
+<footer
+  class:list={[
+    "relative border-t border-border/70 bg-background/95 text-foreground transition-colors overflow-hidden",
+    className
+  ]}
+  role="contentinfo"
+>
+  <!-- Ambient top highlight glow line -->
+  <div
+    class="pointer-events-none absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-brand/40 to-transparent"
+    aria-hidden="true"
+  ></div>
+
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+    <!-- Top section: Brand statement, Live Status & Social Quick Access -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-8 border-b border-border/50">
+      <!-- Left side: Brand identity & Status -->
+      <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+        <a
+          href={path('/')}
+          class="group inline-flex items-center gap-2.5 text-foreground hover:opacity-90 transition-opacity"
+          aria-label={`${author.name} - Home`}
+        >
+          <!-- Script name wordmark -->
+          <span class="font-script text-3xl sm:text-4xl text-foreground font-normal tracking-wide select-none">
+            {author.name}
+          </span>
+        </a>
+
+        <!-- Live Status & Local Time Badges -->
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <!-- Location & Live Time -->
+          <div class="inline-flex h-[30px] items-center gap-[6px] rounded-full border border-black/10 dark:border-white/10 bg-black/[0.025] dark:bg-white/[0.025] px-[10px] font-mono select-none backdrop-blur-xs">
+            <!-- Reticle icon ⌖ 12px -->
+            <svg class="size-3 text-foreground/65 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="8" cy="8" r="3" />
+              <path d="M8 1v2.5M8 12.5V15M1 8h2.5M12.5 8H15" />
+            </svg>
+
+            <!-- 地点：12px / 0.65 opacity -->
+            <span class="text-[12px] text-foreground/65 tracking-tight">
+              {t('FooterStatusLocation', undefined, lang)}
+            </span>
+
+            <!-- Spacer between location and time -->
+            <span class="w-[2px]" aria-hidden="true"></span>
+
+            <!-- 时间：12px / 0.90 opacity -->
+            <time id="footer-wuhan-time" class="text-[12px] font-medium text-foreground/90 tabular-nums" datetime={new Date().toISOString()}>
+              --:--
+            </time>
+
+            <!-- CST：10px / 0.45 opacity -->
+            <span class="text-[10px] text-foreground/45 tracking-wider">
+              CST
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Columns Grid (4 columns) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 pt-8">
+      <!-- Col 1: Explore / Navigation -->
+      <div class="space-y-3">
+        <p class="font-mono text-xs font-semibold uppercase tracking-wider text-foreground">
+          {t('FooterNavTitle', undefined, lang)}
+        </p>
+        <ul class="space-y-2.5 text-sm" role="list">
+          <li>
+            <a href={path('/')} class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5">
+              {t('Headerhome', undefined, lang)}
+            </a>
+          </li>
+          <li>
+            <a href={path('/blog')} class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5">
+              {t('Headerblog', undefined, lang)}
+            </a>
+          </li>
+          <li>
+            <a href={path('/stories')} class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5">
+              {t('Headerstories', undefined, lang)}
+            </a>
+          </li>
+          <li>
+            <a href={path('/projects')} class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5">
+              {t('Headerprojects', undefined, lang)}
+            </a>
+          </li>
+          <li>
+            <a href={path('/notes')} class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5">
+              {t('Headernotes', undefined, lang)}
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Col 2: Garden & Explore -->
+      <div class="space-y-3">
+        <p class="font-mono text-xs font-semibold uppercase tracking-wider text-foreground">
+          {t('FooterGardenTitle', undefined, lang)}
+        </p>
+        <ul class="space-y-2.5 text-sm" role="list">
+          <li>
+            <a href={path('/about')} class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5">
+              {t('Headerabout', undefined, lang)}
+            </a>
+          </li>
+          <li>
+            <a href={path('/friends')} class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5">
+              <span>{t('Headerfriends', undefined, lang)}</span>
+              <span class="rounded-sm bg-amber-500/15 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 font-medium px-1.5 py-0.5 text-[10px] font-mono leading-none">
+                {lang === 'zh' ? '邻居' : 'Neighbors'}
+              </span>
+            </a>
+          </li>
+          <li>
+            <a href="/playground" class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5">
+              <span>{t('FooterPlayground', undefined, lang)}</span>
+              <span class="rounded-sm bg-muted text-muted-foreground font-medium px-1.5 py-0.5 text-[10px] font-mono leading-none">
+                Lab
+              </span>
+            </a>
+          </li>
+          <li>
+            <a href="/rss.xml" target="_blank" rel="noopener noreferrer" class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5">
+              <svg class="size-3.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 11a9 9 0 0 1 9 9"/>
+                <path d="M4 4a16 16 0 0 1 16 16"/>
+                <circle cx="5" cy="19" r="1"/>
+              </svg>
+              <span>{t('FooterRss', undefined, lang)}</span>
+              <span class="text-[10px] text-muted-foreground/70">↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5">
+              {t('FooterSitemap', undefined, lang)}
+              <span class="text-[10px] text-muted-foreground/70">↗</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Col 3: Elsewhere / Social -->
+      <div class="space-y-3">
+        <p class="font-mono text-xs font-semibold uppercase tracking-wider text-foreground">
+          {t('FooterConnectTitle', undefined, lang)}
+        </p>
+        <ul class="space-y-2.5 text-sm" role="list">
+          <li>
+            <a
+              href={author.social.github.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5 max-w-full"
+            >
+              <span>GitHub</span>
+              <span class="font-mono text-xs text-muted-foreground/70 truncate">@{author.social.github.username}</span>
+              <span class="text-[10px] text-muted-foreground/70 shrink-0">↗</span>
+            </a>
+          </li>
+          <li>
+            <a
+              href={author.social.x.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5 max-w-full"
+            >
+              <span>X</span>
+              <span class="font-mono text-xs text-muted-foreground/70 truncate">{author.social.x.handle}</span>
+              <span class="text-[10px] text-muted-foreground/70 shrink-0">↗</span>
+            </a>
+          </li>
+          <li>
+            <a
+              href={`mailto:${author.email}`}
+              class="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5 max-w-full"
+            >
+              <span>Email</span>
+              <span class="font-mono text-xs text-muted-foreground/70 truncate">{author.email}</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Col 4: Colophon / Architecture -->
+      <div class="space-y-3">
+        <p class="font-mono text-xs font-semibold uppercase tracking-wider text-foreground">
+          {t('FooterColophonTitle', undefined, lang)}
+        </p>
+        <ul class="space-y-2.5 text-xs text-muted-foreground font-mono" role="list">
+          <li class="flex items-center gap-1.5">
+            <span class="size-1.5 rounded-full bg-brand"></span>
+            <span>Astro 5 · React 19</span>
+          </li>
+          <li class="flex items-center gap-1.5">
+            <span class="size-1.5 rounded-full bg-brand-secondary"></span>
+            <span>Tailwind CSS v4</span>
+          </li>
+          <li class="flex items-center gap-1.5">
+            <span class="size-1.5 rounded-full bg-sky-500"></span>
+            <span>Cloudflare Workers & D1</span>
+          </li>
+          <li class="pt-1">
+            <a
+              href="https://github.com/Max-Samson/imiles.me"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 text-foreground/85 hover:text-foreground transition-colors underline underline-offset-4 decoration-border/80"
+            >
+              <span>{t('FooterSourceCode', undefined, lang)}</span>
+              <span class="text-[10px]">↗</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
   </div>
+
+  <!-- Inline script for dynamic time and copy email -->
+  <script is:inline>
+    function initFooterTime() {
+      const timeEl = document.getElementById('footer-wuhan-time');
+      if (!timeEl) return;
+      function update() {
+        try {
+          const now = new Date();
+          const formatter = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Asia/Shanghai',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+          timeEl.textContent = formatter.format(now);
+        } catch (_) {}
+      }
+      update();
+      setInterval(update, 30000);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initFooterTime);
+    } else {
+      initFooterTime();
+    }
+  </script>
 </footer>
