@@ -20,7 +20,7 @@ export default function FriendsContainer({ lang, turnstileSiteKey }: FriendsCont
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-
+  const [guideOpen, setGuideOpen] = useState(false);
   const fetchFriendLinks = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -58,11 +58,12 @@ export default function FriendsContainer({ lang, turnstileSiteKey }: FriendsCont
       [item.name, item.url, item.description].some((v) => v?.toLowerCase().includes(q)),
     );
   }, [items, searchQuery]);
-
   const scrollToGuide = () => {
-    document.getElementById('exchange-guide')?.scrollIntoView({ behavior: 'smooth' });
+    setGuideOpen(true);
+    setTimeout(() => {
+      document.getElementById('exchange-guide')?.scrollIntoView({ behavior: 'smooth' });
+    }, 60);
   };
-
   return (
     <div className="min-h-screen py-6 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
       {/* Hero */}
@@ -72,9 +73,8 @@ export default function FriendsContainer({ lang, turnstileSiteKey }: FriendsCont
         onGuideClick={scrollToGuide}
       />
 
-      {/* 交换指南 */}
-      <ExchangeGuideCard lang={lang} />
-
+      {/* 交换指南（可折叠渐进式呈现，拒绝空间霸占） */}
+      <ExchangeGuideCard lang={lang} isOpen={guideOpen} onToggle={(open) => setGuideOpen(open)} />
       {/* ── 列表头：标题 + 搜索 ── */}
       <div className="mb-7 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 dark:border-white/5 pb-4">
         <div className="flex items-center gap-2.5">

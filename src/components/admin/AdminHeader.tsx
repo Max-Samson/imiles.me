@@ -1,4 +1,4 @@
-import { FileText, LayoutDashboard, LogOut, Plus, UserRound, X } from 'lucide-react';
+import { FileText, LayoutDashboard, LogOut, Plus, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/registry/shadcn/avatar';
 import { Button } from '@/registry/shadcn/button';
@@ -380,9 +380,16 @@ export function AdminHeader({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-10 max-w-[15rem] gap-2 px-2" aria-label="管理员菜单">
-            <Avatar>
-              <AvatarFallback>
-                <UserRound className="size-4" />
+            <Avatar className="size-7.5 border border-border/60 bg-muted/30">
+              <img
+                src="/assets/botme5.png"
+                alt="Admin Avatar"
+                className="size-full object-cover"
+                width={30}
+                height={30}
+              />
+              <AvatarFallback className="text-[10px] uppercase font-bold text-muted-foreground">
+                {label.slice(0, 2)}
               </AvatarFallback>
             </Avatar>
             <span className="hidden truncate text-sm sm:block">{label}</span>
