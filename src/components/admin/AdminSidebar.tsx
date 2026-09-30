@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/registry/shadcn/button';
 import { cn } from '../../lib/utils';
@@ -18,11 +18,30 @@ export function AdminSidebar({ section }: { section: string }) {
         collapsed ? 'w-[4.5rem]' : 'w-60',
       )}
     >
-      <div className="flex h-16 items-center gap-3 border-b px-4">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <ShieldCheck className="size-5" aria-hidden="true" />
-        </span>
-        {!collapsed && <span className="truncate font-semibold">管理后台</span>}
+      <div className="flex h-16 items-center gap-3 border-b px-3.5">
+        <a
+          href="/admin"
+          className="flex items-center gap-3 min-w-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring rounded-lg p-1"
+          title="管理后台 · imiles.me"
+        >
+          <div className="size-9 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted/30 shadow-xs transition-transform group-hover:scale-105">
+            <img
+              src="/images/weblogo.jpeg"
+              alt="imiles logo"
+              className="size-full object-cover"
+              width={36}
+              height={36}
+            />
+          </div>
+          {!collapsed && (
+            <div className="min-w-0">
+              <span className="block truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
+                管理后台
+              </span>
+              <span className="block truncate text-[11px] text-muted-foreground/80">imiles.me</span>
+            </div>
+          )}
+        </a>
       </div>
       <nav aria-label="后台主导航" className="flex-1 space-y-1 p-3">
         {adminNavigation.map((item) => {
@@ -71,12 +90,20 @@ export function AdminSidebar({ section }: { section: string }) {
         <Button
           variant="ghost"
           size={collapsed ? 'icon' : 'default'}
-          className={cn(!collapsed && 'w-full justify-start')}
+          className={cn(
+            'text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/70 transition-colors',
+            collapsed ? 'mx-auto' : 'w-full justify-start gap-2.5',
+          )}
           onClick={() => setCollapsed((value) => !value)}
           aria-label={collapsed ? '展开侧栏' : '收起侧栏'}
+          title={collapsed ? '展开侧栏' : '收起侧栏'}
         >
-          {collapsed ? <ChevronRight /> : <ChevronLeft />}
-          {!collapsed && '收起侧栏'}
+          {collapsed ? (
+            <PanelLeftOpen className="size-4 shrink-0" />
+          ) : (
+            <PanelLeftClose className="size-4 shrink-0" />
+          )}
+          {!collapsed && <span className="text-xs">收起侧栏</span>}
         </Button>
       </div>
     </aside>

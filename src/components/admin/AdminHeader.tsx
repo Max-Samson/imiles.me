@@ -1,4 +1,4 @@
-import { FileText, LayoutDashboard, LogOut, Moon, Plus, Sun, UserRound, X } from 'lucide-react';
+import { FileText, LayoutDashboard, LogOut, Plus, UserRound, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/registry/shadcn/avatar';
 import { Button } from '@/registry/shadcn/button';
@@ -12,6 +12,7 @@ import {
 } from '@/registry/shadcn/dropdown-menu';
 import { cn } from '../../lib/utils';
 import type { AdminSessionActor } from '../../shared/admin/session-contract';
+import { ModeToggle } from '../header/ModeToggle';
 import { AdminMobileNavigation } from './AdminMobileNavigation';
 import { useAdminRouter } from './AdminRouterContext';
 import { type AdminNavItem, type AdminTab, adminNavigation, findNavItemByKey } from './config';
@@ -49,30 +50,6 @@ function resolveCurrentTab(section: string, friendLinkId?: string): AdminTab {
     href: '/admin',
     icon: LayoutDashboard,
   };
-}
-
-/**
- * 明暗双模主题切换按钮。
- */
-function ThemeButton() {
-  const [dark, setDark] = useState(false);
-  useEffect(() => setDark(document.documentElement.classList.contains('dark')), []);
-  const toggle = () => {
-    const next = !document.documentElement.classList.contains('dark');
-    document.documentElement.classList.toggle('dark', next);
-    localStorage.setItem('theme', next ? 'dark' : 'light');
-    setDark(next);
-  };
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={toggle}
-      aria-label={dark ? '切换到浅色主题' : '切换到深色主题'}
-    >
-      {dark ? <Sun /> : <Moon />}
-    </Button>
-  );
 }
 
 /**
@@ -399,7 +376,7 @@ export function AdminHeader({
         </DropdownMenu>
       </div>
 
-      <ThemeButton />
+      <ModeToggle />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-10 max-w-[15rem] gap-2 px-2" aria-label="管理员菜单">

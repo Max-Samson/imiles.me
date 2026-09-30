@@ -461,19 +461,21 @@ export function FriendLinkDetailPage({ id, session }: { id: string; session: Adm
               </div>
 
               {/* 时间行 — 提交 + 审核并排 */}
-              <div className="flex flex-wrap gap-x-8 gap-y-1 px-4 py-2.5">
+              <div className="flex flex-wrap gap-x-8 gap-y-1.5 px-4 py-2.5">
                 <div className="flex items-baseline gap-2">
-                  <dt className="text-xs text-muted-foreground">提交</dt>
-                  <dd>{formatDate(detail.createdAt)}</dd>
+                  <dt className="text-xs text-muted-foreground">提交时间</dt>
+                  <dd className="font-mono text-xs">{formatDate(detail.createdAt)}</dd>
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <dt className="text-xs text-muted-foreground">审核</dt>
-                  <dd>{formatDate(detail.reviewedAt)}</dd>
-                </div>
+                {detail.reviewedAt && (
+                  <div className="flex items-baseline gap-2">
+                    <dt className="text-xs text-muted-foreground">审核时间</dt>
+                    <dd className="font-mono text-xs">{formatDate(detail.reviewedAt)}</dd>
+                  </div>
+                )}
                 {detail.reviewedBy && (
                   <div className="flex items-baseline gap-2">
                     <dt className="text-xs text-muted-foreground">审核人</dt>
-                    <dd className="break-all">{detail.reviewedBy}</dd>
+                    <dd className="font-mono text-xs break-all">{detail.reviewedBy}</dd>
                   </div>
                 )}
               </div>

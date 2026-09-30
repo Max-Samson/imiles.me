@@ -1,4 +1,4 @@
-import { Menu, ShieldCheck } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Button } from '@/registry/shadcn/button';
 import {
   Sheet,
@@ -24,11 +24,17 @@ export function AdminMobileNavigation({ section }: { section: string }) {
       </SheetTrigger>
       <SheetContent>
         <div className="mb-7 flex items-center gap-3 pr-8">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <ShieldCheck className="size-5" />
-          </span>
+          <div className="size-9 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted/30 shadow-xs">
+            <img
+              src="/images/weblogo.jpeg"
+              alt="imiles logo"
+              className="size-full object-cover"
+              width={36}
+              height={36}
+            />
+          </div>
           <div>
-            <SheetTitle className="font-semibold">管理后台</SheetTitle>
+            <SheetTitle className="font-semibold text-base leading-tight">管理后台</SheetTitle>
             <SheetDescription className="text-xs text-muted-foreground">imiles.me</SheetDescription>
           </div>
         </div>

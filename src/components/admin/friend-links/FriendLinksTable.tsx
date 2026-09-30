@@ -246,7 +246,7 @@ export function FriendLinksTable({
                 <td className="px-4 py-4 align-top">
                   <FriendLinkStatusBadge status={item.status} />
                 </td>
-                <td className="whitespace-nowrap px-4 py-4 align-top text-muted-foreground">
+                <td className="whitespace-nowrap px-4 py-4 align-top font-mono text-xs text-muted-foreground">
                   {formatDate(item.createdAt)}
                 </td>
                 <td className="px-4 py-3 text-right align-top">

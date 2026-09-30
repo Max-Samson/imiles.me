@@ -526,7 +526,7 @@ function DashboardView({ session }: { session: AdminSession }) {
           name: 'Resend 邮件通知',
           type: '事务邮件网关',
           iconSlug: 'resend',
-          brandColor: '#000000',
+          brandColor: 'currentColor',
           description: infra.resend?.configured
             ? '基于 Resend HTTP API 的事务邮件服务，支持友链审批通知、管理员新申请提醒等自动化邮件。零 SDK 依赖，纯 Fetch 实现，适配 Edge Runtime。'
             : '邮件服务尚未配置 RESEND_API_KEY，审批通过通知与新申请提醒将自动跳过。请在 Cloudflare Secrets 中配置密钥以启用。',
@@ -600,7 +600,7 @@ function DashboardView({ session }: { session: AdminSession }) {
       label: '事务邮件',
       value: infra?.resend?.configured ? 'Resend' : '未配置',
       sub: infra?.resend?.emailFrom ?? 'noreply@imiles.me',
-      icon: <Icon icon="simple-icons:resend" width={16} height={16} color="#000000" />,
+      icon: <Icon icon="simple-icons:resend" width={16} height={16} className="text-foreground" />,
       link: 'https://resend.com/domains',
       statusOk: infra?.resend?.configured ?? false,
     },
