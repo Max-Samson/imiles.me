@@ -132,13 +132,11 @@ export default function ExchangeGuideCard({
                 </span>
                 <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-[#d4a958]/15 dark:text-[#f3d289]">
                   <Icon icon="ph:sparkle-fill" width={11} height={11} />
-                  <span>互换指南 & 本站配置</span>
+                  <span>{t('FriendsGuideBadge')}</span>
                 </span>
               </div>
               <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                {isExpanded
-                  ? '点击可收起指南与配置详情'
-                  : '查看互换约定、独立博客准则及 YAML / JSON / Markdown 一键配置'}
+                {isExpanded ? t('FriendsGuideCollapsePrompt') : t('FriendsGuideExpandPrompt')}
               </p>
             </div>
           </div>
@@ -146,7 +144,7 @@ export default function ExchangeGuideCard({
           {/* 右侧：状态指示与箭头 */}
           <div className="flex items-center gap-3 shrink-0">
             <span className="hidden md:inline-block text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-              {isExpanded ? '收起详情' : '展开查看'}
+              {isExpanded ? t('FriendsGuideCollapseAction') : t('FriendsGuideExpandAction')}
             </span>
             <span
               className={cn(
@@ -186,7 +184,7 @@ export default function ExchangeGuideCard({
                       )}
                     >
                       <Icon icon="ph:code-bold" width={14} height={14} />
-                      <span>本站配置代码</span>
+                      <span>{t('FriendsGuideTabConfig')}</span>
                     </button>
                     <button
                       type="button"
@@ -199,14 +197,14 @@ export default function ExchangeGuideCard({
                       )}
                     >
                       <Icon icon="ph:shield-check-bold" width={14} height={14} />
-                      <span>互换约定与准则</span>
+                      <span>{t('FriendsGuideTabRules')}</span>
                     </button>
                   </div>
 
                   {/* 快捷跳转/辅助说明 */}
                   <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                     <Icon icon="ph:info" width={13} height={13} />
-                    <span>申请前请先添加本站友链</span>
+                    <span>{t('FriendsGuidePreCondition')}</span>
                   </span>
                 </div>
 
@@ -234,7 +232,7 @@ export default function ExchangeGuideCard({
                           <button
                             type="button"
                             onClick={() => copy(field.value, field.key)}
-                            title={`复制 ${field.label}`}
+                            title={`${t('FriendsGuideCopyFieldPrefix')} ${field.label}`}
                             className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted dark:hover:bg-white/10 transition-colors cursor-pointer"
                           >
                             {copiedKey === field.key ? (
@@ -335,7 +333,7 @@ export default function ExchangeGuideCard({
                               <Icon icon={RULE_ICONS[idx]} width={16} height={16} />
                             </span>
                             <span className="text-xs font-semibold text-foreground">
-                              约定 0{idx + 1}
+                              {t('FriendsGuideRuleItemPrefix')} 0{idx + 1}
                             </span>
                           </div>
                           <p className="text-xs leading-relaxed text-muted-foreground flex-1">
