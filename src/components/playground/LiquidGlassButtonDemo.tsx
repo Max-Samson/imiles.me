@@ -58,6 +58,12 @@ const VARIANTS: { id: VariantType; label: string; desc: string; color: string }[
     color: 'bg-rose-500',
   },
   { id: 'ghost', label: 'Ghost / 幽灵隐现', desc: '静止透明，悬停凝结显形', color: 'bg-white/20' },
+  {
+    id: 'adaptive',
+    label: 'Adaptive / 昼夜双模',
+    desc: '自适应：亮色空间蔚蓝 + 暗色品牌琥珀金',
+    color: 'bg-gradient-to-r from-sky-400 to-amber-400',
+  },
 ];
 
 const SIZES: { id: SizeType; label: string }[] = [

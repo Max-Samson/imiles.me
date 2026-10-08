@@ -119,6 +119,19 @@ export const liquidGlassVariants = cva(
           'hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.06),inset_0_1.5px_1px_0_rgba(255,255,255,0.85)]',
           'dark:hover:shadow-[0_12px_32px_-4px_rgba(0,0,0,0.4),inset_0_1.5px_1px_0_rgba(255,255,255,0.2)]',
         ],
+        // 11. 站点双模自适应玻璃 (亮色空间电光蓝 + 暗色品牌琥珀金，自适应站点昼夜主色调)
+        adaptive: [
+          'text-sky-950 dark:text-amber-100',
+          'bg-gradient-to-b from-sky-200/55 via-sky-400/20 to-sky-300/35 dark:from-amber-400/20 dark:via-amber-500/10 dark:to-amber-400/15',
+          'border border-sky-300/60 dark:border-amber-400/30',
+          'shadow-[0_8px_24px_-4px_rgba(14,165,233,0.2),inset_0_1.5px_1px_0_rgba(255,255,255,0.9),inset_0_-1px_1px_0_rgba(2,132,199,0.15)]',
+          'dark:shadow-[0_12px_32px_-4px_rgba(245,158,11,0.35),inset_0_1.5px_1px_0_rgba(255,255,255,0.35),inset_0_-1px_1px_0_rgba(0,0,0,0.4)]',
+          'hover:border-sky-300/80 dark:hover:border-amber-400/50',
+          'hover:bg-gradient-to-b hover:from-sky-200/65 hover:via-sky-400/28 hover:to-sky-300/45 dark:hover:from-amber-400/26 dark:hover:via-amber-500/14 dark:hover:to-amber-400/20',
+          'group-hover:border-sky-400/80 dark:group-hover:border-amber-400/60',
+          'group-hover:bg-gradient-to-b group-hover:from-sky-200/75 group-hover:via-sky-400/35 group-hover:to-sky-300/55 dark:group-hover:from-amber-400/30 dark:group-hover:via-amber-500/18 dark:group-hover:to-amber-400/25',
+          'group-hover:text-sky-900 dark:group-hover:text-amber-200',
+        ],
       },
       size: {
         xs: 'h-7 px-3 text-xs gap-1.5 [&_svg:not([class*="size-"])]:size-3.5',
@@ -147,6 +160,8 @@ export const liquidGlassVariants = cva(
 export type LiquidGlassVariants = VariantProps<typeof liquidGlassVariants>;
 
 export interface LiquidGlassBaseProps extends LiquidGlassVariants {
+  /** 自定义根元素类型 (默认有 href 时为 'a'，无 href 时为 'button') */
+  as?: 'button' | 'a' | 'span' | 'div';
   /** 自定义类名 */
   className?: string;
   /** 子元素内容 */
@@ -173,17 +188,12 @@ export interface LiquidGlassBaseProps extends LiquidGlassVariants {
   disabled?: boolean;
 }
 
-export type LiquidGlassButtonProps = LiquidGlassBaseProps &
-  (
-    | ({ href: string } & Omit<
-        React.AnchorHTMLAttributes<HTMLAnchorElement>,
-        keyof LiquidGlassBaseProps | 'href'
-      >)
-    | ({ href?: undefined } & Omit<
-        React.ButtonHTMLAttributes<HTMLButtonElement>,
-        keyof LiquidGlassBaseProps | 'href'
-      >)
-  );
+export type LiquidGlassButtonProps = LiquidGlassBaseProps & {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  target?: string;
+  rel?: string;
+} & React.HTMLAttributes<HTMLElement>;
 
 /**
  * LiquidGlassButton — 苹果风格液态玻璃按钮组件
@@ -195,231 +205,263 @@ export type LiquidGlassButtonProps = LiquidGlassBaseProps &
  * - 物理弹性微震按压阻尼动画
  * - 支持多种拟物玻璃材质与颜色变体 (水晶/磨砂/品牌金/翠绿/电光蓝/黑曜石/虹彩流光等)
  */
-export const LiquidGlassButton = React.forwardRef<
-  HTMLButtonElement | HTMLAnchorElement,
-  LiquidGlassButtonProps
->(function LiquidGlassButton(
-  {
-    className,
-    variant = 'default',
-    size = 'default',
-    shape = 'pill',
-    children,
-    icon,
-    iconRight,
-    interactive = true,
-    shimmer = false,
-    curvedBevel = true,
-    glow = false,
-    glowColor,
-    hapticScale = true,
-    loading = false,
-    disabled = false,
-    href,
-    ...props
-  },
-  ref,
-) {
-  const [mousePos, setMousePos] = React.useState<{ x: number; y: number } | null>(null);
-  const [isHovered, setIsHovered] = React.useState(false);
+export const LiquidGlassButton = React.forwardRef<HTMLElement, LiquidGlassButtonProps>(
+  function LiquidGlassButton(
+    {
+      as,
+      className,
+      variant = 'default',
+      size = 'default',
+      shape = 'pill',
+      children,
+      icon,
+      iconRight,
+      interactive = true,
+      shimmer = false,
+      curvedBevel = true,
+      glow = false,
+      glowColor,
+      hapticScale = true,
+      loading = false,
+      disabled = false,
+      href,
+      ...props
+    },
+    ref,
+  ) {
+    const [mousePos, setMousePos] = React.useState<{ x: number; y: number } | null>(null);
+    const [isHovered, setIsHovered] = React.useState(false);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    if (!interactive || disabled) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMousePos({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  };
+    const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+      if (!interactive || disabled) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      setMousePos({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    };
 
-  const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
-    if (disabled) return;
-    setIsHovered(true);
-    handleMouseMove(e);
-  };
+    const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
+      if (disabled) return;
+      setIsHovered(true);
+      handleMouseMove(e);
+    };
 
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setMousePos(null);
-  };
+    const handleMouseLeave = () => {
+      setIsHovered(false);
+      setMousePos(null);
+    };
 
-  // 动画弹性配置
-  const springAnimation =
-    hapticScale && !disabled
-      ? {
-          whileHover: { scale: 1.025, y: -1 },
-          whileTap: { scale: 0.965, y: 0.5 },
-          transition: {
-            type: 'spring' as const,
-            stiffness: 420,
-            damping: 24,
-            mass: 0.8,
-          },
-        }
-      : {};
+    // 动画弹性配置
+    const springAnimation =
+      hapticScale && !disabled
+        ? {
+            whileHover: { scale: 1.025, y: -1 },
+            whileTap: { scale: 0.965, y: 0.5 },
+            transition: {
+              type: 'spring' as const,
+              stiffness: 420,
+              damping: 24,
+              mass: 0.8,
+            },
+          }
+        : {};
 
-  // 彩虹变体专用柔和虹光漫射配置
-  const isRainbow = variant === 'rainbow';
+    // 彩虹变体专用柔和虹光漫射配置
+    const isRainbow = variant === 'rainbow';
 
-  const content = (
-    <>
-      {/* 1. 背后环境漫射光晕 (Ambient Back Glow) */}
-      {(glow || isRainbow) && (
-        <span
-          className={cn(
-            'pointer-events-none absolute -inset-1.5 -z-20 rounded-[inherit] opacity-35 blur-lg transition-opacity duration-300',
-            isHovered && 'opacity-70',
-            isRainbow &&
-              'bg-gradient-to-r from-pink-500/40 via-indigo-500/40 to-emerald-500/40 opacity-40 blur-md',
-          )}
-          style={glowColor ? { background: glowColor } : undefined}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* 2. 虹彩流光专用彩虹渐变边框层 */}
-      {isRainbow && (
-        <span
-          className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] p-[1.5px] bg-gradient-to-r from-pink-500/80 via-sky-400/80 to-emerald-400/80 [mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] [mask-composite:exclude]"
-          aria-hidden="true"
-        />
-      )}
-
-      {/* 3. 顶部 1px 弧面镜面倒角高光 (模拟凸面透镜反光) */}
-      {curvedBevel && (
-        <span
-          className="pointer-events-none absolute inset-x-3 top-0 z-20 h-[1px] bg-gradient-to-r from-transparent via-white/90 to-transparent dark:via-white/35"
-          aria-hidden="true"
-        />
-      )}
-
-      {/* 4. 底部微弱折射光线 */}
-      {curvedBevel && (
-        <span
-          className="pointer-events-none absolute inset-x-5 bottom-0 z-20 h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent dark:via-white/10"
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Clip moving highlights locally so the ambient glow can extend beyond the button. */}
-      <span
-        className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-[inherit]"
-        aria-hidden="true"
-      >
-        {/* 5. 动态光标聚光折射 (Fresnel Spotlight) */}
-        {interactive && mousePos && (
-          <motion.span
-            className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-200"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: isHovered ? 1 : 0 }}
-            style={{
-              background: `radial-gradient(110px circle at ${mousePos.x}px ${mousePos.y}px, rgba(255, 255, 255, 0.38), transparent 75%)`,
-            }}
-            aria-hidden="true"
-          />
-        )}
-
-        {/* 6. 持续微光液态流动动画 (Shimmer wave) */}
-        {shimmer && (
-          <motion.span
-            className="pointer-events-none absolute inset-y-0 left-0 w-1/2 z-0 bg-gradient-to-r from-transparent via-white/30 to-transparent dark:via-white/15 -skew-x-12"
-            initial={{ x: '-150%' }}
-            animate={{ x: '350%' }}
-            transition={{
-              repeat: Number.POSITIVE_INFINITY,
-              duration: 2.8,
-              ease: 'easeInOut',
-              repeatDelay: 1,
-            }}
-            aria-hidden="true"
-          />
-        )}
-      </span>
-
-      {/* 7. 主体内容与图标 */}
-      <span className="relative z-20 inline-flex items-center justify-center gap-[inherit]">
-        {loading ? (
-          <span className="inline-flex items-center gap-2">
-            <svg
-              className="size-4 animate-spin text-current opacity-80"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="3"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-            {children && <span className="opacity-80">{children}</span>}
-          </span>
-        ) : (
-          <>
-            {icon && <span className="inline-flex shrink-0">{icon}</span>}
-            {children && <span>{children}</span>}
-            {iconRight && (
-              <span className="inline-flex shrink-0 transition-transform duration-200 group-hover:translate-x-0.5">
-                {iconRight}
-              </span>
+    const content = (
+      <>
+        {/* 1. 背后环境漫射光晕 (Ambient Back Glow) */}
+        {(glow || isRainbow) && (
+          <span
+            className={cn(
+              'pointer-events-none absolute -inset-1.5 -z-20 rounded-[inherit] opacity-35 blur-lg transition-opacity duration-300',
+              isHovered && 'opacity-70',
+              isRainbow &&
+                'bg-gradient-to-r from-pink-500/40 via-indigo-500/40 to-emerald-500/40 opacity-40 blur-md',
             )}
-          </>
+            style={glowColor ? { background: glowColor } : undefined}
+            aria-hidden="true"
+          />
         )}
-      </span>
-    </>
-  );
 
-  const combinedClassName = cn(
-    liquidGlassVariants({ variant, size, shape }),
-    disabled && 'opacity-45 pointer-events-none cursor-not-allowed',
-    className,
-  );
+        {/* 2. 虹彩流光专用彩虹渐变边框层 */}
+        {isRainbow && (
+          <span
+            className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] p-[1.5px] bg-gradient-to-r from-pink-500/80 via-sky-400/80 to-emerald-400/80 [mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)] [mask-composite:exclude]"
+            aria-hidden="true"
+          />
+        )}
 
-  if (href) {
-    const anchorProps = props as React.AnchorHTMLAttributes<HTMLAnchorElement>;
+        {/* 3. 顶部 1px 弧面镜面倒角高光 (模拟凸面透镜反光) */}
+        {curvedBevel && (
+          <span
+            className="pointer-events-none absolute inset-x-3 top-0 z-20 h-[1px] bg-gradient-to-r from-transparent via-white/90 to-transparent dark:via-white/35"
+            aria-hidden="true"
+          />
+        )}
+
+        {/* 4. 底部微弱折射光线 */}
+        {curvedBevel && (
+          <span
+            className="pointer-events-none absolute inset-x-5 bottom-0 z-20 h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent dark:via-white/10"
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Clip moving highlights locally so the ambient glow can extend beyond the button. */}
+        <span
+          className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-[inherit]"
+          aria-hidden="true"
+        >
+          {/* 5. 动态光标聚光折射 (Fresnel Spotlight) */}
+          {interactive && mousePos && (
+            <motion.span
+              className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-200"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isHovered ? 1 : 0 }}
+              style={{
+                background: `radial-gradient(110px circle at ${mousePos.x}px ${mousePos.y}px, rgba(255, 255, 255, 0.38), transparent 75%)`,
+              }}
+              aria-hidden="true"
+            />
+          )}
+
+          {/* 6. 持续微光液态流动动画 (Shimmer wave) */}
+          {shimmer && (
+            <motion.span
+              className="pointer-events-none absolute inset-y-0 left-0 w-1/2 z-0 bg-gradient-to-r from-transparent via-white/30 to-transparent dark:via-white/15 -skew-x-12"
+              initial={{ x: '-150%' }}
+              animate={{ x: '350%' }}
+              transition={{
+                repeat: Number.POSITIVE_INFINITY,
+                duration: 2.8,
+                ease: 'easeInOut',
+                repeatDelay: 1,
+              }}
+              aria-hidden="true"
+            />
+          )}
+        </span>
+
+        {/* 7. 主体内容与图标 */}
+        <span className="relative z-20 inline-flex items-center justify-center gap-[inherit]">
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <svg
+                className="size-4 animate-spin text-current opacity-80"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              {children && <span className="opacity-80">{children}</span>}
+            </span>
+          ) : (
+            <>
+              {icon && <span className="inline-flex shrink-0">{icon}</span>}
+              {children && <span>{children}</span>}
+              {iconRight && (
+                <span className="inline-flex shrink-0 transition-transform duration-200 group-hover:translate-x-0.5">
+                  {iconRight}
+                </span>
+              )}
+            </>
+          )}
+        </span>
+      </>
+    );
+
+    const combinedClassName = cn(
+      liquidGlassVariants({ variant, size, shape }),
+      disabled && 'opacity-45 pointer-events-none cursor-not-allowed',
+      className,
+    );
+
+    if (as === 'span') {
+      return (
+        <motion.span
+          ref={ref as React.Ref<HTMLSpanElement>}
+          className={combinedClassName}
+          onMouseMove={handleMouseMove}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          {...springAnimation}
+          {...(props as unknown as HTMLMotionProps<'span'>)}
+        >
+          {content}
+        </motion.span>
+      );
+    }
+
+    if (as === 'div') {
+      return (
+        <motion.div
+          ref={ref as React.Ref<HTMLDivElement>}
+          className={combinedClassName}
+          onMouseMove={handleMouseMove}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          {...springAnimation}
+          {...(props as unknown as HTMLMotionProps<'div'>)}
+        >
+          {content}
+        </motion.div>
+      );
+    }
+
+    if (href || as === 'a') {
+      const anchorProps = props as React.AnchorHTMLAttributes<HTMLAnchorElement>;
+      return (
+        <motion.a
+          ref={ref as React.Ref<HTMLAnchorElement>}
+          href={href}
+          className={combinedClassName}
+          onMouseMove={handleMouseMove}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          aria-disabled={disabled}
+          {...springAnimation}
+          {...(anchorProps as unknown as HTMLMotionProps<'a'>)}
+        >
+          {content}
+        </motion.a>
+      );
+    }
+
+    const buttonProps = props as React.ButtonHTMLAttributes<HTMLButtonElement>;
     return (
-      <motion.a
-        ref={ref as React.Ref<HTMLAnchorElement>}
-        href={href}
+      <motion.button
+        ref={ref as React.Ref<HTMLButtonElement>}
+        type={buttonProps.type || 'button'}
+        disabled={disabled || loading}
         className={combinedClassName}
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        aria-disabled={disabled}
         {...springAnimation}
-        {...(anchorProps as unknown as HTMLMotionProps<'a'>)}
+        {...(buttonProps as unknown as HTMLMotionProps<'button'>)}
       >
         {content}
-      </motion.a>
+      </motion.button>
     );
-  }
-
-  const buttonProps = props as React.ButtonHTMLAttributes<HTMLButtonElement>;
-  return (
-    <motion.button
-      ref={ref as React.Ref<HTMLButtonElement>}
-      type={buttonProps.type || 'button'}
-      disabled={disabled || loading}
-      className={combinedClassName}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      {...springAnimation}
-      {...(buttonProps as unknown as HTMLMotionProps<'button'>)}
-    >
-      {content}
-    </motion.button>
-  );
-});
+  },
+);
 
 LiquidGlassButton.displayName = 'LiquidGlassButton';
 

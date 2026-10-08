@@ -3,23 +3,260 @@ import type { CollectionEntry } from 'astro:content';
 import { type Locale, useTranslations, localizePathname, formatDate } from '@/lib/i18n';
 import { calculateReadTime } from '@/lib/readTime';
 import { ShineBorder } from '@/registry/magicui/shine-border';
+import HomeBlogReadMore from './HomeBlogReadMore';
 import { rainbowButtonVariants } from '@/registry/magicui/rainbow-button';
 import { cn } from '@/lib/utils';
 
 interface Props { lang: Locale; posts: CollectionEntry<'blog'>[] }
 const { lang, posts } = Astro.props;
 const { t } = useTranslations(lang);
+
+const [featuredPost, ...streamPosts] = posts;
+const hasStream = streamPosts.length > 0;
 ---
 <section id="blog-section" class="home-section" aria-labelledby="home-blog-title">
-  <header class="home-section-heading"><p class="home-eyebrow">{t('HomeBlogEyebrow')}</p><h2 id="home-blog-title">{t('HomeBlogTitle')}</h2><p>{t('HomeBlogIntro')}</p></header>
-  <div class="home-essays">
-    {posts.map(post => <a class="home-card home-essay group" data-home-reveal data-home-tilt href={localizePathname(`/blog/${post.id.replace(/-zh$/, '')}`, lang)}>
-      <ShineBorder className="rounded-2xl opacity-0 transition-opacity group-hover:opacity-70 group-focus-visible:opacity-70" shineColor={['#d4a958', '#83a9b9']} />
-      <div class="home-essay-meta"><time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate, lang)}</time><span>{t('HomeReadTime', { minutes: calculateReadTime(post.body || '').minutes })}</span></div>
-      <h3>{post.data.title}</h3><p>{post.data.description}</p>
-      <div class="home-essay-bottom"><ul class="home-tags">{post.data.tags.slice(0, 3).map(tag => <li>{tag}</li>)}</ul><span aria-hidden="true">↗</span></div>
-    </a>)}
-  </div>
+  <header class="home-section-heading">
+    <p class="home-eyebrow">{t('HomeBlogEyebrow')}</p>
+    <h2 id="home-blog-title">{t('HomeBlogTitle')}</h2>
+    <p>{t('HomeBlogIntro')}</p>
+  </header>
+
+  {featuredPost && (
+    <div class="home-essays">
+      <div class="home-essays-bento">
+        {hasStream ? (
+          <>
+            <!-- Left Column: Featured Hero Essay -->
+            <div class="home-essay-lead-col">
+              <a
+                class="home-card home-essay-card home-essay-lead group"
+                data-home-reveal
+                href={localizePathname(`/blog/${featuredPost.id.replace(/-zh$/, '')}`, lang)}
+              >
+                <ShineBorder
+                  className="rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-75 group-focus-visible:opacity-75"
+                  shineColor={['var(--line-sidebar-accent)', '#83a9b9']}
+                />
+
+                <!-- Ambient radial spotlight -->
+                <div
+                  class="pointer-events-none absolute -top-16 -right-16 size-60 rounded-full bg-gradient-to-br from-sky-500/12 via-[#83a9b9]/8 to-transparent dark:from-[#d4a958]/18 dark:via-[#83a9b9]/12 blur-3xl opacity-70 transition-opacity duration-500 group-hover:opacity-100"
+                  aria-hidden="true"
+                />
+
+                <!-- Faint issue numeral watermark -->
+                <div
+                  class="pointer-events-none absolute right-4 top-3 sm:right-6 sm:top-4 select-none font-mono text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tighter text-foreground/[0.025] dark:text-foreground/[0.035] transition-colors duration-500 group-hover:text-sky-500/[0.08] dark:group-hover:text-amber-400/[0.08]"
+                  aria-hidden="true"
+                >
+                  01
+                </div>
+
+                <!-- Top Header: Featured Badge + Date & Read Time -->
+                <div class="relative z-10 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300 w-fit">
+                    <span class="relative flex size-2">
+                      <span class="absolute inline-flex size-full animate-ping rounded-full bg-sky-500 dark:bg-amber-400 opacity-75"></span>
+                      <span class="relative inline-flex size-2 rounded-full bg-sky-600 dark:bg-amber-400"></span>
+                    </span>
+                    <span>{t('HomeBlogFeatured')}</span>
+                  </div>
+
+                  <div class="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                    <span class="inline-flex items-center gap-1.5">
+                      <svg class="size-3.5 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                      <time datetime={featuredPost.data.pubDate.toISOString()}>{formatDate(featuredPost.data.pubDate, lang)}</time>
+                    </span>
+                    <span aria-hidden="true" class="opacity-30">/</span>
+                    <span class="inline-flex items-center gap-1.5">
+                      <svg class="size-3.5 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      <span>{t('HomeReadTime', { minutes: calculateReadTime(featuredPost.body || '').minutes })}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Center Content: Title + Long-form Excerpt -->
+                <div class="relative z-10 my-4 sm:my-6 flex-1">
+                  <h3 class="text-xl sm:text-[1.75rem] lg:text-[1.95rem] font-semibold tracking-tight text-foreground text-balance leading-snug sm:leading-[1.3] transition-colors duration-200 group-hover:text-sky-600 dark:group-hover:text-amber-300">
+                    {featuredPost.data.title}
+                  </h3>
+                  <p class="mt-2.5 sm:mt-3.5 text-xs sm:text-base text-muted-foreground leading-relaxed line-clamp-3 sm:line-clamp-4 font-normal">
+                    {featuredPost.data.description}
+                  </p>
+                </div>
+
+                <!-- Bottom Bar: Tags + Action Read Button -->
+                <div class="relative z-10 flex flex-col gap-3 pt-3.5 border-t border-border/40 sm:flex-row sm:items-center sm:justify-between">
+                  <ul class="home-tags">
+                    {featuredPost.data.tags.slice(0, 3).map(tag => (
+                      <li class="transition-colors group-hover:border-sky-500/30 dark:group-hover:border-[#d4a958]/35 group-hover:text-foreground/90">
+                        #{tag}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <HomeBlogReadMore
+                    label={t('HomeBlogReadMore')}
+                    size="sm"
+                    className="self-end sm:self-auto shrink-0 shadow-xs"
+                  />
+                </div>
+              </a>
+            </div>
+
+            <!-- Right Column: Companion Essays Stream -->
+            <div class="home-essay-stream-col">
+              {streamPosts.map((post, idx) => {
+                const itemNumber = String(idx + 2).padStart(2, '0');
+                return (
+                  <a
+                    class="home-card home-essay-card home-essay-stream-item group"
+                    data-home-reveal
+                    href={localizePathname(`/blog/${post.id.replace(/-zh$/, '')}`, lang)}
+                  >
+                    <ShineBorder
+                      className="rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-75 group-focus-visible:opacity-75"
+                      shineColor={['var(--line-sidebar-accent)', '#83a9b9']}
+                    />
+
+                    <!-- Faint issue watermark -->
+                    <div
+                      class="pointer-events-none absolute right-3.5 top-2.5 select-none font-mono text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tighter text-foreground/[0.02] dark:text-foreground/[0.03] transition-colors duration-500 group-hover:text-sky-500/[0.08] dark:group-hover:text-amber-400/[0.07]"
+                      aria-hidden="true"
+                    >
+                      {itemNumber}
+                    </div>
+
+                    <!-- Header: Number stamp + Date & Read Time -->
+                    <div class="relative z-10 flex flex-wrap items-center justify-between gap-x-2.5 gap-y-1 font-mono">
+                      <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground/80 tracking-wider group-hover:text-sky-600 dark:group-hover:text-amber-400 transition-colors">
+                        <span>{itemNumber}</span>
+                        <span class="opacity-30">/</span>
+                        <span class="text-[10px] tracking-widest text-muted-foreground uppercase">ESSAY</span>
+                      </span>
+
+                      <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-muted-foreground">
+                        <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate, lang)}</time>
+                        <span aria-hidden="true" class="opacity-30">·</span>
+                        <span class="shrink-0">{t('HomeReadTime', { minutes: calculateReadTime(post.body || '').minutes })}</span>
+                      </div>
+                    </div>
+
+                    <!-- Body: Title + Concise Summary -->
+                    <div class="relative z-10 my-2.5 sm:my-3 flex-1">
+                      <h3 class="text-base sm:text-lg font-semibold tracking-tight text-foreground text-balance leading-snug line-clamp-2 transition-colors duration-200 group-hover:text-sky-600 dark:group-hover:text-amber-300">
+                        {post.data.title}
+                      </h3>
+                      <p class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                        {post.data.description}
+                      </p>
+                    </div>
+
+                    <!-- Bottom Bar: Tags + Micro-arrow -->
+                    <div class="relative z-10 flex items-center justify-between gap-3 pt-3 border-t border-border/40">
+                      <ul class="home-tags">
+                        {post.data.tags.slice(0, 2).map(tag => (
+                          <li class="transition-colors group-hover:border-sky-500/30 dark:group-hover:border-[#d4a958]/35 group-hover:text-foreground/90">
+                            #{tag}
+                          </li>
+                        ))}
+                      </ul>
+
+                      <HomeBlogReadMore
+                        size="icon-sm"
+                        className="shrink-0 transition-all duration-300 group-hover:scale-105"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <!-- Single Post Layout -->
+          <div class="home-essay-single-col">
+            <a
+              class="home-card home-essay-card home-essay-single-item group"
+              data-home-reveal
+              href={localizePathname(`/blog/${featuredPost.id.replace(/-zh$/, '')}`, lang)}
+            >
+              <ShineBorder
+                className="rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-75 group-focus-visible:opacity-75"
+                shineColor={['var(--line-sidebar-accent)', '#83a9b9']}
+              />
+
+              <div
+                class="pointer-events-none absolute -top-24 -right-24 size-80 rounded-full bg-gradient-to-br from-sky-500/12 via-[#83a9b9]/8 to-transparent dark:from-[#d4a958]/18 dark:via-[#83a9b9]/12 blur-3xl opacity-70 transition-opacity duration-500 group-hover:opacity-100"
+                aria-hidden="true"
+              />
+
+              <div
+                class="pointer-events-none absolute right-4 top-3 sm:right-8 sm:top-6 select-none font-mono text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tighter text-foreground/[0.025] dark:text-foreground/[0.035] transition-colors duration-500 group-hover:text-sky-500/[0.08] dark:group-hover:text-amber-400/[0.08]"
+                aria-hidden="true"
+              >
+                01
+              </div>
+
+              <div class="relative z-10 grid gap-6 sm:gap-8 lg:grid-cols-12 lg:gap-12 lg:items-center">
+                <!-- Left side: Badge, Title, Meta -->
+                <div class="lg:col-span-7 flex flex-col justify-between">
+                  <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300 w-fit">
+                      <span class="relative flex size-2">
+                        <span class="absolute inline-flex size-full animate-ping rounded-full bg-sky-500 dark:bg-amber-400 opacity-75"></span>
+                        <span class="relative inline-flex size-2 rounded-full bg-sky-600 dark:bg-amber-400"></span>
+                      </span>
+                      <span>{t('HomeBlogFeatured')}</span>
+                    </div>
+
+                    <div class="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                      <span class="inline-flex items-center gap-1.5">
+                        <svg class="size-3.5 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                        <time datetime={featuredPost.data.pubDate.toISOString()}>{formatDate(featuredPost.data.pubDate, lang)}</time>
+                      </span>
+                      <span aria-hidden="true" class="opacity-30">/</span>
+                      <span class="inline-flex items-center gap-1.5">
+                        <svg class="size-3.5 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span>{t('HomeReadTime', { minutes: calculateReadTime(featuredPost.body || '').minutes })}</span>
+                      </span>
+                    </div>
+                  </div>
+                  <h3 class="my-4 text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground text-balance leading-[1.25] transition-colors duration-200 group-hover:text-sky-600 dark:group-hover:text-amber-300">
+                    {featuredPost.data.title}
+                  </h3>
+
+                  <ul class="home-tags mt-2">
+                    {featuredPost.data.tags.slice(0, 4).map(tag => (
+                      <li class="transition-colors group-hover:border-sky-500/30 dark:group-hover:border-[#d4a958]/35 group-hover:text-foreground/90">
+                        #{tag}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <!-- Right side: Excerpt & Action Callout -->
+                <div class="lg:col-span-5 flex flex-col justify-between border-t border-border/40 pt-5 sm:pt-6 lg:border-t-0 lg:border-l lg:border-border/40 lg:pl-10 lg:pt-0">
+                  <p class="text-xs sm:text-base text-muted-foreground leading-relaxed font-normal">
+                    {featuredPost.data.description}
+                  </p>
+
+                  <div class="mt-4 sm:mt-6">
+                    <HomeBlogReadMore
+                      label={t('HomeBlogReadMore')}
+                      size="default"
+                      className="shadow-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  )}
+
   <a
     href={localizePathname('/blog', lang)}
     class={cn(

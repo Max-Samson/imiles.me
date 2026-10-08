@@ -18,6 +18,8 @@ export const en = {
   HomeBlogTitle: 'Essays & Insights',
   HomeBlogIntro: 'Notes from building, learning, and living with technology.',
   HomeAllPosts: 'All essays',
+  HomeBlogFeatured: 'Featured Essay',
+  HomeBlogReadMore: 'Read full essay',
   HomeReadTime: '{minutes} min read',
   HomeTechTitle: 'Tech Radar & Matrix',
   HomeTechIntro: 'From the interface to the infrastructure.',

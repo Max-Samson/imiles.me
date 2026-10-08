@@ -1,8 +1,10 @@
 'use client';
 
 import { addCollection, Icon } from '@iconify/react';
-import { X } from 'lucide-react';
+import { Cloud, X } from 'lucide-react';
 import { createElement, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
 import javaIcon from '@/data/java-icon.json';
 import techIcons from '@/data/tech-icons.json';
 import { IconCloud } from '@/registry/magicui/icon-cloud';
@@ -66,39 +68,45 @@ interface TechSkillsCloudProps {
 
 export default function TechSkillsCloud({ headingId, inline = false }: TechSkillsCloudProps) {
   const [open, setOpen] = useState(false);
+  const [headingEl, setHeadingEl] = useState<HTMLElement | null>(null);
 
   // Attach a click handler + affordance to the section heading.
   useEffect(() => {
     if (!headingId || inline) return;
-    const heading = document.getElementById(headingId);
-    if (!heading) return;
 
-    heading.classList.add('cursor-pointer', 'group');
+    let cleanupHeading: (() => void) | undefined;
 
-    const hint = document.createElement('button');
-    hint.type = 'button';
-    hint.className =
-      'ml-2 inline-flex translate-y-[-2px] items-center gap-1 align-middle text-sm font-normal text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground';
-    hint.innerHTML =
-      '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>';
-    hint.setAttribute('aria-label', 'View the full tech stack as an icon cloud');
-    hint.addEventListener('click', (event) => {
-      event.stopPropagation();
-      setOpen(true);
-    });
-    heading.appendChild(hint);
+    const attachToHeading = () => {
+      const heading = document.getElementById(headingId);
+      if (!heading) return false;
 
-    const onClick = (event: MouseEvent) => {
-      // Ignore clicks on the heading anchor-link button added by HeadingLinkEnhancer.
-      if ((event.target as HTMLElement).closest('button')) return;
-      setOpen(true);
+      heading.classList.add('cursor-pointer', 'group');
+      setHeadingEl(heading);
+
+      const onClick = (event: MouseEvent) => {
+        // Ignore clicks on heading anchor-link button or our trigger button
+        if ((event.target as HTMLElement).closest('button')) return;
+        setOpen(true);
+      };
+      heading.addEventListener('click', onClick);
+
+      cleanupHeading = () => {
+        heading.removeEventListener('click', onClick);
+        heading.classList.remove('cursor-pointer', 'group');
+      };
+      return true;
     };
-    heading.addEventListener('click', onClick);
+
+    if (!attachToHeading()) {
+      const timer = setTimeout(attachToHeading, 50);
+      return () => {
+        clearTimeout(timer);
+        cleanupHeading?.();
+      };
+    }
 
     return () => {
-      heading.removeEventListener('click', onClick);
-      heading.classList.remove('cursor-pointer', 'group');
-      hint.remove();
+      cleanupHeading?.();
     };
   }, [headingId, inline]);
 
@@ -118,35 +126,63 @@ export default function TechSkillsCloud({ headingId, inline = false }: TechSkill
 
   if (inline) return <IconCloud icons={CLOUD_ICONS} />;
 
-  if (!open) return null;
+  const isZh =
+    headingId === '技术能力' ||
+    (typeof document !== 'undefined' &&
+      (document.documentElement.lang === 'zh' || window.location.pathname.startsWith('/zh')));
+
+  const triggerButton = (
+    <LiquidGlassButton
+      type="button"
+      variant="adaptive"
+      size="icon-sm"
+      shape="squircle"
+      glow
+      shimmer
+      icon={<Cloud className="size-4" />}
+      onClick={(event) => {
+        event.stopPropagation();
+        setOpen(true);
+      }}
+      className="ml-2.5 inline-flex align-middle cursor-pointer select-none shadow-xs shrink-0"
+      aria-label={isZh ? '打开 3D 动态技术栈图标球' : 'Open 3D Tech Stack Icon Cloud'}
+      title={isZh ? '打开 3D 动态技术栈图标球' : 'Open 3D Tech Stack Icon Cloud'}
+    />
+  );
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Tech stack icon cloud"
-    >
-      <button
-        type="button"
-        aria-label="Close tech stack icon cloud"
-        onClick={() => setOpen(false)}
-        className="absolute inset-0 cursor-default"
-      />
-      <div className="relative">
-        <IconCloud icons={CLOUD_ICONS} />
-      </div>
-      <button
-        type="button"
-        onClick={() => setOpen(false)}
-        aria-label="Close tech stack icon cloud"
-        className="absolute right-6 top-6 rounded-full border border-border bg-background/80 p-2 text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <X size={20} />
-      </button>
-      <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 text-sm text-muted-foreground">
-        Drag to rotate · Esc to close
-      </p>
-    </div>
+    <>
+      {headingEl && createPortal(triggerButton, headingEl)}
+
+      {open && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label={isZh ? '3D 动态技术栈图标球' : 'Tech stack icon cloud'}
+        >
+          <button
+            type="button"
+            aria-label={isZh ? '关闭' : 'Close tech stack icon cloud'}
+            onClick={() => setOpen(false)}
+            className="absolute inset-0 cursor-default"
+          />
+          <div className="relative">
+            <IconCloud icons={CLOUD_ICONS} />
+          </div>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label={isZh ? '关闭' : 'Close tech stack icon cloud'}
+            className="absolute right-6 top-6 rounded-full border border-border bg-background/80 p-2 text-muted-foreground transition-colors hover:text-foreground cursor-pointer"
+          >
+            <X size={20} />
+          </button>
+          <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 text-sm text-muted-foreground">
+            {isZh ? '拖拽旋转 · 按 Esc 退出' : 'Drag to rotate · Esc to close'}
+          </p>
+        </div>
+      )}
+    </>
   );
 }

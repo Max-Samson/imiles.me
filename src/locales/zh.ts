@@ -18,6 +18,8 @@ export const zh = {
   HomeBlogTitle: '长文 & 思考',
   HomeBlogIntro: '公开记录前端工程、AI 时代感受与全栈实践。',
   HomeAllPosts: '阅读更多长文',
+  HomeBlogFeatured: '深度长文 · 最新',
+  HomeBlogReadMore: '阅读全文',
   HomeReadTime: '约 {minutes} 分钟阅读',
   HomeTechTitle: '技术雷达',
   HomeTechIntro: '从用户界面，到系统底层。',
