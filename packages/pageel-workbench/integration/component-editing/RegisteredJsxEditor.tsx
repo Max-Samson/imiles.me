@@ -1,4 +1,5 @@
 import { GenericJsxEditor, type JsxEditorProps, useMdastNodeUpdater } from '@mdxeditor/editor';
+import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
 import {
   type CSSProperties,
   useEffect,
@@ -82,14 +83,16 @@ export function RegisteredJsxEditor(props: JsxEditorProps) {
             <span className="cms-jsx-title">{label}</span>
             <span className="cms-jsx-tag">&lt;{mdastNode.name}&gt;</span>
           </div>
-          <button
+          <LiquidGlassButton
             type="button"
-            className="cms-jsx-config-btn"
+            size="xs"
+            variant="default"
+            shape="rounded"
             aria-label={`配置${label}`}
             onClick={handleSelect}
           >
             配置参数
-          </button>
+          </LiquidGlassButton>
         </div>
       )}
       {descriptor.kind === 'text' && (

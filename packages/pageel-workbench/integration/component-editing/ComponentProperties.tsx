@@ -1,5 +1,6 @@
 import { ArrowLeft, Check, Info } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
 import { patchLiteral, readLiteral } from '../jsx-attributes';
 import { useComponentInspector } from './InspectorContext';
 import { findComponent } from './registry';
@@ -74,14 +75,16 @@ export function ComponentProperties({ onBack }: ComponentPropertiesProps) {
         <p className="mb-4 text-[11px] leading-relaxed">
           点击正文中的组件，或在「组件库」的“本文已用”列表中点击任意组件即可在此配置参数。
         </p>
-        <button
+        <LiquidGlassButton
           type="button"
+          size="xs"
+          variant="default"
+          shape="rounded"
+          icon={<ArrowLeft className="h-3.5 w-3.5" />}
           onClick={() => inspector.setMode('library')}
-          className="inline-flex items-center gap-1.5 rounded-md border border-notion-border bg-notion-sidebar px-3 py-1.5 font-medium text-notion-text hover:bg-notion-hover"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
           前往组件库
-        </button>
+        </LiquidGlassButton>
       </div>
     );
   }
@@ -90,14 +93,16 @@ export function ComponentProperties({ onBack }: ComponentPropertiesProps) {
     <div className="p-5 text-xs text-notion-text">
       {/* Top back button */}
       <div className="mb-4 flex items-center justify-between border-b border-notion-border pb-3">
-        <button
+        <LiquidGlassButton
           type="button"
+          size="xs"
+          variant="ghost"
+          shape="rounded"
+          icon={<ArrowLeft className="h-3.5 w-3.5" />}
           onClick={handleBack}
-          className="inline-flex items-center gap-1 text-notion-muted hover:text-notion-text text-[11px] font-medium"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
           返回组件库
-        </button>
+        </LiquidGlassButton>
         {dirty && (
           <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
             ● 有未应用的修改
@@ -247,13 +252,18 @@ export function ComponentProperties({ onBack }: ComponentPropertiesProps) {
           )}
 
           <div className="pt-2">
-            <button
+            <LiquidGlassButton
               type="submit"
               disabled={!dirty}
-              className="w-full rounded-md bg-notion-blue px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-notion-blue/90 disabled:opacity-40 transition-colors"
+              size="default"
+              variant="blue"
+              shape="rounded"
+              glow
+              shimmer
+              className="w-full"
             >
               应用参数
-            </button>
+            </LiquidGlassButton>
           </div>
         </form>
       )}

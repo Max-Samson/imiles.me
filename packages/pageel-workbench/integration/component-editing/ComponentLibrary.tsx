@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
+import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
 import { DocumentComponents } from './DocumentComponents';
 import { useComponentInspector } from './InspectorContext';
 import {
@@ -283,21 +284,29 @@ export function ComponentLibrary() {
 
                             {/* Insert Button */}
                             {!isStories && (
-                              <button
+                              <LiquidGlassButton
                                 type="button"
+                                size="xs"
+                                shape="rounded"
+                                variant={comp.supportLevel === 'configurable' ? 'blue' : 'brand'}
+                                glow={comp.supportLevel === 'configurable'}
+                                icon={
+                                  comp.supportLevel === 'configurable' ? (
+                                    <Plus className="size-3.5" />
+                                  ) : (
+                                    <Terminal className="size-3.5" />
+                                  )
+                                }
                                 onClick={() => handleInsertClick(comp)}
-                                className="mt-1 flex items-center gap-1 rounded bg-notion-bg px-2.5 py-1 text-xs font-medium text-notion-text border border-notion-border hover:bg-notion-blue hover:text-white hover:border-notion-blue transition-all shadow-2xs"
+                                className="mt-1 font-medium"
                                 title={
                                   comp.supportLevel === 'configurable'
                                     ? `在正文中插入${comp.label}`
                                     : `在正文中插入${comp.label}占位模板`
                                 }
                               >
-                                <Plus className="h-3 w-3" />
-                                <span>
-                                  {comp.supportLevel === 'configurable' ? '插入' : '源码配置'}
-                                </span>
-                              </button>
+                                {comp.supportLevel === 'configurable' ? '插入' : '源码配置'}
+                              </LiquidGlassButton>
                             )}
                           </div>
                         </div>
@@ -341,23 +350,28 @@ export function ComponentLibrary() {
                 }
               }}
               placeholder={promptModal.defaultText}
-              className="w-full rounded border border-notion-border bg-notion-bg px-2.5 py-1.5 text-xs text-notion-text mb-4 focus:outline-none focus:ring-1 focus:ring-notion-blue"
+              className="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
             />
             <div className="flex justify-end gap-2">
-              <button
+              <LiquidGlassButton
                 type="button"
+                size="xs"
+                variant="ghost"
+                shape="rounded"
                 onClick={() => setPromptModal({ open: false, component: null, defaultText: '' })}
-                className="rounded border border-notion-border px-3 py-1 text-notion-muted hover:text-notion-text"
               >
                 取消
-              </button>
-              <button
+              </LiquidGlassButton>
+              <LiquidGlassButton
                 type="button"
+                size="xs"
+                variant="blue"
+                shape="rounded"
+                glow
                 onClick={handleConfirmPrompt}
-                className="rounded bg-notion-blue px-3 py-1 font-medium text-white hover:bg-notion-blue/90"
               >
                 插入到正文
-              </button>
+              </LiquidGlassButton>
             </div>
           </div>
         </div>
