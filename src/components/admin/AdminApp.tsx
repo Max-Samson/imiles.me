@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { adminApiRequest } from '../../lib/admin/api-client';
+import { canLeaveAdminModule } from '../../lib/admin/navigation-guard';
 import type { AdminSession } from '../../shared/admin/session-contract';
 import { AdminErrorBoundary } from './AdminErrorBoundary';
 import { type AdminRoute, AdminRouterContext, parseAdminPath } from './AdminRouterContext';
-import { findNavItemByKey } from './config';
+import { findNavItemByKey, findNavItemByPath } from './config';
 import { SessionBoundary, type SessionState } from './SessionBoundary';
 
 /** 会话存储中的缓存键名。 */
@@ -80,6 +81,11 @@ export default function AdminApp({
    * 更新组件内路由状态、同步 HTML5 历史记录、刷新网页标题并将主内容区平滑回滚至顶部。
    */
   const navigate = useCallback((href: string) => {
+    if (href !== window.location.pathname && !canLeaveAdminModule()) return false;
+    if (findNavItemByPath(href)?.navigation === 'document') {
+      window.location.assign(href);
+      return true;
+    }
     const nextRoute = parseAdminPath(href);
     setRoute(nextRoute);
 
@@ -91,6 +97,7 @@ export default function AdminApp({
       const mainEl = document.getElementById('admin-main');
       if (mainEl) mainEl.scrollTop = 0;
     }
+    return true;
   }, []);
 
   /** 会话失效或异常时的重试触发器。 */
@@ -101,6 +108,10 @@ export default function AdminApp({
   // 监听浏览器前进、后退操作（popstate），实现与浏览器历史导航的无缝同步
   useEffect(() => {
     const onPopState = () => {
+      if (!canLeaveAdminModule()) {
+        window.history.pushState(null, '', route.path);
+        return;
+      }
       const nextRoute = parseAdminPath(window.location.pathname);
       setRoute(nextRoute);
       updatePageTitle(nextRoute);
@@ -109,7 +120,7 @@ export default function AdminApp({
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, []);
+  }, [route.path]);
 
   // 后台异步静默校验会话（SWR 模式），验证凭证是否依然有效，若失效则安全退出
   useEffect(() => {

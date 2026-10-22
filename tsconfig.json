@@ -5,7 +5,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@pageel/plugin-mdx": ["./packages/pageel-workbench/plugin-mdx/index.ts"],
+      "@pageel/plugin-types": ["./packages/pageel-workbench/plugin-types/index.ts"]
     },
     "jsx": "react-jsx",
     "jsxImportSource": "react",

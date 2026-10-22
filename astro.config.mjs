@@ -29,6 +29,10 @@ export default defineConfig({
     plugins: [tailwindcss()],
     resolve: {
       dedupe: ['react', 'react-dom'],
+      alias: {
+        '@pageel/plugin-mdx': new URL('./packages/pageel-workbench/plugin-mdx/index.ts', import.meta.url).pathname,
+        '@pageel/plugin-types': new URL('./packages/pageel-workbench/plugin-types/index.ts', import.meta.url).pathname,
+      },
     },
     optimizeDeps: {
       include: ['motion', 'motion/react', 'pdfjs-dist'],

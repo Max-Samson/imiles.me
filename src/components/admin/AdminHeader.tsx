@@ -154,6 +154,13 @@ export function AdminHeader({
     const remaining = tabs.filter((t) => t.id !== tabToClose.id);
     const fallbackTabs = remaining.length > 0 ? remaining : [defaultTab];
 
+    // 若关闭的是当前激活项，重定向至左侧相邻标签或剩余首个标签
+    if (tabToClose.id === currentTab.id) {
+      const closedIndex = tabs.findIndex((t) => t.id === tabToClose.id);
+      const target = closedIndex > 0 ? tabs[closedIndex - 1] : fallbackTabs[0];
+      if (!navigate(target.href)) return;
+    }
+
     try {
       localStorage.setItem(
         STORAGE_KEY,
@@ -164,13 +171,6 @@ export function AdminHeader({
     }
 
     setTabs(fallbackTabs);
-
-    // 若关闭的是当前激活项，重定向至左侧相邻标签或剩余首个标签
-    if (tabToClose.id === currentTab.id) {
-      const closedIndex = tabs.findIndex((t) => t.id === tabToClose.id);
-      const target = closedIndex > 0 ? tabs[closedIndex - 1] : fallbackTabs[0];
-      navigate(target.href);
-    }
   };
 
   /** 一键关闭其他所有标签，仅保留当前所在页面 */
@@ -202,6 +202,10 @@ export function AdminHeader({
       icon: defaultNav.icon,
     };
 
+    if (currentTab.id !== defaultTab.id) {
+      if (!navigate(defaultTab.href)) return;
+    }
+
     try {
       localStorage.setItem(
         STORAGE_KEY,
@@ -211,9 +215,6 @@ export function AdminHeader({
       // 忽略存储异常
     }
     setTabs([defaultTab]);
-    if (currentTab.id !== defaultTab.id) {
-      navigate(defaultTab.href);
-    }
   };
 
   /** 从快捷下拉菜单中打开某个功能模块并激活其标签 */

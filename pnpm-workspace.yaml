@@ -2,6 +2,7 @@ packages:
   - .
 
 allowBuilds:
+  es5-ext: false
   esbuild: true
   sharp: true
   workerd: true

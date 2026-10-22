@@ -1,0 +1,2 @@
+/* 独立入口兼容层：宿主样式集中管理在 integration。 */
+@import "../integration/tailwind.css";

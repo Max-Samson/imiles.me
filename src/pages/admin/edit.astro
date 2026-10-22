@@ -1,0 +1,18 @@
+---
+import AdminApp from '@/components/admin/AdminApp';
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { getServerEnv } from '../../server/env';
+import { authorizeAdmin } from '../../server/security/access';
+import { handleApiError } from '../../server/errors';
+export const prerender = false;
+try {
+  await authorizeAdmin(Astro.request, getServerEnv(Astro.locals), 'admin:read');
+} catch (error) {
+  return handleApiError(error);
+}
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+---
+<AdminLayout title="文章工作台 · imiles.me">
+  <AdminApp section="articles" client:only="react" />
+</AdminLayout>

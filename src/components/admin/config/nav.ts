@@ -1,4 +1,4 @@
-import { LayoutDashboard, UsersRound } from 'lucide-react';
+import { FilePenLine, LayoutDashboard, UsersRound } from 'lucide-react';
 import type { AdminNavItem } from './types';
 
 /**
@@ -15,6 +15,17 @@ export const adminNavigation: AdminNavItem[] = [
     description: '系统整体运行指标、Cloudflare 会话授权与核心模块概况',
     category: 'core',
     badge: '站点服务面板',
+  },
+  {
+    key: 'articles',
+    label: '文章工作台',
+    href: '/admin/edit',
+    icon: FilePenLine,
+    enabled: true,
+    description: 'Pageel 文章编辑兼容性验证，修改仅保存在内存，暂不支持保存与发布',
+    category: 'business',
+    badge: '验证中',
+    requiredCapability: 'admin:read',
   },
   {
     key: 'friend-links',

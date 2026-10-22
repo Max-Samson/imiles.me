@@ -68,7 +68,8 @@
       "!.astro",
       "!dist",
       "!.wrangler",
-      "!.pnpm-store"
+      "!.pnpm-store",
+      "!packages/pageel-workbench"
     ],
     "ignoreUnknown": true
   },

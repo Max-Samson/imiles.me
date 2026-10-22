@@ -58,6 +58,9 @@ export function getServerEnv(locals: Partial<App.Locals>): CloudflareEnv {
     CLOUDFLARE_TURNSTILE_WIDGET_NAME: scalar('CLOUDFLARE_TURNSTILE_WIDGET_NAME'),
     // Supabase project metadata
     SUPABASE_PROJECT_REF: scalar('SUPABASE_PROJECT_REF'),
+    CMS_GITHUB_TOKEN: scalar('CMS_GITHUB_TOKEN'),
+    CMS_GITHUB_REPO: scalar('CMS_GITHUB_REPO'),
+    CMS_GITHUB_BRANCH: scalar('CMS_GITHUB_BRANCH'),
   };
 }
 

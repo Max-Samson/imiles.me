@@ -46,6 +46,9 @@ export interface CloudflareEnv
 
   // Supabase project metadata
   SUPABASE_PROJECT_REF?: string;
+  CMS_GITHUB_TOKEN?: string;
+  CMS_GITHUB_REPO?: string;
+  CMS_GITHUB_BRANCH?: string;
 }
 
 declare global {

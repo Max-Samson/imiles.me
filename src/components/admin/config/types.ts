@@ -18,6 +18,8 @@ export interface AdminNavItem {
   icon: LucideIcon;
   /** 是否启用。为 true 时支持点击访问与标签页打开，为 false 时侧栏标注待接入。 */
   enabled: boolean;
+  /** 独立 Astro 页面需完整加载，避免被后台 SPA 渲染为通用占位页。 */
+  navigation?: 'document';
   /** 模块描述信息，用于 Header 快捷菜单、Tab 提示与自动生成的管理页。 */
   description?: string;
   /** 模块归属分类 */

@@ -1,0 +1,24 @@
+@reference "tailwindcss";
+/* 宿主边界：不重复注入 Tailwind preflight；所有工作台 utilities 限定在包容器内。 */
+@source "../upstream";
+@source "../plugin-mdx";
+@source "./";
+@theme {
+
+  --color-notion-bg: #FFFFFF;
+  --color-notion-sidebar: #F7F7F5;
+  --color-notion-hover: #EFEFEF;
+  --color-notion-text: #37352F;
+  --color-notion-muted: #787774;
+  --color-notion-border: #E9E9E7;
+  --color-notion-select: #E3E2E0;
+  --color-notion-blue: #2383E2;
+}
+
+@plugin "@tailwindcss/typography";
+@scope (.pageel-host) {
+  @tailwind utilities source(none);
+  button, [role="button"], a { cursor: pointer; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #868d9940; border-radius: 5px; }
+}
