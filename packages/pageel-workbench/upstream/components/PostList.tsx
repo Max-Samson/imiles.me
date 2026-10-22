@@ -1,5 +1,7 @@
 import { ComponentEditingProvider } from '../../integration/components/InspectorContext';
 import { fieldLabel } from '../../integration/labels';
+import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
+import { Filter, ChevronDown, Plus, Upload } from 'lucide-react';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { IGitService, GithubRepo, ProjectType } from '../types';
@@ -519,7 +521,7 @@ const PostList: React.FC<PostListProps> = ({
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
             }}
-            className="w-full pl-8 pr-4 py-1.5 bg-transparent border border-notion-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-notion-blue focus:bg-white transition-all text-notion-text placeholder-notion-muted/70 shadow-sm"
+            className="w-full pl-8 pr-4 py-1.5 bg-white/80 dark:bg-slate-800/80 border border-notion-border dark:border-slate-700 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all text-notion-text dark:text-slate-100 placeholder-notion-muted/70 shadow-2xs"
             />
             <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
             <SearchIcon className="h-3.5 w-3.5 text-notion-muted" />
@@ -529,24 +531,24 @@ const PostList: React.FC<PostListProps> = ({
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             {/* WF-08: Filter toggle */}
             {activeTemplate && (
-              <button
-                onClick={() => setIsFilterOpen(prev => !prev)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-sm border transition-colors shadow-sm ${
-                  isFilterOpen || Object.keys(activeFilters).length > 0
-                    ? 'bg-notion-blue text-white border-notion-blue'
-                    : 'bg-white text-notion-text border-notion-border hover:bg-gray-50'
-                }`}
+              <LiquidGlassButton
+                type="button"
+                size="xs"
+                shape="rounded"
+                variant={isFilterOpen || Object.keys(activeFilters).length > 0 ? 'blue' : 'default'}
+                glow={isFilterOpen || Object.keys(activeFilters).length > 0}
+                icon={<Filter className="size-3.5" />}
+                onClick={() => setIsFilterOpen((prev) => !prev)}
+                className="font-medium"
+                title={isFilterOpen ? '收起筛选面板' : '展开筛选面板'}
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-                筛选
+                <span>筛选</span>
                 {Object.keys(activeFilters).length > 0 && (
-                  <span className="text-[10px] font-bold bg-white/20 rounded-full px-1.5">
+                  <span className="ml-0.5 inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full text-[10px] font-bold bg-blue-500 text-white dark:bg-blue-400 dark:text-blue-950 shadow-2xs">
                     {Object.keys(activeFilters).length}
                   </span>
                 )}
-              </button>
+              </LiquidGlassButton>
             )}
 
             {/* Sort Dropdown (WF-08: dynamic options from template) */}
@@ -554,50 +556,64 @@ const PostList: React.FC<PostListProps> = ({
                 <select 
                     value={sortOption}
                     onChange={(e) => setSortOption(e.target.value as SortOption)}
-                    className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-notion-border rounded-sm text-xs font-medium text-notion-text focus:outline-none focus:ring-1 focus:ring-notion-blue shadow-sm cursor-pointer hover:bg-gray-50"
+                    className="appearance-none pl-2.5 pr-7 py-1 bg-white dark:bg-slate-800 border border-notion-border dark:border-slate-700 rounded-lg text-xs font-medium text-notion-text dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 transition-all"
                 >
                     {dynamicSortOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">{opt.label}</option>
                     ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-notion-muted">
-                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-notion-muted">
+                    <ChevronDown className="h-3 w-3" />
                 </div>
             </div>
 
-            <div className="flex bg-notion-sidebar p-0.5 rounded-sm border border-notion-border">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-notion-border dark:border-slate-700 shadow-2xs">
                 <button 
+                    type="button"
                     onClick={() => setViewMode('table')}
-                    className={`p-1 rounded-sm transition-all ${viewMode === 'table' ? 'bg-white shadow-sm text-notion-text' : 'text-notion-muted hover:text-notion-text hover:bg-gray-200/50'}`}
+                    className={`p-1 rounded-md transition-all ${viewMode === 'table' ? 'bg-white dark:bg-slate-900 shadow-xs text-notion-text dark:text-white' : 'text-notion-muted hover:text-notion-text hover:bg-gray-200/50 dark:hover:bg-slate-700/50'}`}
                     title={t('postList.viewMode.table')}
                 >
-                    <ViewListIcon className="w-4 h-4" />
+                    <ViewListIcon className="w-3.5 h-3.5" />
                 </button>
                 <button 
+                    type="button"
                     onClick={() => setViewMode('grid')}
-                    className={`p-1 rounded-sm transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-notion-text' : 'text-notion-muted hover:text-notion-text hover:bg-gray-200/50'}`}
+                    className={`p-1 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-900 shadow-xs text-notion-text dark:text-white' : 'text-notion-muted hover:text-notion-text hover:bg-gray-200/50 dark:hover:bg-slate-700/50'}`}
                     title={t('postList.viewMode.grid')}
                 >
-                    <ViewGridIcon className="w-4 h-4" />
+                    <ViewGridIcon className="w-3.5 h-3.5" />
                 </button>
             </div>
 
             {/* @para-doc [#csa-post-creation-trigger] */}
-            <button
-                disabled onClick={handleCreateNewPost}
-                className="flex items-center justify-center px-3 py-1.5 bg-white hover:bg-gray-50 border border-notion-border text-notion-text text-xs font-medium rounded-sm transition-colors shadow-sm"
+            <LiquidGlassButton
+                type="button"
+                size="xs"
+                shape="rounded"
+                variant="default"
+                disabled
+                onClick={handleCreateNewPost}
+                icon={<Plus className="size-3.5" />}
+                className="font-medium"
+                title="新建文章（暂未开放）"
             >
-                <PlusIcon className="w-3.5 h-3.5 mr-1.5" />
                 {t('postList.createButton')}
-            </button>
+            </LiquidGlassButton>
 
-            <button
-                disabled onClick={() => uploadPostInputRef.current?.click()}
-                className="flex items-center justify-center px-3 py-1.5 bg-notion-blue hover:bg-blue-600 text-white text-xs font-medium rounded-sm transition-colors shadow-sm"
+            <LiquidGlassButton
+                type="button"
+                size="xs"
+                shape="rounded"
+                variant="blue"
+                disabled
+                onClick={() => uploadPostInputRef.current?.click()}
+                icon={<Upload className="size-3.5" />}
+                className="font-medium"
+                title="上传文章（暂未开放）"
             >
-                <UploadIcon className="w-3.5 h-3.5 mr-1.5" />
                 {t('postList.uploadButton')}
-            </button>
+            </LiquidGlassButton>
         </div>
       </div>
 

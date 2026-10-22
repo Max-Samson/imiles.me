@@ -1,5 +1,6 @@
 
 import React, { useMemo } from 'react';
+import { Filter, RotateCcw } from 'lucide-react';
 import { CollectionTemplate, TemplateField } from '../features/collections';
 import { useI18n } from '../i18n/I18nContext';
 
@@ -69,14 +70,6 @@ const getDateRange = (posts: PostData[], field: string): { min: string; max: str
   return { min, max };
 };
 
-// Type pill colors (shared with TemplateGenerator)
-const TYPE_COLORS: Record<string, string> = {
-  'string': 'border-blue-200 bg-blue-50 text-blue-700',
-  'date': 'border-orange-200 bg-orange-50 text-orange-700',
-  'array': 'border-purple-200 bg-purple-50 text-purple-700',
-  'boolean': 'border-green-200 bg-green-50 text-green-700',
-  'number': 'border-teal-200 bg-teal-50 text-teal-700',
-};
 
 /**
  * FilterBar: Renders type-aware filter controls based on collection template
@@ -104,15 +97,16 @@ const FilterBar: React.FC<FilterBarProps> = ({
 
   const renderFilterControl = (field: TemplateField) => {
     const currentFilter = activeFilters[field.name];
-    const colorClass = TYPE_COLORS[field.type] || 'border-gray-200 bg-gray-50 text-gray-700';
 
     switch (field.type) {
       case 'string': {
         const uniqueValues = getUniqueValues(posts, field.name);
         if (uniqueValues.length === 0) return null;
         return (
-          <div key={field.name} className="flex flex-col gap-1">
-            <label className="text-[10px] font-semibold text-notion-muted uppercase tracking-wider">{field.name}</label>
+          <div key={field.name} className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {field.name}
+            </label>
             <select
               value={currentFilter?.value || ''}
               onChange={(e) => {
@@ -123,13 +117,19 @@ const FilterBar: React.FC<FilterBarProps> = ({
                   onFilterChange(field.name, { type: 'string', value: val });
                 }
               }}
-              className={`text-xs px-2 py-1.5 rounded-sm border focus:outline-none focus:ring-1 focus:ring-notion-blue cursor-pointer ${
-                currentFilter ? colorClass : 'bg-white border-notion-border text-notion-text'
+              className={`text-xs px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs ${
+                currentFilter
+                  ? 'bg-blue-50/90 dark:bg-blue-950/50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 font-medium'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
               }`}
             >
-              <option value="">All</option>
-              {uniqueValues.map(v => (
-                <option key={v} value={v}>{v}</option>
+              <option value="" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                全部 ({field.name})
+              </option>
+              {uniqueValues.map((v) => (
+                <option key={v} value={v} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                  {v}
+                </option>
               ))}
             </select>
           </div>
@@ -139,9 +139,11 @@ const FilterBar: React.FC<FilterBarProps> = ({
       case 'date': {
         const range = getDateRange(posts, field.name);
         return (
-          <div key={field.name} className="flex flex-col gap-1">
-            <label className="text-[10px] font-semibold text-notion-muted uppercase tracking-wider">{field.name}</label>
-            <div className="flex items-center gap-1">
+          <div key={field.name} className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {field.name}
+            </label>
+            <div className="flex items-center gap-1.5">
               <input
                 type="date"
                 value={currentFilter?.value?.from || ''}
@@ -156,11 +158,13 @@ const FilterBar: React.FC<FilterBarProps> = ({
                     onFilterChange(field.name, { type: 'date', value: { from, to } });
                   }
                 }}
-                className={`text-xs px-1.5 py-1 rounded-sm border focus:outline-none focus:ring-1 focus:ring-notion-blue w-[120px] ${
-                  currentFilter ? colorClass : 'bg-white border-notion-border'
+                className={`text-xs px-2 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-2xs ${
+                  currentFilter?.value?.from
+                    ? 'bg-amber-50/90 dark:bg-amber-950/50 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 font-medium'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
               />
-              <span className="text-[10px] text-notion-muted">→</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">至</span>
               <input
                 type="date"
                 value={currentFilter?.value?.to || ''}
@@ -175,8 +179,10 @@ const FilterBar: React.FC<FilterBarProps> = ({
                     onFilterChange(field.name, { type: 'date', value: { from, to } });
                   }
                 }}
-                className={`text-xs px-1.5 py-1 rounded-sm border focus:outline-none focus:ring-1 focus:ring-notion-blue w-[120px] ${
-                  currentFilter ? colorClass : 'bg-white border-notion-border'
+                className={`text-xs px-2 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-2xs ${
+                  currentFilter?.value?.to
+                    ? 'bg-amber-50/90 dark:bg-amber-950/50 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 font-medium'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
               />
             </div>
@@ -189,18 +195,21 @@ const FilterBar: React.FC<FilterBarProps> = ({
         if (allTags.length === 0) return null;
         const selectedTags: string[] = currentFilter?.value || [];
         return (
-          <div key={field.name} className="flex flex-col gap-1">
-            <label className="text-[10px] font-semibold text-notion-muted uppercase tracking-wider">{field.name}</label>
-            <div className="flex flex-wrap gap-1 max-w-xs">
-              {allTags.slice(0, 12).map(tag => {
+          <div key={field.name} className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {field.name}
+            </label>
+            <div className="flex flex-wrap gap-1.5 max-w-lg">
+              {allTags.slice(0, 16).map((tag) => {
                 const isSelected = selectedTags.includes(tag);
                 return (
                   <button
                     key={tag}
+                    type="button"
                     onClick={() => {
                       let newTags: string[];
                       if (isSelected) {
-                        newTags = selectedTags.filter(t => t !== tag);
+                        newTags = selectedTags.filter((t) => t !== tag);
                       } else {
                         newTags = [...selectedTags, tag];
                       }
@@ -211,10 +220,11 @@ const FilterBar: React.FC<FilterBarProps> = ({
                       }
                     }}
                     className={`
-                      px-1.5 py-0.5 rounded-sm text-[10px] font-medium transition-all border
-                      ${isSelected
-                        ? 'bg-purple-100 text-purple-800 border-purple-300 shadow-sm'
-                        : 'bg-white text-notion-muted border-notion-border hover:bg-gray-50 hover:text-notion-text'
+                      px-2.5 py-0.5 rounded-full text-xs font-medium transition-all border cursor-pointer select-none
+                      ${
+                        isSelected
+                          ? 'bg-purple-500/15 dark:bg-purple-500/25 text-purple-700 dark:text-purple-300 border-purple-400/60 dark:border-purple-500/60 shadow-2xs ring-1 ring-purple-500/20 font-semibold'
+                          : 'bg-slate-100/90 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-200/90 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
                       }
                     `}
                   >
@@ -222,8 +232,10 @@ const FilterBar: React.FC<FilterBarProps> = ({
                   </button>
                 );
               })}
-              {allTags.length > 12 && (
-                <span className="text-[10px] text-notion-muted self-center">+{allTags.length - 12}</span>
+              {allTags.length > 16 && (
+                <span className="text-xs text-slate-400 dark:text-slate-500 self-center pl-1">
+                  +{allTags.length - 16}
+                </span>
               )}
             </div>
           </div>
@@ -233,34 +245,42 @@ const FilterBar: React.FC<FilterBarProps> = ({
       case 'boolean': {
         const currentVal = currentFilter?.value; // true | false | undefined (all)
         return (
-          <div key={field.name} className="flex flex-col gap-1">
-            <label className="text-[10px] font-semibold text-notion-muted uppercase tracking-wider">{field.name}</label>
-            <div className="flex bg-gray-100 p-0.5 rounded-sm border border-notion-border">
+          <div key={field.name} className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {field.name}
+            </label>
+            <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
               {[
-                { label: 'All', val: undefined },
+                { label: '全部', val: undefined },
                 { label: 'True', val: true },
                 { label: 'False', val: false },
-              ].map(opt => (
-                <button
-                  key={String(opt.val)}
-                  onClick={() => {
-                    if (opt.val === undefined) {
-                      onFilterChange(field.name, null);
-                    } else {
-                      onFilterChange(field.name, { type: 'boolean', value: opt.val });
-                    }
-                  }}
-                  className={`
-                    px-2 py-0.5 rounded-sm text-[10px] font-medium transition-all
-                    ${currentVal === opt.val || (opt.val === undefined && currentVal === undefined)
-                      ? 'bg-white shadow-sm text-notion-text'
-                      : 'text-notion-muted hover:text-notion-text'
-                    }
-                  `}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              ].map((opt) => {
+                const isActive =
+                  currentVal === opt.val || (opt.val === undefined && currentVal === undefined);
+                return (
+                  <button
+                    key={String(opt.val)}
+                    type="button"
+                    onClick={() => {
+                      if (opt.val === undefined) {
+                        onFilterChange(field.name, null);
+                      } else {
+                        onFilterChange(field.name, { type: 'boolean', value: opt.val });
+                      }
+                    }}
+                    className={`
+                      px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer
+                      ${
+                        isActive
+                          ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-semibold'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                      }
+                    `}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         );
@@ -269,9 +289,11 @@ const FilterBar: React.FC<FilterBarProps> = ({
       case 'number': {
         const range = getNumberRange(posts, field.name);
         return (
-          <div key={field.name} className="flex flex-col gap-1">
-            <label className="text-[10px] font-semibold text-notion-muted uppercase tracking-wider">{field.name}</label>
-            <div className="flex items-center gap-1">
+          <div key={field.name} className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {field.name}
+            </label>
+            <div className="flex items-center gap-1.5">
               <input
                 type="number"
                 placeholder={String(range.min)}
@@ -285,11 +307,13 @@ const FilterBar: React.FC<FilterBarProps> = ({
                     onFilterChange(field.name, { type: 'number', value: { min, max } });
                   }
                 }}
-                className={`text-xs px-1.5 py-1 rounded-sm border focus:outline-none focus:ring-1 focus:ring-notion-blue w-16 ${
-                  currentFilter ? colorClass : 'bg-white border-notion-border'
+                className={`text-xs px-2 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-20 transition-all shadow-2xs ${
+                  currentFilter?.value?.min !== undefined
+                    ? 'bg-teal-50/90 dark:bg-teal-950/50 border-teal-300 dark:border-teal-700 text-teal-800 dark:text-teal-200 font-medium'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
               />
-              <span className="text-[10px] text-notion-muted">→</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">至</span>
               <input
                 type="number"
                 placeholder={String(range.max)}
@@ -303,8 +327,10 @@ const FilterBar: React.FC<FilterBarProps> = ({
                     onFilterChange(field.name, { type: 'number', value: { min, max } });
                   }
                 }}
-                className={`text-xs px-1.5 py-1 rounded-sm border focus:outline-none focus:ring-1 focus:ring-notion-blue w-16 ${
-                  currentFilter ? colorClass : 'bg-white border-notion-border'
+                className={`text-xs px-2 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-20 transition-all shadow-2xs ${
+                  currentFilter?.value?.max !== undefined
+                    ? 'bg-teal-50/90 dark:bg-teal-950/50 border-teal-300 dark:border-teal-700 text-teal-800 dark:text-teal-200 font-medium'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
               />
             </div>
@@ -318,31 +344,33 @@ const FilterBar: React.FC<FilterBarProps> = ({
   };
 
   return (
-    <div className="bg-white border border-notion-border rounded-sm p-3 space-y-3 shadow-sm">
-      <div className="flex items-center justify-between">
+    <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md p-4 space-y-3.5 shadow-sm transition-all">
+      <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/80 pb-2.5">
         <div className="flex items-center gap-2">
-          <svg className="w-3.5 h-3.5 text-notion-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          <span className="text-xs font-semibold text-notion-text">Filters</span>
+          <Filter className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+          <span className="text-xs font-semibold text-slate-800 dark:text-slate-100">
+            {t('filterBar.title') || '筛选条件'}
+          </span>
           {activeFilterCount > 0 && (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-notion-blue text-white">
-              {activeFilterCount}
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:bg-blue-400/20 dark:text-blue-300 border border-blue-500/20">
+              已选 {activeFilterCount} 项
             </span>
           )}
         </div>
         {activeFilterCount > 0 && (
           <button
+            type="button"
             onClick={onClearFilters}
-            className="text-[10px] text-notion-muted hover:text-red-600 font-medium transition-colors"
+            className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 font-medium transition-colors cursor-pointer"
           >
-            Clear all
+            <RotateCcw className="w-3 h-3" />
+            <span>{t('filterBar.clearAll') || '清空筛选'}</span>
           </button>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-4 items-end">
-        {filterableFields.map(field => renderFilterControl(field))}
+      <div className="flex flex-wrap gap-5 items-end">
+        {filterableFields.map((field) => renderFilterControl(field))}
       </div>
     </div>
   );
