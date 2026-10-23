@@ -1,7 +1,7 @@
 # Pageel 文章后台接入 Spec
 
 - 日期：2026-10-22
-- 状态：设计待原型验证，尚未安装或部署 Pageel。
+- 状态：Pageel 已集成本地编辑台，UI 已完成；写入、上传、发布尚未开放。下一阶段以第 14 节为准。
 - 决策：退役本站自建文章工作台；复用 Pageel 完整 React 工作台，集成现有 Astro / Cloudflare Worker。通过固定版本的上游源码包与小型适配补丁维护，不拆散复制后重建同类后台。
 - 需求来源：[Blog CMS PRD](../blog-cms-prd.md)。本文替代旧 PRD 中的自建工作台、文章 REST API 和 Worker 写入实现方案。
 
@@ -383,3 +383,255 @@ enabled 控制属性编辑接入；关闭时仍保留识别描述符，避免旧
 - 原生撤销/重做同步回右侧颜色表单；嵌套 PreviewLink 可独立选中。
 - 本次验证颜色已恢复。未提交文章内容，未启用保存与发布。
 - 撤销仅在当前编辑器生命周期内验证；跨源码切换的历史、手机交互、全量组件兼容性待验收。
+
+## 14. 下一阶段：编辑到站点 URL 的功能闭环
+
+更新：2026-10-23。UI 已完成，本节为下一阶段实施设计，不表示写入能力已开放。实现与旧章节描述冲突时，以当前代码和本节明确的状态为准。
+
+### 14.1 当前代码基线
+
+| 环节 | 已有实现 | 尚缺能力 |
+| --- | --- | --- |
+| 正文 | Pageel + MDXEditor，源码模式、撤销、5 个项目组件配置 | 全量 MD/MDX 往返保真验收、Stories 专用能力限制 |
+| 组件 | 配置、表单、官方插入桥接与实例列表 UI | 插入可靠性、默认属性/hydration、实例解析验收；真实 Astro 预览（见 15.1） |
+| 仓库读取 | `/api/v1/admin/cms/repository`、服务端 GitHub Contents API；开发快照 | 当前 `PageelReadAdapter` 所有写方法拒绝；repository 只有 read/list/sha |
+| 保存 | 页面可持有未保存修改 | 创建/更新接口、基准版本、冲突处理、恢复验收 |
+| 图片 | Pageel 上传入口；项目通用 `validateImage` | CMS 上传、GitHub 二进制写入、部署前受保护读取 |
+| 发布 | deploy.yml 在 main/master push 时 build + wrangler deploy | CMS 提交与指定部署结果的关联 |
+| 站点 URL | Astro 内容集合、预渲染详情页 | 后台统一 URL 计算；当前 findProductionUrl 返回 null |
+
+现有 media/image-service 使用对象存储协议；CMS 首版仍按第 7 节写入 Git 图片目录，仅复用图片校验与有界读取，不混用对象 key 和站点 URL，不新增 R2 或文章数据库。
+
+### 14.2 明确保存、修改和发布的含义
+
+继续既定“直接提交部署分支”方案，避免暗中引入另一套草稿系统：
+
+- 新建文章默认 `draft:true`；“保存草稿”表示文件已入 Git，公开详情页不生成。
+- 草稿点击“发布”：验证字段、组件及资源，将 `draft:false` 与正文一起提交；进入等待部署状态。
+- 已发布文章点击“更新并发布”：保留 `draft:false`，新版本提交后触发部署。线上在部署成功前继续显示旧版本。
+- 不能把已发布文章临时保存成 `draft:true`，这会导致下一次构建下线文章。
+- 本方案不提供“已发布文章的服务端私密修改草稿”。如产品需要独立保存后再发布，应先确定 Git 草稿分支/PR 机制及恢复规则，不能仅新增一个保存按钮。
+- 浏览器未保存、Git 已保存、部署处理中、部署失败、线上版本是不同状态。保存成功提示必须返回 commit SHA，不能直接写“已上线”。
+- 一次发布只指向明确的内容版本。网络超时结果未知时先对账提交与内容，不能盲目再次写入。
+
+### 14.3 文本编辑与组件插入
+
+**正文保真先于开放写入。** 以真实文章为样本覆盖 frontmatter 日期/注释/未知字段、imports、命名导入、client:*、嵌套 JSX、对象表达式、公式、代码块和中英文。当前 parsing.ts 的 load/dump 和 body.trim 会重写文档，应消除无编辑重写，采用成熟 YAML 文档 API 更新变更字段；保留原始 frontmatter 与正文区段。MDX 继续由官方编辑器解析/序列化，不自建转换器。无法往返的内容明确使用源码模式并阻止静默替换。
+
+项目配置 `src/config/content-components.ts` 作为唯一组件接入来源，扩展插入所需默认属性、子内容、hydration 与适用集合；所有默认片段必须真实构建通过。
+
+1. 侧栏“可用组件”读取启用配置，显示中文名称、用途与插入动作。Stories 不显示该入口，服务端仍拒绝 JSX/媒体等不合规内容。
+2. 点击组件后通过 MDXEditor 官方 `insertJsx$` 插入，descriptor 负责导入来源；不拼接字符串到正文。校验光标位置、inline/flow 行为和失焦后的目标；无有效目标时明确提示定位正文，不能默默插入错误位置。
+3. Highlighter/PreviewLink 的选区包裹单独验收，不把普通 JSX 插入等同于已有文字包裹能力。首版允许插入占位文字后修改。
+4. “当前文档”显示实例而非仅去重组件名称：组件中文名称、简短内容摘要、重复序号，点击定位并选中节点。复用编辑器节点信息，不用正则扫描源码统计，源码模式解析失败时显示不可用状态。
+5. 插入后立即选中并显示属性表单；正文内容仍在原编辑器编辑，参数通过官方节点 API 修改，撤销/重做同步侧栏。
+6. TechStackTerminal 默认 profile 必须是经验证的最小对象；已有对象表达式继续源码编辑，不执行 eval。
+
+编辑态静态表达与真实效果预览分开说明。正式 hydration、动画、图片解析由 Astro 构建负责。现有生产 `preview_urls=false`，不能声称已经具备受保护预览部署。真实草稿预览需另行配置受 Access 保护、无生产写权限的构建环境及草稿路由过滤规则；首轮不在 Worker 请求内运行完整 Astro 编译。
+
+### 14.4 保存、上传与权限接口
+
+保留现有 repository dispatcher 和 Pageel IGitService 契约，增加受限创建/更新适配，避免并行建设另一套 CRUD 系统。
+
+- 读取返回同一版本的 content 与 blob SHA，避免分别读取期间版本变化；保存携带打开/上次保存时的基准 SHA。更新以 GitHub 的版本校验为准，冲突返回 409，保留用户内容；禁止拿最新 SHA 自动覆盖。
+- 新建路径只能落在允许集合，检查扩展名、语言与最终 URL 冲突。修改标题不自动重命名文件；重命名与下线不纳入第一批写能力。
+- 服务端固定 repo/branch，写操作调用 authorizeAdminMutation，限制请求大小和路径；校验 schema、集合规则和允许导入。客户端禁用按钮不是权限校验。
+- 不把启用的组件清单直接当历史文档删除白名单：停用组件保留已有节点；未知/不可支持内容进入源码与发布校验流程。完整 MDX 编译结果由构建门槛判断，校验不执行任意表达式。
+- 写入返回 path、blobSha、commitSha、draft 状态和预计 publicUrl。客户端只在收到成功回执后更新保存基线；保存期间继续输入的新内容仍标记未保存。
+- 图片上传复用 validateImage 和有界读取，首版 PNG/JPEG/WebP；固定 `public/images/blog/`，服务端生成不覆盖旧资源的文件名，正文写 `/images/blog/...`。
+- 上传成功后通过受保护 blob API 在编辑台展示，不能把后台鉴权地址写入文章。未部署时公开 `/images/...` 可能仍为 404。
+- 图片先上传、正文后保存可沿用上游顺序；失败时保留文章并提示未引用资源，不自动删除。第三方图片仍须补充现有 credits 登记。
+- 粘贴/拖放、正文图片、封面图必须最终走同一受限上传服务；`.md/.mdx` 文件导入复用创建校验，不走图片端点。
+- 本地 snapshot 明确只读；可配置远端测试分支验证写入，但这不满足本地写盘。PRD 的本地写盘要求仍是未解决项，不能宣传已达成。
+
+### 14.5 发布与 URL 显示
+
+```mermaid
+flowchart LR
+  A[正文/属性/组件编辑] --> B[保存前校验]
+  U[图片上传到 Git] --> A
+  B --> C[Access 保护的 Worker API]
+  C --> D[GitHub 内容提交与 commit SHA]
+  D --> E[现有 deploy.yml]
+  E --> F[Astro 构建 MDX 与 React islands]
+  F --> G[Wrangler 部署 Worker 与静态资源]
+  G --> H[公开文章 URL]
+```
+
+URL 必须复用/抽取站点路由规则，不使用 Pageel 通用标题 slug 猜测：
+
+| 内容 | 路由规则 | 示例 |
+| --- | --- | --- |
+| 英文 Blog | `/blog/{Astro entry.id}` | miles.mdx → `https://imiles.me/blog/miles` |
+| 中文 Blog | `/zh/blog/{entry.id 去掉末尾 -zh}` | miles-zh.mdx → `https://imiles.me/zh/blog/miles` |
+| 英文 Stories | `/stories/{entry.id}` | example.md → `https://imiles.me/stories/example`（规则示例） |
+| 中文 Stories | `/zh/stories/{entry.id}`，不去 -zh | example-zh.md → `https://imiles.me/zh/stories/example-zh`（规则示例） |
+
+语言以 frontmatter.lang 为准；标题不是 URL。ID 处理要与 Astro loader 一致并用构建输出验证。Stories 使用 `[slug]`，首版创建禁止嵌套目录；Blog 可按 `[...slug]` 规则处理。防止同名 md/mdx、语言后缀归一化后落到同一路径。域名来自受信任站点配置，草稿只显示“预计发布地址”，不可用公开 URL 充当草稿预览。
+
+继续使用现有 GitHub Actions，不再同时添加 Workers Builds 自动部署。首版返回提交链接、指定 workflow 链接和预计 URL；未核实部署时显示“已提交，等待部署”。若接入状态查询，必须按 commit SHA 匹配指定 Deploy 工作流；现有 cancel-in-progress 会取消旧任务，需显示取消/被更新版本替代。HTTP 200 只能证明地址存在，不能证明最新版本上线；精确版本确认需构建产物中的部署版本/内容摘要。站点 URL 只在确认相应部署后标记已上线，构建失败显示失败与日志入口。
+
+仓库提供 workflow 并不证明线上 secrets、分支设置或工作流启用状态正确；实施前需要实际验证。CMS 写入分支必须与部署触发分支一致；测试分支不得触发生产发布。
+
+### 14.6 模块边界、顺序与验收
+
+| 顺序 | 模块 | 完成标准 |
+| --- | --- | --- |
+| 1 | plugin-mdx + integration + 现有 parsing | 真实 MD/MDX 编辑往返通过，Stories 限制生效；未编辑字段不重写 |
+| 2 | content-components 配置 + 官方 JSX 插件 | 5 个组件可插入、定位、改参数、撤销；import/hydration 正确，Astro 构建通过 |
+| 3 | cms repository/service/policy + Pageel adapter | 测试分支创建/更新通过；鉴权、路径、409、超时对账、保存中继续输入均验证 |
+| 4 | cms upload/blob + 现有图片校验 | 上传即编辑台可见，部署后公开可见，失败无正文丢失，Stories 拒绝 |
+| 5 | URL 映射 + 现有 deploy.yml | 草稿不公开、发布可访问、更新保持 URL、失败不误报上线；中英文 Blog/Stories 全部覆盖 |
+
+端到端验收样本：创建中文草稿 → 编辑正文 → 插入 ExploreCard/PreviewLink → 上传图片 → 保存并重开 → 发布 → 确认指定部署 → 打开 `/zh/blog/...` → 修改已发布内容 → 更新并发布 → 同一 URL 显示新版本。补测两窗口并发冲突、Access 过期、上传成功但正文保存失败、构建失败、连续提交导致部署取消。
+
+参考：
+- [MDXEditor JSX 官方扩展](https://mdxeditor.dev/editor/docs/jsx)：复用 JSX descriptor、插入与嵌套编辑能力。
+- [Cloudflare Git integration](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/)：Workers Builds 是另一种部署集成；本项目已有 Actions，首版不重复接入。
+
+## 15. 功能实施契约与发布地址配置
+
+更新：2026-10-23，补充最新工作区核查。本节细化第 14 节，不开放实际写入。
+
+### 15.1 最新差距与优先修正
+
+组件库、文档实例列表以及 `MdxSlot.tsx` 的 `insertJsx$` 桥接现已存在，第 14 节“尚缺插入与列表”更新为“已接线，尚未完成可靠性验收”。UI 完整不表示以下数据链路已通过：
+
+- `insertion.ts` 的 payload 只有字符串 props，未声明 hydration。新插入交互组件必须写入 client:load/client:visible；重型展示组件使用 client:visible。使用官方支持的属性节点表示，不把布尔指令转换成字符串。
+- TechStackTerminal 的 profile 为必填对象，组件直接调用 Object.entries(profile)，当前默认插入只有 successMessage，会有构建/运行失败风险。配置需支持明确的字面量与表达式属性类别，并提供有效默认 profile；不能把对象 JSON 字符串当属性对象。
+- PreviewLink 默认 href 为 `https://`，不是完整可用链接。插入前收集有效链接或阻止带未完成占位值的发布。
+- useDocumentComponents 目前正则扫描且硬编码组件名，会误计代码围栏示例、错误处理同名嵌套及表达式。替换为现有编辑器节点注册/遍历；源码模式使用成熟 MDX AST 能力，无法解析时显示不可用，不自行实现解析器。
+- DOM Range 存在模块全局变量，restoreEditorSelection 返回失败后仍发布插入命令。改为编辑器实例作用域的官方 selection/command；切换文章清空，校验节点仍属当前编辑器，无有效目标时停止插入。
+- 插入成功应根据真实节点建立选中状态与属性更新回调，不能仅构造一个“新插入组件”的侧栏展示对象就视为绑定完成。
+- 当前又存在 integration/component-editing 目录；下阶段应遵守用户已确认的目录边界，通用适配归并 integration/components 与 helper，配置保持 src/config/content-components.ts 单一来源，不另设业务组件子系统。
+
+以上为本轮源码分析结果，不表示已修复。
+
+### 15.2 集合是文件、编辑能力与发布地址的统一入口
+
+推荐新增纯数据配置 `src/config/content-collections.ts`，由现有服务端 cms/config.ts 转成 Pageel 集合配置。前后端可共享公开元数据；repo、branch、token 仍留服务端。共享纯函数建议放 `src/lib/content-routing.ts`，最终让公开页面与后台使用同一 URL 规则，迁移时不得改变现有地址。
+
+配置契约（设计示例，不是当前可执行配置）：
+
+```ts
+interface ContentCollectionDefinition {
+  id: 'blog' | 'stories';
+  directory: string;
+  newExtension: '.mdx' | '.md';
+  allowedExtensions: Array<'.md' | '.mdx'>;
+  routes: Record<'en' | 'zh', string>; // /blog、/zh/blog 等前缀
+  chineseFilenameSuffix: '' | '-zh';
+  stripChineseSuffixInUrl: boolean;
+  allowNestedNewFiles: boolean;
+  capabilities: { components: boolean; images: boolean; headings: boolean; code: boolean; math: boolean };
+}
+```
+
+| 项目 | Blog | Stories |
+| --- | --- | --- |
+| directory | content/blog | content/stories |
+| newExtension | .mdx | .md |
+| allowedExtensions | .md / .mdx | .md |
+| routes.en / routes.zh | /blog / /zh/blog | /stories / /zh/stories |
+| 新建中文文件后缀 | -zh | 不自动追加 |
+| 中文 URL 去末尾 -zh | 是 | 否 |
+| 新建嵌套路径 | 首版禁止，已有嵌套保持 | 禁止 |
+| 组件/图片/标题/代码/公式 | 允许（以插件实际能力为准） | 全部禁止 |
+
+新建表单输入 collectionId、lang、slug、title；slug 定义为希望展示的最终 URL 尾段，首版只允许小写 ASCII 字母、数字和中划线，禁止空值/连续路径分隔。中文标题不套用当前会清空中文的 slugify，应让用户填明确地址标识。中文 Blog 自动追加文件后缀；不重复剥离用户 slug 中的文字，特殊歧义由预览与冲突校验明确处理。已有文件名不强制迁移。
+
+`resolveNewContentTarget` 返回 path、entryId、publicPath、publicUrl；`resolveExistingContentTarget` 以真实文件路径和 lang 计算地址。siteUrl 取 src/config/app.ts。域名、目录、路由前缀均不接受文章表单自由输入。
+
+示例：blog + zh + hello → content/blog/hello-zh.mdx → /zh/blog/hello；stories + zh + hello → content/stories/hello.md → /zh/stories/hello。已有 stories/hello-zh.md 仍对应 /zh/stories/hello-zh。
+
+首次成功保存后锁定 collection、lang、slug、path，普通修改只更新内容。语言变化也可能迁移 URL，必须走未来独立迁移操作；不能仅锁定文件名却允许语言切换引发旧地址消失。
+
+UI 预览不能替代服务端校验：创建时检查路径占用，以及全体相关文档按同一规则计算后的 URL 冲突。预检查存在竞态，发布前构建必须有重复路由检查作为最终门槛；若要求“并发创建阶段绝不产生冲突”，需采用分支 head 条件更新的 Git tree/commit 写入方案，不能把单文件 SHA 校验声称为跨文件事务。首版仍复用单文件写入，明确可能需要修复冲突提交。
+
+### 15.3 读取、保存与发布的最小契约
+
+继续现有 `/api/v1/admin/cms/repository`，动作白名单按读写分类；客户端适配 Pageel 方法，不另造工作台。以下字段是实施契约，具体 action 名应与已锁定上游类型对齐：
+
+- 读取：返回 `{ path, content, blobSha, target }`，正文与 SHA 来自同次 GitHub 响应。Pageel 分开的 getFileContent/getFileSha 通过适配层共享已加载版本，禁止保存时刷新 SHA 后覆盖。
+- 创建：输入 `{ collectionId, lang, slug, content, intent: 'save-draft' | 'publish' }`；服务端生成 path。路径已存在返回 409，不转成更新。
+- 更新：输入 `{ path, baseBlobSha, content, intent: 'save-draft' | 'publish' | 'update-published' }`；服务端读取并校验原状态、语言和集合，intent 与 draft 必须一致。已发布内容不接受 save-draft，下线另行设计。
+- 成功：返回 `{ path, blobSha, commitSha, draft, publicUrl, commitUrl }`。服务端生成可信 URL，不能反射客户端提交的任意 URL。
+- 失败：401/403 保留输入并提示恢复会话；409 保留本地版本并提供原始/远端内容比较或下载；422 字段/内容错误定位到对应输入；上游失败明确是否结果未知。
+
+保存开始时捕获编辑器 revision 和内容快照。成功只标记该 revision 已保存；请求期间继续输入的内容保持 dirty。单篇保存串行，防止旧响应覆盖新基线。源码切换、属性更新和正文变更归入同一官方编辑状态，不引入第二份正文。
+
+超时后重新读取目标文件：内容相同可确认该内容已存在，但不能凭这一点伪造 commitSha 或认定本次请求成功；需查询该路径提交记录定位对应内容版本。无法确定则显示“保存结果待确认”，保留输入，等待对账后再发起写操作。
+
+### 15.4 上传必须同时返回编辑地址与发布地址
+
+在现有 Pageel 上传适配边界新增受保护 CMS upload/blob 路由；upload 返回：
+
+```ts
+{
+  path: 'public/images/blog/<generated-name>.webp',
+  publicUrl: '/images/blog/<generated-name>.webp',
+  previewUrl: '/api/v1/admin/cms/blob/<asset-reference>',
+  blobSha: '...',
+  commitSha: '...'
+}
+```
+
+previewUrl 指向服务器校验的固定仓库资源引用，不允许任意 URL 代理。可引用不可变 blob 版本，避免上传预览读到不同内容。仅 publicUrl 写入 MDX/frontmatter；编辑器 imagePreviewHandler 映射受保护地址，重开文章时仍能解析尚未部署资源。无法加载时显示失败，不以后台地址替换正文。
+
+上传进行中禁止提交引用尚未完成的资源；失败保留正文与重试入口。封面统一写 heroImage，清理上游 image/thumbnail/cover 默认字段映射差异。
+
+直接提交生产分支意味着：图片上传本身会触发部署，而且草稿图片也可能成为公开静态资源。`draft:true` 仅控制文章路由，不提供资产保密；如要求私密媒体，必须另设受保护存储/草稿分支方案，不能承诺现方案有此能力。第三方图片登记与发布前检查仍遵循仓库 credits 规则。
+
+### 15.5 发布状态与 URL 面板
+
+把编辑状态、仓库状态、部署状态分开维护：
+
+| 维度 | 状态示例 | 依据 |
+| --- | --- | --- |
+| 编辑 | clean / dirty / saving / conflict / unknown | 当前 revision、保存回执与错误 |
+| 仓库 | unsaved / draft / published | 已确认保存版本的 draft 字段 |
+| 部署 | unverified / pending / running / failed / cancelled / verified | 指定 commit 的 Deploy 工作流与部署版本证据 |
+
+URL 面板展示“文件位置、预计发布地址、最近提交、部署记录”。草稿只有预计地址；已发布但有未保存修改时，“查看线上版本”明确仍是旧版本；没有核实部署结果时不显示“最新版本已上线”。部署失败提供日志与继续修复入口，不自动把 draft 改回 true，也不自动回滚可能覆盖他人工作的 Git 提交。
+
+首版可链接现有 Actions 页面人工核验，状态保持 unverified；自动确认作为明确后续能力，不为显示绿色徽章新增持久化草稿系统。若实施自动查询，使用 Worker 代理 GitHub 指定 workflow/branch/commit 的运行结果，浏览器不得持有 token；刷新可通过路径最近提交重建上下文。
+
+现有 workflow 的 cancel-in-progress 可能让提交 A 被提交 B 替代。只有确认已部署 B 包含目标文章对应内容版本时，才能将 A 的内容视为已上线；不能把任何一次更新的成功部署都归到 A。
+
+draft 路由隐藏仍须验收 Blog/Stories 列表、详情、RSS、搜索索引、sitemap 与 LLM 导出，防止从其他入口泄漏文章文本。Git 仓库公开性独立于 draft；本轮不把 draft 定义为安全访问控制。
+
+### 15.6 推荐开发批次与放行条件
+
+1. **配置和编辑保真**：统一集合/路由映射；完成实际样本往返与 Stories 限制；修复已有组件插入缺口。此阶段不开写入。
+2. **测试分支保存闭环**：创建 MDX/MD → 保存 → 重开 → 修改 → 冲突恢复；为新增接口和 SHA 行为做定向验证。测试分支与线上分支隔离。
+3. **上传闭环**：上传 → 后台预览 → 保存公开引用 → 重开；验证失败恢复和封面字段。使用现有图片校验。
+4. **发布闭环**：在可控内容上发布 → 指定构建成功 → Cloudflare 部署 → 确认 URL 与组件交互 → 更新同一 URL。确认草稿的各公开索引过滤。
+5. **生产写入放行**：只有上述闭环通过才切换 writable 能力；repo/branch、Access 权限与部署 secrets 实际核实。首版不包含重命名、迁移、下线、自动回滚、私密修改草稿与真实未保存预览。
+
+每批验收覆盖英文 Blog、中文 Blog、英文 Stories、中文 Stories；组件样本额外覆盖新插入 TechStackTerminal 的 profile、client 指令、同名嵌套、代码围栏里的 JSX 示例、切换文档后的光标和撤销/重做。
+
+## 16. 本轮修复与文件导入（2026-10-23）
+
+- 组件适配归并至 integration/components，移除 component-editing 目录；宿主配置仍是唯一组件清单。
+- 配置增加 hydration 与受信任默认表达式，终端默认 profile 可用，链接默认使用站内 `/`。
+- 插入使用官方 Lexical 当前编辑器/选区检查，不再保存全局 DOM Range；无有效光标或存在选区时拒绝插入。首版不承诺保留格式的选区包裹。
+- 新节点注册后选中真实实例；属性回调读取当前节点，属性同步按值变化触发，避免 React 更新循环。
+- 文档实例列表改用 unified + remark-parse + remark-mdx AST，代码围栏/行内代码不计入，支持同名嵌套；解析失败明确提示。
+- 文章列表增加“导入文件”和“刷新文件列表”。导入限制 1 MiB，校验 YAML、必填属性、语言、文件类型和 MDX 语法；Stories 限制纯文字。保留原始内容，不执行 MDX。
+- 手动导入：选集合 → 选文件 → 校验 → 打开正文与属性。当前只是浏览器内预览/编辑，不创建仓库文件、不覆盖同名文章、不上传引用图片、不发布；离开后需要重新导入。未来开放写入时必须按创建/替换的独立意图及版本校验处理。
+- 修复上游 FileReader 异步回调不被 await、错误捕获失效及 loading 过早结束的问题，改为 await file.text()。
+
+### 直接在项目代码中添加文件
+
+1. Blog 放 `content/blog/*.mdx`（兼容已有 .md），Stories 放 `content/stories/*.md`，包含符合集合 schema 的 frontmatter；草稿明确写 draft:true。
+2. 本地无 GitHub 凭据的快照模式：Astro 开发 glob 读取本地 content，添加/修改后刷新文件列表；如果开发服务未感知新增文件，重启 pnpm dev。无需在后台登记一份文章记录。
+3. 配置 GitHub 数据源时：列表读取指定仓库与分支，未提交/未推送的本地文件不会出现。提交到该分支后刷新列表；服务端递归读取目录，已有嵌套 Blog 文件也能发现。
+4. 后台列表包含 draft:true；公开页面仅包含符合语言与 draft 过滤的文章。生产网页需要部署分支构建成功，文件出现在后台不等于已上线。
+5. 中文 Blog 文件 `hello-zh.mdx` + lang:zh → `/zh/blog/hello`；Stories 保留文件 ID 后缀。直接代码新增仍需遵循现有 schema、组件 import、资源路径和图片 credits 规则。
+6. 本轮不执行 Git 提交或生产部署。完整保存、媒体上传和发布仍受原验证门槛约束。
+
+### 16.1 导入与发布校验分离
+
+无 YAML frontmatter、缺少属性或属性值待修正，不再阻止导入。无属性时以文件名填初始标题，摘要/发布日期留空、tags 默认 []、draft 默认 true；已有属性不被静默替换，原始正文与原文件内容保留。导入校验提示待补充项但允许打开。
+
+右侧“发布前属性检查”实时显示字段级中文提示：标题、摘要、发布日期、更新日期、标签、语言、草稿值、AI 索引，以及 Blog 专属的封面路径与分享文案。补齐或修正后提示消除；Stories 不检查 Blog 专属字段。该检查仅表示属性完整，不能冒充发布成功。未来发布接口必须复用同等服务端校验并结合路径、正文、资源与构建验证；当前保存与发布仍未开放。YAML 语法错误、错误文件格式、大小超限及不支持的 Stories 内容继续阻止导入。

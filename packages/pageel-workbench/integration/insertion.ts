@@ -1,58 +1,14 @@
-import type { ContentComponentConfig } from './registry';
+import type { ContentComponentConfig } from './component-config';
 
+import type { JsxProperties } from '@mdxeditor/editor';
+import type { RootContent } from 'mdast';
 export interface JsxInsertPayload {
   name: string;
   kind: 'text' | 'flow';
-  props: Record<string, string>;
-  children?: Array<{ type: string; value?: string; children?: unknown[] }>;
+  props: JsxProperties;
+  children?: RootContent[];
 }
-
 export type InsertJsxHandler = (payload: JsxInsertPayload) => void;
-
-let savedRange: Range | null = null;
-let savedText = '';
-
-export function saveEditorSelection(): { range: Range | null; text: string } {
-  const selection = window.getSelection();
-  if (selection && selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    // Ensure the selection is within the editor
-    const container = range.commonAncestorContainer;
-    const isInsideEditor =
-      container instanceof Element
-        ? container.closest('.mdxeditor, [contenteditable="true"]')
-        : container.parentElement?.closest('.mdxeditor, [contenteditable="true"]');
-
-    if (isInsideEditor) {
-      savedRange = range.cloneRange();
-      savedText = selection.toString();
-      return { range: savedRange, text: savedText };
-    }
-  }
-  return { range: savedRange, text: savedText };
-}
-
-export function restoreEditorSelection(): boolean {
-  if (!savedRange) return false;
-  const selection = window.getSelection();
-  if (!selection) return false;
-  try {
-    selection.removeAllRanges();
-    selection.addRange(savedRange);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function getSavedSelectionText(): string {
-  return savedText;
-}
-
-export function clearSavedSelection(): void {
-  savedRange = null;
-  savedText = '';
-}
 
 export function canInsertComponent(
   collection: string,
@@ -84,7 +40,12 @@ export function buildInsertPayload(
   customText?: string,
   customProps?: Record<string, string>,
 ): JsxInsertPayload {
-  const props = { ...(component.defaultProps ?? {}), ...(customProps ?? {}) };
+  const props: JsxProperties = { ...(component.defaultProps ?? {}), ...(customProps ?? {}) };
+  // 指令使用布尔表达式，避免生成 client:load="true"。
+  if (component.hydration) props[component.hydration] = { type: 'expression', value: 'true' };
+  for (const [name, value] of Object.entries(component.defaultExpressions ?? {})) {
+    props[name] = { type: 'expression', value };
+  }
   const text = customText || component.defaultChildren || '内容文字';
 
   if (component.kind === 'text') {

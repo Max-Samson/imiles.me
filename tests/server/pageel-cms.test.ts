@@ -99,3 +99,30 @@ test('GitHub reads use explicit branch and server token; upstream error bodies a
   );
   assert.throws(() => githubRepository({}), /配置尚未完成/);
 });
+
+test('GitHub 文件列表递归发现代码新增的嵌套 MDX', async () => {
+  const repo = {
+    mode: 'github' as const,
+    read: async () => '',
+    sha: async () => null,
+    list: async (path: string) =>
+      path === 'content/blog'
+        ? [{ name: 'notes', path: 'content/blog/notes', type: 'dir' as const, sha: '', size: 0 }]
+        : [
+            {
+              name: 'new.mdx',
+              path: 'content/blog/notes/new.mdx',
+              type: 'file' as const,
+              sha: 'new',
+              size: 10,
+            },
+          ],
+  };
+  const entries = await readCmsOperation(repo, 'listFiles', { path: 'content/blog' });
+  assert.ok(Array.isArray(entries));
+  assert.ok(
+    entries.some(
+      (entry) => typeof entry !== 'string' && entry.path === 'content/blog/notes/new.mdx',
+    ),
+  );
+});

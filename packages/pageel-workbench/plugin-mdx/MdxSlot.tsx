@@ -1,3 +1,4 @@
+import { $getSelection, $isRangeSelection } from 'lexical';
 import { useWorkbench } from '../integration/context';
 import { translateEditor } from '../integration/zh';
 /**
@@ -37,15 +38,14 @@ import {
   type MDXEditorMethods,
   realmPlugin,
   insertJsx$,
+  activeEditor$,
 } from '@mdxeditor/editor';
 import '@mdxeditor/editor/style.css';
 import { jsxComponentDescriptors } from '../integration/jsx-descriptors';
-import { useOptionalComponentInspector } from '../integration/component-editing/InspectorContext';
+import { useOptionalComponentInspector } from '../integration/components/InspectorContext';
 import {
-  saveEditorSelection,
-  restoreEditorSelection,
   type JsxInsertPayload,
-} from '../integration/component-editing/insertion';
+} from '../integration/insertion';
 import type { EditorProps } from '@pageel/plugin-types';
 import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 
@@ -104,18 +104,7 @@ export function MdxEditorSlot(props: EditorProps = {} as EditorProps) {
   const setInsertHandler = inspector?.setInsertHandler;
   const insertDispatchRef = useRef<((payload: JsxInsertPayload) => void) | null>(null);
 
-  // Selection tracking: preserve editor selection range on change
-  useEffect(() => {
-    const handleSelectionChange = () => {
-      saveEditorSelection();
-    };
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => {
-      document.removeEventListener('selectionchange', handleSelectionChange);
-    };
-  }, []);
-
-  // Register insertion dispatcher to inspector context
+  // 仅当前挂载的编辑器接收侧栏插入命令；卸载时撤销入口，避免跨文章插入。
   useEffect(() => {
     if (setInsertHandler) {
       setInsertHandler((payload) => {
@@ -129,18 +118,30 @@ export function MdxEditorSlot(props: EditorProps = {} as EditorProps) {
     }
   }, [setInsertHandler]);
 
-  // Plugin to connect MDXEditor realm with external insert signal
+  // 通过官方 realm 插入；仅接受当前编辑器有效的折叠光标，不模拟带格式选区包裹。
   const insertionPlugin = useMemo(() => {
     return realmPlugin({
       init(realm) {
         insertDispatchRef.current = (payload: any) => {
-          restoreEditorSelection();
+          const editor = realm.getValue(activeEditor$);
+          if (!editor || !editor.getRootElement()?.isConnected) throw new Error('请先在当前正文中定位插入位置');
+          const valid = editor.getEditorState().read(() => {
+            const selection = $getSelection();
+            return $isRangeSelection(selection) && selection.isCollapsed() && selection.anchor.getNode().isAttached();
+          });
+          if (!valid) throw new Error('请在正文中点击确定光标位置；暂不支持替换选区');
           realm.pub(insertJsx$, payload);
         };
       },
       update(realm) {
         insertDispatchRef.current = (payload: any) => {
-          restoreEditorSelection();
+          const editor = realm.getValue(activeEditor$);
+          if (!editor || !editor.getRootElement()?.isConnected) throw new Error('请先在当前正文中定位插入位置');
+          const valid = editor.getEditorState().read(() => {
+            const selection = $getSelection();
+            return $isRangeSelection(selection) && selection.isCollapsed() && selection.anchor.getNode().isAttached();
+          });
+          if (!valid) throw new Error('请在正文中点击确定光标位置；暂不支持替换选区');
           realm.pub(insertJsx$, payload);
         };
       },

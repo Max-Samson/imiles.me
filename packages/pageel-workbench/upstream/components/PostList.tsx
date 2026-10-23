@@ -32,6 +32,7 @@ interface PostListProps {
   repo: GithubRepo;
   onPostUpdate: () => void;
   onAction: () => void;
+  onEditingChange?: (isEditing: boolean) => void;
 }
 
 type SortOption = string;
@@ -97,7 +98,8 @@ const PostList: React.FC<PostListProps> = ({
   gitService,
   repo,
   onPostUpdate,
-  onAction
+  onAction,
+  onEditingChange
 }) => {
   // TD-09: Read settings from CollectionStore (SSoT) instead of props
   const { workspace, getActiveCollection } = useCollectionStore();
@@ -126,6 +128,13 @@ const PostList: React.FC<PostListProps> = ({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
+  useEffect(() => {
+    onEditingChange?.(Boolean(selectedPost));
+    return () => {
+      onEditingChange?.(false);
+    };
+  }, [selectedPost, onEditingChange]);
+
 
   // TD-10: Post actions extracted to hook
   const {
@@ -156,6 +165,7 @@ const PostList: React.FC<PostListProps> = ({
     updatePostCommitTemplate,
     onAction,
     fetchPosts: () => fetchPosts(),
+    onImport: setSelectedPost,
     selectedPost,
     setSelectedPost,
   });
@@ -459,7 +469,9 @@ const PostList: React.FC<PostListProps> = ({
 
   if (selectedPost) {
       return (
-          <ComponentEditingProvider><PostDetailView 
+          <ComponentEditingProvider key={selectedPost.path}>
+          {selectedPost.imported && <p role="status" className="p-3 text-sm text-notion-muted">已导入本地文件，仅在当前编辑台预览；未保存到仓库。现阶段保存尚未开放，离开后请重新导入原文件。</p>}
+          <PostDetailView
             post={selectedPost} 
             onBack={() => setSelectedPost(null)}
             onDelete={(p) => setPostToDelete(p)}
@@ -481,7 +493,7 @@ const PostList: React.FC<PostListProps> = ({
       <input type="file" ref={updatePostFileInputRef} className="hidden" accept={postFileTypes} onChange={confirmUpdatePostFile} />
       
       {isUploadModalOpen && uploadFile && (
-          <PostUploadValidationModal 
+          <PostUploadValidationModal localPreview collection={path === 'content/stories' ? 'stories' : 'blog'} busy={isUploading}
             file={uploadFile}
             gitService={gitService}
             repo={repo}
@@ -606,17 +618,20 @@ const PostList: React.FC<PostListProps> = ({
                 size="xs"
                 shape="rounded"
                 variant="blue"
-                disabled
                 onClick={() => uploadPostInputRef.current?.click()}
                 icon={<Upload className="size-3.5" />}
                 className="font-medium"
-                title="上传文章（暂未开放）"
+                title="导入本地 MD/MDX 文件到编辑台，不会提交仓库"
             >
-                {t('postList.uploadButton')}
+                导入文件
             </LiquidGlassButton>
         </div>
       </div>
 
+      <div className="flex items-center justify-between px-4 pb-3 text-xs text-notion-muted">
+        <span>列表读取当前数据源；直接添加文件后点击刷新。公开页面需等待构建部署。</span>
+        <button type="button" disabled={isLoading} onClick={() => fetchPosts()}>刷新文件列表</button>
+      </div>
       {/* WF-08: FilterBar */}
       {isFilterOpen && activeTemplate && (
         <FilterBar

@@ -16,15 +16,13 @@ import { DocumentComponents } from './DocumentComponents';
 import { useComponentInspector } from './InspectorContext';
 import {
   canInsertComponent,
-  getSavedSelectionText,
-  restoreEditorSelection,
-} from './insertion';
+} from '../insertion';
 import {
   type ComponentCategory,
   type ContentComponentConfig,
   componentCategories,
   componentRegistry,
-} from './registry';
+} from '../component-config';
 
 function renderStaticExample(name: string) {
   switch (name) {
@@ -148,8 +146,7 @@ export function ComponentLibrary() {
     }
 
     // Restore selection in editor
-    restoreEditorSelection();
-    const selectedText = getSavedSelectionText();
+    const selectedText = ''; // 首版仅在光标处插入，避免替换选区丢失原格式。
 
     if (component.kind === 'text') {
       if (selectedText) {
@@ -172,7 +169,6 @@ export function ComponentLibrary() {
 
   const handleConfirmPrompt = () => {
     if (promptModal.component) {
-      restoreEditorSelection();
       inspector.executeInsert(promptModal.component, inputText || promptModal.defaultText);
     }
     setPromptModal({ open: false, component: null, defaultText: '' });

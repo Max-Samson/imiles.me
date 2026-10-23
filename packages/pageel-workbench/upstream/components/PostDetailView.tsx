@@ -1,3 +1,4 @@
+import { validatePublicationFields } from '../../integration/publication-validation';
 import { ComponentInspector, useComponentInspector } from '../../integration/components/InspectorContext';
 import { useWorkbench } from '../../integration/context';
 import { fieldLabel } from '../../integration/labels';
@@ -40,6 +41,7 @@ interface PostData {
   path: string;
   html_url: string;
   thumbnailUrl: string | null;
+  imported?: boolean;
 }
 
 interface PostDetailViewProps {
@@ -291,6 +293,10 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
     componentInspector.setCollection(coll);
   }, [post.path, componentInspector.setCollection]);
   
+  const publicationIssues = useMemo(() => validatePublicationFields(
+    editableFrontmatter,
+    post.path.includes('content/stories') ? 'stories' : 'blog',
+  ), [editableFrontmatter, post.path]);
   // Updates specific to Detail View
   const updatePostFileInputRef = useRef<HTMLInputElement>(null);
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -350,8 +356,11 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
   const handleAddMissingField = (key: string) => {
       let defaultValue: any = "";
-      if (key === 'date' || key === 'publishDate') defaultValue = new Date().toISOString().split('T')[0];
+      if (key === 'date' || key === 'publishDate' || key === 'pubDate' || key === 'updatedDate') defaultValue = new Date().toISOString().split('T')[0];
       if (key === 'tags') defaultValue = [];
+      if (key === 'draft') defaultValue = true;
+      if (key === 'llms') defaultValue = false;
+      if (key === 'lang') defaultValue = 'en';
       
       handleFrontmatterChange(key, defaultValue);
       setMissingFields(prev => prev.filter(k => k !== key));
@@ -1041,53 +1050,115 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
       {/* Sticky Header - Aligned to System Console & LiquidGlass styling */}
       <header className="h-14 border-b border-notion-border bg-notion-bg/90 sticky top-0 z-30 flex-shrink-0 backdrop-blur-md">
-        <div className="px-6 h-full flex justify-between items-center w-full">
-            <div className="flex items-center gap-3 overflow-hidden">
+        <div className="px-4 sm:px-6 h-full flex justify-between items-center w-full gap-4">
+            {/* Left: Return + Breadcrumb Title (flex-1 min-w-0 for auto truncation) */}
+            <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden justify-start">
                 <LiquidGlassButton
                   type="button"
                   variant="secondary"
                   size="sm"
+                  icon={<ArrowLeft className="w-3.5 h-3.5 shrink-0" />}
                   onClick={() => { if (confirmLeave()) onBack(); }}
-                  className="gap-1.5 h-8 text-xs font-medium text-notion-text"
+                  className="gap-1.5 h-8 text-xs font-medium text-notion-text shrink-0 whitespace-nowrap select-none"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>返回列表</span>
+                  <span className="whitespace-nowrap">返回列表</span>
                 </LiquidGlassButton>
-                <span className="text-notion-border text-sm font-light">/</span>
-                <div className="flex items-center text-xs text-notion-muted truncate">
-                  <span className="truncate font-semibold text-notion-text text-xs max-w-[240px]">
-                    {post.sha === "" ? t('postList.createButton') : (editableFrontmatter.title || post.name)}
+                <span className="text-notion-border text-xs font-light shrink-0 select-none">/</span>
+                <div className="flex items-center min-w-0 truncate text-xs text-notion-muted">
+                  <span
+                    className="truncate font-semibold text-notion-text text-xs whitespace-nowrap min-w-0"
+                    title={post.sha === "" && !post.imported ? t('postList.createButton') : (editableFrontmatter.title || post.name)}
+                  >
+                    {post.sha === "" && !post.imported ? t('postList.createButton') : (editableFrontmatter.title || post.name)}
                   </span>
                 </div>
             </div>
-            
-            <div className="flex items-center gap-2.5">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                  <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  仅内存保留
+
+            {/* Right: Fixed Action Controls & Tabs (Position fixed to right, unaffected by title changes) */}
+            <div className="flex items-center justify-end gap-2 sm:gap-2.5 shrink-0">
+                {/* View Switcher: Segmented Pill Control */}
+                <div className="inline-flex items-center p-1 rounded-xl bg-notion-sidebar border border-notion-border shadow-2xs whitespace-nowrap shrink-0">
+                    {hasWysiwygPlugin && (
+                        <button
+                            type="button"
+                            onClick={() => handleTabChange('edit')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                                activeTab === 'edit'
+                                ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
+                                : 'text-notion-muted hover:text-notion-text'
+                            }`}
+                        >
+                            <EditIcon className="w-3.5 h-3.5 shrink-0" />
+                            <span className="whitespace-nowrap">编辑</span>
+                        </button>
+                    )}
+                    {hasWysiwygPlugin ? (
+                        <button
+                            type="button"
+                            onClick={() => handleTabChange('code')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                                activeTab === 'code'
+                                ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
+                                : 'text-notion-muted hover:text-notion-text'
+                            }`}
+                        >
+                            <CodeIcon className="w-3.5 h-3.5 shrink-0" />
+                            <span className="whitespace-nowrap">源码</span>
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => handleTabChange('edit')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                                activeTab === 'edit'
+                                ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
+                                : 'text-notion-muted hover:text-notion-text'
+                            }`}
+                        >
+                            <CodeIcon className="w-3.5 h-3.5 shrink-0" />
+                            <span className="whitespace-nowrap">源码</span>
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        onClick={() => handleTabChange('preview')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                            activeTab === 'preview'
+                            ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
+                            : 'text-notion-muted hover:text-notion-text'
+                        }`}
+                    >
+                        <EyeIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="whitespace-nowrap">{t('postPreview.tabPreview')}</span>
+                    </button>
+                </div>
+
+                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap shrink-0 select-none">
+                  <span className="size-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                  <span className="whitespace-nowrap">仅内存保留</span>
                 </span>
                 <LiquidGlassButton
                   type="button"
                   variant="secondary"
                   size="sm"
+                  icon={<SlidersHorizontal className="w-3.5 h-3.5 text-notion-muted shrink-0" />}
                   aria-expanded={propertiesOpen}
                   aria-controls="cms-properties"
                   onClick={() => setPropertiesOpen(value => !value)}
-                  className="gap-1.5 h-8 text-xs font-medium text-notion-text"
+                  className="gap-1.5 h-8 text-xs font-medium text-notion-text whitespace-nowrap shrink-0"
                 >
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-notion-muted" />
-                  <span>{propertiesOpen ? '收起属性' : '文章属性'}</span>
+                  <span className="whitespace-nowrap">{propertiesOpen ? '收起属性' : '文章属性'}</span>
                 </LiquidGlassButton>
                 <LiquidGlassButton
                   type="button"
                   variant="outline"
                   size="sm"
                   disabled
+                  icon={<Save className="w-3.5 h-3.5 shrink-0" />}
                   title="兼容性验证阶段，尚未开放保存与发布"
-                  className="gap-1.5 h-8 text-xs font-medium text-notion-muted opacity-60 cursor-not-allowed border-dashed"
+                  className="gap-1.5 h-8 text-xs font-medium text-notion-muted opacity-60 cursor-not-allowed border-dashed whitespace-nowrap shrink-0 hidden md:inline-flex"
                 >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>保存未开放</span>
+                  <span className="whitespace-nowrap">保存未开放</span>
                 </LiquidGlassButton>
             </div>
         </div>
@@ -1099,91 +1170,36 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
               {/* LEFT COLUMN — Content Editor */}
               <div className="cms-writing-column flex-1 min-w-0 px-6 py-8" tabIndex={0} role="region" aria-label="文章正文编辑区">
-                {/* Title - Auto Resizing Textarea */}
-                <textarea 
-                    ref={titleTextareaRef}
-                    className="text-3xl lg:text-4xl font-bold text-notion-text mb-6 break-words leading-tight tracking-tight w-full border-none focus:ring-0 p-0 placeholder-gray-300 resize-none overflow-hidden bg-transparent"
-                    value={editableFrontmatter.title || ''}
-                    onChange={(e) => {
-                        handleFrontmatterChange('title', e.target.value);
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                    }}
-                    onKeyDown={(e) => { if(e.key === 'Enter') e.preventDefault(); }}
-                    placeholder="未命名文章" aria-label="文章标题"
-                    rows={1}
-                />
+                <div className="w-full max-w-[820px] mx-auto">
+                  {/* Title - Auto Resizing Textarea */}
+                  <textarea
+                      ref={titleTextareaRef}
+                      className="text-3xl lg:text-4xl font-bold text-notion-text mb-6 break-words leading-tight tracking-tight w-full border-none focus:ring-0 p-0 placeholder:text-notion-muted/40 resize-none overflow-hidden bg-transparent"
+                      value={editableFrontmatter.title || ''}
+                      onChange={(e) => {
+                          handleFrontmatterChange('title', e.target.value);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = e.target.scrollHeight + 'px';
+                      }}
+                      onKeyDown={(e) => { if(e.key === 'Enter') e.preventDefault(); }}
+                      placeholder="未命名文章" aria-label="文章标题"
+                      rows={1}
+                  />
 
-                <div className="border-t border-notion-border mb-6"></div>
-
-                {/* Tabs — segmented pill control aligned with System Console */}
-                <div className="inline-flex items-center p-1 rounded-xl bg-notion-sidebar border border-notion-border mb-6 shadow-2xs">
-                    {hasWysiwygPlugin && (
-                        <button
-                            type="button"
-                            onClick={() => handleTabChange('edit')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                                activeTab === 'edit'
-                                ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
-                                : 'text-notion-muted hover:text-notion-text'
-                            }`}
-                        >
-                            <EditIcon className="w-3.5 h-3.5" />
-                            <span>编辑</span>
-                        </button>
+                  {/* JSX 文字与源码参数的分工提示，不宣称此视图是真实 Astro 预览。 */}
+                  {activeTab === 'edit' && post.name.endsWith('.mdx') && (
+                    <div className="cms-jsx-help flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-xs text-sky-700 dark:text-sky-300 mb-6 leading-relaxed">
+                      <Info className="w-4 h-4 shrink-0 text-sky-500" />
+                      <span>文字可直接编辑；点击组件在右侧配置。复杂表达式使用源码编辑，组件库支持在正文光标处插入。</span>
+                    </div>
+                  )}
+                  {/* Content Area */}
+                  <div className="pb-20">
+                    {importError && (
+                      <div role="alert" className="p-3 mb-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
+                        可视化解析失败，已保留原文并切换源码：{importError}
+                      </div>
                     )}
-                    {hasWysiwygPlugin ? (
-                        <button
-                            type="button"
-                            onClick={() => handleTabChange('code')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                                activeTab === 'code'
-                                ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
-                                : 'text-notion-muted hover:text-notion-text'
-                            }`}
-                        >
-                            <CodeIcon className="w-3.5 h-3.5" />
-                            <span>源码</span>
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={() => handleTabChange('edit')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                                activeTab === 'edit'
-                                ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
-                                : 'text-notion-muted hover:text-notion-text'
-                            }`}
-                        >
-                            <CodeIcon className="w-3.5 h-3.5" />
-                            <span>源码</span>
-                        </button>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => handleTabChange('preview')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                            activeTab === 'preview'
-                            ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
-                            : 'text-notion-muted hover:text-notion-text'
-                        }`}
-                    >
-                        <EyeIcon className="w-3.5 h-3.5" />
-                        <span>{t('postPreview.tabPreview')}</span>
-                    </button>
-                </div>
-
-                {/* JSX 文字与源码参数的分工提示，不宣称此视图是真实 Astro 预览。 */}
-                {activeTab === 'edit' && post.name.endsWith('.mdx') && (
-                  <p className="cms-jsx-help">文字可直接编辑；点击组件在右侧配置。高亮、链接支持表单，其他组件和表达式参数使用源码编辑。</p>
-                )}
-                {/* Content Area */}
-                <div className="pb-20">
-                {importError && (
-                  <div role="alert" className="p-3 mb-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
-                    可视化解析失败，已保留原文并切换源码：{importError}
-                  </div>
-                )}
                 {activeTab === 'edit' ? (
                     // @para-doc [#csa-native-fallback-settings-bypass]
                     <SlotRenderer
@@ -1239,6 +1255,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                         dangerouslySetInnerHTML={createMarkup(editableBody)}
                     />
                 )}
+                  </div>
                 </div>
               </div>
 
@@ -1247,9 +1264,16 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                 <ComponentInspector />
                 <div hidden={componentInspector.mode !== 'article'} className="p-5 space-y-5">
 
+                  <section aria-label="发布前属性检查" className="rounded-lg border border-notion-border p-3 text-xs space-y-2">
+                    <h3 className="font-semibold text-notion-text">发布前属性检查</h3>
+                    <p className="text-notion-muted">这里的文章属性对应文件顶部的 YAML frontmatter。可先导入编辑，再补齐发布信息。</p>
+                    {publicationIssues.length ? <ul className="list-disc pl-4 space-y-1 text-amber-600 dark:text-amber-400">
+                      {publicationIssues.map(issue => <li key={issue.field}>{issue.message}</li>)}
+                    </ul> : <p className="text-notion-muted">文章属性检查通过；不代表已发布。保存与发布当前尚未开放。</p>}
+                  </section>
                   {/* 封面图片 Section */}
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-notion-muted mb-3 tracking-wider">封面图片</p>
+                    <p className="text-xs font-semibold text-notion-muted mb-2.5">封面图片</p>
                     {hasCoverImage ? (
                       <div className="relative group">
                         <CoverImage 
@@ -1272,9 +1296,9 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     ) : (
                       <button
                         disabled title="图片上传暂未开放" onClick={handleUpdateImage}
-                        className="w-full h-28 rounded-lg border-2 border-dashed border-notion-border hover:border-notion-blue/50 flex flex-col items-center justify-center gap-2 text-notion-muted hover:text-notion-blue transition-colors group"
+                        className="w-full h-28 rounded-xl border border-dashed border-notion-border/80 hover:border-notion-blue/50 bg-notion-sidebar/20 hover:bg-notion-sidebar/40 flex flex-col items-center justify-center gap-2 text-notion-muted hover:text-notion-blue transition-colors group cursor-not-allowed"
                       >
-                        <ImageIcon className="w-6 h-6 opacity-50 group-hover:opacity-80 transition-opacity" />
+                        <ImageIcon className="w-5 h-5 opacity-40 group-hover:opacity-70 transition-opacity" />
                         <span className="text-xs font-medium">设置封面（暂未开放）</span>
                       </button>
                     )}
@@ -1284,7 +1308,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
                   {/* Metadata Fields */}
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-notion-muted mb-3 tracking-wider">文章属性</p>
+                    <p className="text-xs font-semibold text-notion-muted mb-2.5">文章属性</p>
                     <div className="space-y-0">
                       {Object.entries(editableFrontmatter).filter(([k]) => k !== 'title').map(([key, value]) => (
                           <div key={key} className="flex py-1.5 group items-start">
@@ -1307,7 +1331,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                       <>
                         <div className="border-t border-dashed border-notion-border"></div>
                         <div>
-                          <p className="text-[10px] uppercase font-bold text-notion-muted mb-2 tracking-wider">可补充属性</p>
+                          <p className="text-xs font-semibold text-notion-muted mb-2">可补充属性</p>
                           {missingFields.map(field => (
                               <div key={field} className="flex py-1.5 group items-center opacity-70 hover:opacity-100 transition-opacity">
                                   <div className="w-24 flex-shrink-0 flex items-center text-notion-muted">
@@ -1335,7 +1359,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
                   {/* File Info Spec Box */}
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-notion-muted mb-2 tracking-wider">文件信息</p>
+                    <p className="text-xs font-semibold text-notion-muted mb-2">文件信息</p>
                     <div className="space-y-1.5 rounded-lg border border-notion-border bg-notion-sidebar/40 p-2.5 text-xs text-notion-muted shadow-2xs">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] text-notion-muted">文件名</span>

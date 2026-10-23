@@ -5,7 +5,7 @@ import { type DocumentComponentInstance, useDocumentComponents } from './useDocu
 
 export function DocumentComponents() {
   const inspector = useComponentInspector();
-  const { grouped, totalCount, typeCount } = useDocumentComponents(inspector.content);
+  const { grouped, totalCount, typeCount, error } = useDocumentComponents(inspector.content);
 
   // Keep track of collapsed groups (all expanded by default)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
@@ -20,6 +20,8 @@ export function DocumentComponents() {
   const handleInstanceClick = (instance: DocumentComponentInstance) => {
     inspector.selectInstance(instance);
   };
+
+  if (error) return <p role="alert" className="p-3 text-xs text-notion-muted">{error}</p>;
 
   if (totalCount === 0) {
     return (

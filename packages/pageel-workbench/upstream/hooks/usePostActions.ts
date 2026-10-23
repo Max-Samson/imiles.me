@@ -1,3 +1,4 @@
+import { inspectImportedContent } from '../../integration/import-content';
 /**
  * usePostActions Hook
  * 
@@ -22,6 +23,7 @@ export interface PostData {
   path: string;
   html_url: string;
   thumbnailUrl: string | null;
+  imported?: boolean;
 }
 
 interface UsePostActionsParams {
@@ -31,6 +33,7 @@ interface UsePostActionsParams {
   updatePostCommitTemplate: string;
   onAction: () => void;
   fetchPosts: () => void;
+  onImport?: (post: PostData) => void;
   selectedPost: PostData | null;
   setSelectedPost: (post: PostData | null) => void;
 }
@@ -72,6 +75,7 @@ export function usePostActions({
   updatePostCommitTemplate,
   onAction,
   fetchPosts,
+  onImport,
   selectedPost,
   setSelectedPost,
 }: UsePostActionsParams): UsePostActionsReturn {
@@ -105,21 +109,23 @@ export function usePostActions({
     if (!uploadFile) return;
     setIsUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const content = e.target?.result as string;
-        const commitMsg = `feat(content): add post "${uploadFile.name}"`;
-        const filePath = path ? `${path}/${uploadFile.name}` : uploadFile.name;
-
-        await gitService.createFileFromString(filePath, content, commitMsg);
+      if (uploadFile.size > 1024 * 1024) throw new Error('文章文件不能超过 1 MiB');
+      // 等待读取完成后再更新 loading；异步读取/校验错误统一落入下方 catch。
+      const content = await uploadFile.text();
+      const parsed = inspectImportedContent(uploadFile.name, content, path === 'content/stories' ? 'stories' : 'blog');
+      const filePath = `${path}/${uploadFile.name}`;
+      // 宿主提供 onImport 时只打开本地编辑态；不能顺便调用 Git 创建或覆盖文件。
+      if (onImport) {
+        onImport({ ...parsed, name: uploadFile.name, path: filePath, sha: '', html_url: '', thumbnailUrl: null, imported: true });
+      } else {
+        await gitService.createFileFromString(filePath, content, `feat(content): add post "${uploadFile.name}"`);
         onAction();
         fetchPosts();
-        setIsUploadModalOpen(false);
-        setUploadFile(null);
-      };
-      reader.readAsText(uploadFile);
-    } catch (e) {
-      alert("Upload failed");
+      }
+      setIsUploadModalOpen(false);
+      setUploadFile(null);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '导入失败');
     } finally {
       setIsUploading(false);
     }
@@ -136,17 +142,14 @@ export function usePostActions({
 
     setIsUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const content = ev.target?.result as string;
-        const commitMsg = updatePostCommitTemplate.replace('{filename}', postToUpdateFile.name) || `fix(content): update post "${postToUpdateFile.name}"`;
-
-        await gitService.updateFileContent(postToUpdateFile.path, content, commitMsg, postToUpdateFile.sha);
-        onAction();
-        fetchPosts();
-        setPostToUpdateFile(null);
-      };
-      reader.readAsText(file);
+      if (file.size > 1024 * 1024) throw new Error('文章文件不能超过 1 MiB');
+      const content = await file.text();
+      inspectImportedContent(file.name, content, path === 'content/stories' ? 'stories' : 'blog');
+      const commitMsg = updatePostCommitTemplate.replace('{filename}', postToUpdateFile.name);
+      await gitService.updateFileContent(postToUpdateFile.path, content, commitMsg, postToUpdateFile.sha);
+      onAction();
+      fetchPosts();
+      setPostToUpdateFile(null);
     } catch (err) {
       alert("Update failed");
     } finally {
@@ -183,7 +186,7 @@ export function usePostActions({
         }
 
         const fm = postToUpdateImage.frontmatter;
-        let targetField = 'image';
+        let targetField = 'heroImage';
         if (fm.cover) targetField = 'cover';
         else if (fm.thumbnail) targetField = 'thumbnail';
         else if (fm.heroImage) targetField = 'heroImage';

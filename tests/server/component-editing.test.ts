@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  buildInsertPayload,
-  canInsertComponent,
-} from '../../packages/pageel-workbench/integration/component-editing/insertion';
-import {
   componentCategories,
   componentRegistry,
   findComponent,
-} from '../../packages/pageel-workbench/integration/component-editing/registry';
-import { parseDocumentComponents } from '../../packages/pageel-workbench/integration/component-editing/useDocumentComponents';
+} from '../../packages/pageel-workbench/integration/component-config';
+import { parseDocumentComponents } from '../../packages/pageel-workbench/integration/components/useDocumentComponents';
+import {
+  buildInsertPayload,
+  canInsertComponent,
+} from '../../packages/pageel-workbench/integration/insertion';
 
 test('parseDocumentComponents: 正确解析文章中已用的组件、摘要和数量统计', () => {
   const markdown = `

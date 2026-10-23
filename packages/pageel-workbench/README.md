@@ -208,3 +208,9 @@ component-editing/
 - **LiquidGlass 控件与规格说明盒**：
   - 返回列表、属性面板开关、保存按钮、筛选与文章操作按键均集成 `LiquidGlassButton`。
   - 文件信息、属性列表及 Frontmatter 复杂弹窗统一升级为 Spec Box 规范盒，彻底消除页面间的样式割裂。
+
+### 2026-10-23 导入与组件修复
+
+组件配置继续由宿主 `src/config/content-components.ts` 管理，适配组件归并 `integration/components`，不维护独立 component-editing 目录。新增 `insertion.ts` 生成官方 JSX 载荷、`import-content.ts` 校验本地导入；实例识别采用 remark MDX AST。
+
+上游最小补丁：PostList 增加本地导入回调和刷新入口；PostUploadValidationModal 增加不提交仓库的本地校验模式；usePostActions 使用可等待的 File.text，保留失败状态。当前导入只打开编辑台，不启用任何 Git 写入或发布。

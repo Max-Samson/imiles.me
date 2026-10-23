@@ -126,6 +126,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     callback: (path: string) => void;
   } | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isEditingPost, setIsEditingPost] = useState(false);
 
   const { t, language } = useI18n();
 
@@ -254,6 +255,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             repo={currentRepo}
             onPostUpdate={fetchStats}
             onAction={handleAction}
+            onEditingChange={setIsEditingPost}
           />
         );
       case "workflows":
@@ -419,28 +421,30 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         }
-        <main className="flex-1 overflow-y-auto bg-notion-bg text-notion-text transition-colors">
-          <div className="w-full mx-auto py-8 px-4 sm:px-6 lg:px-6">
+        <main className={`flex-1 ${isEditingPost ? 'overflow-hidden' : 'overflow-y-auto'} bg-notion-bg text-notion-text transition-colors`}>
+          <div className={isEditingPost ? 'w-full h-full' : 'w-full mx-auto py-8 px-4 sm:px-6 lg:px-6'}>
             {/* Unified Page Header matching Admin Console */}
-            <div className="cms-page-heading mb-8 group">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="flex size-2 animate-pulse rounded-full bg-emerald-500" />
-                <p className="text-xs font-semibold text-notion-blue tracking-wider uppercase">Content Management</p>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  {getPageIcon()}
-                  <div>
-                    <h1 className="text-2xl font-bold text-notion-text tracking-tight md:text-3xl">{getPageTitle()}</h1>
-                    <p className="text-xs text-notion-muted hidden sm:block mt-0.5">
-                      全站内容管理 · 支持 MDX 交互组件与双语文章编排
-                    </p>
-                  </div>
+            {!isEditingPost && (
+              <div className="cms-page-heading mb-8 group">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="flex size-2 animate-pulse rounded-full bg-emerald-500" />
+                  <p className="text-xs font-semibold text-notion-blue tracking-wider uppercase">Content Management</p>
                 </div>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    {getPageIcon()}
+                    <div>
+                      <h1 className="text-2xl font-bold text-notion-text tracking-tight md:text-3xl">{getPageTitle()}</h1>
+                      <p className="text-xs text-notion-muted hidden sm:block mt-0.5">
+                        全站内容管理 · 支持 MDX 交互组件与双语文章编排
+                      </p>
+                    </div>
+                  </div>
 
-                {embedded && <CollectionToolbar />}
+                  {embedded && <CollectionToolbar />}
+                </div>
               </div>
-            </div>
+            )}
 
             {renderContent()}
           </div>

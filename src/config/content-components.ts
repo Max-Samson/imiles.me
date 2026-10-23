@@ -25,6 +25,10 @@ export interface ContentComponentConfig {
   supportLevel: 'configurable' | 'source';
   /** 默认插入属性 */
   defaultProps?: Record<string, string>;
+  /** Astro 客户端激活指令；动画组件延迟激活。 */
+  hydration?: 'client:load' | 'client:visible';
+  /** 仅由受信任项目配置提供的表达式，不执行用户源码。 */
+  defaultExpressions?: Record<string, string>;
   /** 默认插入子内容 */
   defaultChildren?: string;
   /** 允许插入的集合（故事 stories 为纯文本 Markdown，不开放组件插入） */
@@ -46,6 +50,7 @@ export const contentComponents: ContentComponentConfig[] = [
     kind: 'text',
     hasChildren: true,
     enabled: true,
+    hydration: 'client:load',
     supportLevel: 'configurable',
     defaultProps: {
       action: 'highlight',
@@ -82,9 +87,10 @@ export const contentComponents: ContentComponentConfig[] = [
     kind: 'text',
     hasChildren: true,
     enabled: true,
+    hydration: 'client:load',
     supportLevel: 'configurable',
     defaultProps: {
-      href: 'https://',
+      href: '/',
     },
     defaultChildren: '链接标题',
     collections: ['blog'],
@@ -109,6 +115,7 @@ export const contentComponents: ContentComponentConfig[] = [
     kind: 'flow',
     hasChildren: true,
     enabled: true,
+    hydration: 'client:load',
     supportLevel: 'configurable',
     defaultProps: {
       title: 'Snippet of the Week — 探索主题',
@@ -128,6 +135,7 @@ export const contentComponents: ContentComponentConfig[] = [
     kind: 'flow',
     hasChildren: false,
     enabled: true,
+    hydration: 'client:visible',
     supportLevel: 'source',
     defaultProps: {
       headingId: 'technical-skills',
@@ -138,6 +146,7 @@ export const contentComponents: ContentComponentConfig[] = [
   },
   {
     name: 'TechStackTerminal',
+    defaultExpressions: { profile: '{ role: "Developer", skills: ["Astro", "React"] }' },
     label: '技术栈终端',
     category: '展示组件',
     description: '模拟终端卡片，展示全栈角色画像与技能矩阵',
@@ -146,6 +155,7 @@ export const contentComponents: ContentComponentConfig[] = [
     kind: 'flow',
     hasChildren: false,
     enabled: true,
+    hydration: 'client:visible',
     supportLevel: 'source',
     defaultProps: {
       successMessage: '✔ Type-check complete. Profile exported.',

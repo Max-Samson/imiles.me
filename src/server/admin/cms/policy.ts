@@ -29,7 +29,7 @@ export function contentPath(value: unknown, directory = false): string {
   ) {
     throw new ValidationError('内容路径无效');
   }
-  if (directory && ['content/blog', 'content/stories'].includes(value)) return value;
+  if (directory && /^content\/(blog|stories)(?:\/[^/]+)*$/.test(value)) return value;
   if (
     /^content\/blog\/(?:[^/]+\/)*[^/]+\.mdx?$/.test(value) ||
     /^content\/stories\/(?:[^/]+\/)*[^/]+\.md$/.test(value)
