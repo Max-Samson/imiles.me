@@ -115,18 +115,12 @@ html.dark .cms-component-select {
 .cms-collection-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 24px;
-  border-bottom: 1px solid var(--color-notion-border);
-  background: var(--color-notion-sidebar);
-  backdrop-filter: blur(8px);
-  flex-shrink: 0;
+  gap: 10px;
   font-size: 12px;
 }
 .cms-collection-toolbar select { padding: 5px 10px; border: 1px solid var(--color-notion-border); border-radius: 8px; background: var(--color-notion-bg); }
-.cms-collection-toolbar > span { margin-left: auto; color: var(--color-notion-muted); }
-@media (max-width: 640px) { .cms-collection-toolbar { padding: 10px 12px; flex-wrap: wrap; } .cms-collection-toolbar > span { margin-left: 0; width: 100%; } }
+.cms-collection-toolbar > span { color: var(--color-notion-muted); }
+@media (max-width: 640px) { .cms-collection-toolbar { flex-wrap: wrap; } }
 
 /* 针对固定版本 MDXEditor 的 CSS module 名称前缀适配；升级时需回归节点排版。 */
 .cms-jsx-inline {

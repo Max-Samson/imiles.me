@@ -3,15 +3,19 @@ import { FolderGit2 } from 'lucide-react';
 import { useCollectionStore } from '../../upstream/features/collections/store';
 import { useWorkbench } from '../context';
 
+interface CollectionToolbarProps {
+  className?: string;
+}
+
 /** 替代上游应用侧栏，只提供文章集合选择；账户和导航由 AdminShell 负责。 */
-export function CollectionToolbar() {
+export function CollectionToolbar({ className = '' }: CollectionToolbarProps) {
   const { workspace, setActiveCollection } = useCollectionStore();
   const { confirmLeave } = useWorkbench();
   return (
-    <div className="cms-collection-toolbar">
-      <div className="flex items-center gap-2">
+    <div className={`cms-collection-toolbar flex flex-wrap items-center gap-2.5 ${className}`}>
+      <div className="flex items-center gap-2 rounded-xl border border-notion-border bg-notion-sidebar/60 px-3 py-1.5 shadow-2xs backdrop-blur-md">
         <FolderGit2 className="size-4 text-notion-muted" />
-        <label htmlFor="cms-collection" className="text-xs font-medium text-notion-muted">
+        <label htmlFor="cms-collection" className="text-xs font-medium text-notion-muted whitespace-nowrap">
           文章集合
         </label>
         <select
@@ -30,8 +34,8 @@ export function CollectionToolbar() {
         </select>
       </div>
 
-      <div className="ml-auto flex items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+      <div className="flex items-center">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-2xs whitespace-nowrap">
           <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
           仅内存编辑 · 保存与发布暂未开放
         </span>

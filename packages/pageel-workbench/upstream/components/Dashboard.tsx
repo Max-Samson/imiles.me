@@ -391,7 +391,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       }
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-white">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-notion-bg">
         {/* Sync Warning Banner */}
         {!isSynced && (
           <div className="bg-white border-b border-notion-border px-4 py-2 flex items-center justify-center sticky top-0 z-40 shadow-sm animate-fade-in text-xs">
@@ -402,7 +402,6 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         )}
 
-        {embedded && <CollectionToolbar />}
         {/* Top Bar - Mobile */}
         {!embedded && <div className="flex items-center justify-between px-4 py-3 border-b border-notion-border lg:hidden bg-white">
           <button
@@ -431,11 +430,15 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   {getPageIcon()}
-                  <h1 className="text-2xl font-bold text-notion-text tracking-tight md:text-3xl">{getPageTitle()}</h1>
+                  <div>
+                    <h1 className="text-2xl font-bold text-notion-text tracking-tight md:text-3xl">{getPageTitle()}</h1>
+                    <p className="text-xs text-notion-muted hidden sm:block mt-0.5">
+                      全站内容管理 · 支持 MDX 交互组件与双语文章编排
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-notion-muted hidden sm:block">
-                  全站内容管理 · 支持 MDX 交互组件与双语文章编排
-                </p>
+
+                {embedded && <CollectionToolbar />}
               </div>
             </div>
 
