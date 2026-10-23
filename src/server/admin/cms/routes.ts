@@ -20,7 +20,13 @@ const files = Object.fromEntries(
   Object.entries(sourceFiles).map(([path, body]) => [path.slice(1), body]),
 );
 
-export const cmsGitRoute = defineRestRoute({
+/**
+ * CMS 内容仓库操作路由
+ *
+ * 代理 Pageel CMS 编辑器对博客与故事存储库的只读操作（目录扫描、文件树、文件内容、元数据等）。
+ * 服务端隔离 GitHub Token 与开发环境本地快照，严格限制为只读动作，杜绝写操作。
+ */
+export const cmsRepositoryRoute = defineRestRoute({
   POST: async ({ env }, route) => {
     await authorizeAdmin(route.request, env, 'admin:read');
     const bytes = await readBoundedBytes(route.request.body, 8192);
@@ -57,6 +63,9 @@ export const cmsGitRoute = defineRestRoute({
     return jsonSuccess(await readCmsOperation(repo, action, params));
   },
 });
+
+/** @deprecated 旧名称兼容别名，推荐使用 cmsRepositoryRoute */
+export const cmsGitRoute = cmsRepositoryRoute;
 
 export const cmsSessionRoute = defineRestRoute({
   GET: async ({ env }, route) =>

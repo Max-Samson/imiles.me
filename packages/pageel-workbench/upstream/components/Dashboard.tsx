@@ -422,11 +422,20 @@ const Dashboard: React.FC<DashboardProps> = ({
         }
         <main className="flex-1 overflow-y-auto bg-notion-bg text-notion-text transition-colors">
           <div className="w-full mx-auto py-8 px-4 sm:px-6 lg:px-6">
-            {/* Notion-style Page Header */}
+            {/* Unified Page Header matching Admin Console */}
             <div className="cms-page-heading mb-8 group">
-              <div className="flex items-center mb-6">
-                {getPageIcon()}
-                <h1 className="text-2xl font-bold text-notion-text tracking-tight">{getPageTitle()}</h1>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="flex size-2 animate-pulse rounded-full bg-emerald-500" />
+                <p className="text-xs font-semibold text-notion-blue tracking-wider uppercase">Content Management</p>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  {getPageIcon()}
+                  <h1 className="text-2xl font-bold text-notion-text tracking-tight md:text-3xl">{getPageTitle()}</h1>
+                </div>
+                <p className="text-xs text-notion-muted hidden sm:block">
+                  全站内容管理 · 支持 MDX 交互组件与双语文章编排
+                </p>
               </div>
             </div>
 

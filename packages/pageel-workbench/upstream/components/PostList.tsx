@@ -83,11 +83,11 @@ const ThumbnailWithAuth: React.FC<{ gitService: IGitService, imagePath: string, 
     }, [gitService, imagePath]);
     
     if (isLoading) {
-        return <div className={`flex items-center justify-center bg-gray-50 ${className}`}><SpinnerIcon className="w-3 h-3 animate-spin text-gray-400" /></div>;
+        return <div className={`flex items-center justify-center bg-notion-sidebar/40 ${className}`}><SpinnerIcon className="w-3 h-3 animate-spin text-notion-muted" /></div>;
     }
 
     if (!imageUrl) {
-        return <div className={`flex items-center justify-center bg-gray-50 ${className}`}><ImageIcon className="text-gray-300 w-1/2 h-1/2" /></div>;
+        return <div className={`flex items-center justify-center bg-notion-sidebar/40 ${className}`}><ImageIcon className="text-notion-muted/40 w-1/2 h-1/2" /></div>;
     }
 
     return <img src={imageUrl} alt="Thumbnail" className={className} />;
@@ -634,13 +634,13 @@ const PostList: React.FC<PostListProps> = ({
               <span className="ml-3 text-notion-muted">{t('postList.loading')}</span>
           </div>
       ) : error ? (
-          <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-sm">
+          <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-lg text-xs">
               {error}
           </div>
       ) : currentPosts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 border border-dashed border-notion-border rounded-sm bg-gray-50">
-              <DocumentIcon className="w-10 h-10 text-notion-muted mb-2" />
-              <p className="text-notion-muted">{t('postList.noPosts')}</p>
+          <div className="flex flex-col items-center justify-center h-64 border border-dashed border-notion-border rounded-xl bg-notion-sidebar/20">
+              <DocumentIcon className="w-10 h-10 text-notion-muted mb-2 opacity-50" />
+              <p className="text-notion-muted text-xs">{t('postList.noPosts')}</p>
           </div>
       ) : (
           <div>
@@ -651,31 +651,31 @@ const PostList: React.FC<PostListProps> = ({
                           <div 
                             key={post.sha} 
                             onClick={() => setSelectedPost(post)}
-                            className="bg-white border border-notion-border rounded-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden flex flex-col h-full"
+                            className="bg-notion-sidebar/40 border border-notion-border rounded-xl hover:border-notion-blue/40 hover:shadow-xs transition-all cursor-pointer overflow-hidden flex flex-col h-full group"
                           >
-                              <div className="h-32 bg-gray-100 overflow-hidden relative border-b border-notion-border">
+                              <div className="h-32 bg-notion-sidebar overflow-hidden relative border-b border-notion-border">
                                 {projectType === 'github' && repo.private && post.thumbnailUrl ? (
                                     <ThumbnailWithAuth gitService={gitService} imagePath={post.thumbnailUrl} className="w-full h-full object-cover" />
                                 ) : (() => {
                                     const resolvedUrl = resolveImageUrl(post.thumbnailUrl);
                                     if (resolvedUrl && resolvedUrl !== 'needs-domain') {
-                                        return <img src={resolvedUrl} alt="" className="w-full h-full object-cover" onError={(e) => e.currentTarget.style.display = 'none'} />;
+                                        return <img src={resolvedUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => e.currentTarget.style.display = 'none'} />;
                                     } else {
                                         return (
                                             <div className="flex items-center justify-center w-full h-full text-notion-muted">
-                                                <DocumentIcon className="w-8 h-8 opacity-50" />
+                                                <DocumentIcon className="w-8 h-8 opacity-40" />
                                             </div>
                                         );
                                     }
                                 })()}
                               </div>
                               <div className="p-4 flex-grow">
-                                  <h3 className="text-sm font-semibold text-notion-text mb-1 line-clamp-2">{post.frontmatter.title || post.name}</h3>
-                                  <div className="text-xs text-notion-muted line-clamp-3">
+                                  <h3 className="text-xs font-semibold text-notion-text mb-1 line-clamp-2 group-hover:text-notion-blue transition-colors">{post.frontmatter.title || post.name}</h3>
+                                  <div className="text-[11px] text-notion-muted line-clamp-3 leading-relaxed">
                                       {post.frontmatter.description || post.frontmatter.excerpt || (post.body ? post.body.substring(0, 100) : '')}
                                   </div>
                               </div>
-                              <div className="px-4 py-2 border-t border-notion-border text-[10px] text-notion-muted flex justify-between items-center bg-gray-50">
+                              <div className="px-4 py-2 border-t border-notion-border text-[10px] text-notion-muted flex justify-between items-center bg-notion-sidebar/50">
                                   <span>{post.frontmatter.date ? new Date(post.frontmatter.date).toLocaleDateString() : 'No Date'}</span>
                                   <span>{post.frontmatter.author}</span>
                               </div>
@@ -683,7 +683,7 @@ const PostList: React.FC<PostListProps> = ({
                       ))}
                   </div>
               ) : (
-                  <div className="border border-notion-border rounded-sm overflow-x-auto bg-white">
+                  <div className="border border-notion-border rounded-xl overflow-x-auto bg-notion-bg shadow-2xs">
                       <table className="w-full divide-y divide-notion-border text-sm table-fixed">
                           <colgroup>
                               <col style={{ width: `${columnWidths['__name__'] || 35}%` }} />
@@ -692,10 +692,10 @@ const PostList: React.FC<PostListProps> = ({
                               ))}
                               <col style={{ width: '100px' }} />
                           </colgroup>
-                          <thead className="bg-notion-sidebar text-notion-muted font-semibold">
+                          <thead className="bg-notion-sidebar/60 text-notion-muted font-semibold">
                               <tr>
                                   <th
-                                    className="px-4 py-2 text-left text-xs font-normal border-r border-notion-border uppercase tracking-wide select-none truncate cursor-pointer hover:bg-gray-100 transition-colors"
+                                    className="px-4 py-2.5 text-left text-xs font-medium border-r border-notion-border uppercase tracking-wide select-none truncate cursor-pointer hover:bg-notion-hover transition-colors"
                                     onClick={() => handleColumnSort('title')}
                                   >
                                     <span className="flex items-center gap-1">
@@ -706,7 +706,7 @@ const PostList: React.FC<PostListProps> = ({
                                   {visibleFields.map(field => (
                                       <th
                                         key={field}
-                                        className="px-4 py-2 text-left text-xs font-normal border-r border-notion-border uppercase tracking-wide select-none truncate cursor-pointer hover:bg-gray-100 transition-colors"
+                                        className="px-4 py-2.5 text-left text-xs font-medium border-r border-notion-border uppercase tracking-wide select-none truncate cursor-pointer hover:bg-notion-hover transition-colors"
                                         onClick={() => handleColumnSort(field)}
                                       >
                                         <span className="flex items-center gap-1">
@@ -715,16 +715,16 @@ const PostList: React.FC<PostListProps> = ({
                                         </span>
                                       </th>
                                   ))}
-                                  <th className="px-4 py-2 w-10"></th>
+                                  <th className="px-4 py-2.5 w-10"></th>
                               </tr>
                           </thead>
                           <tbody className="divide-y divide-notion-border">
                               {currentPosts.map(post => (
                                   <tr key={post.sha} onClick={() => setSelectedPost(post)} className="hover:bg-notion-hover/50 cursor-pointer group transition-colors">
-                                      <td className="px-4 py-2 border-r border-notion-border overflow-hidden">
+                                      <td className="px-4 py-2.5 border-r border-notion-border overflow-hidden">
                                           <div className="flex items-start gap-3">
                                               {/* Mini Thumbnail */}
-                                              <div className="w-8 h-8 flex-shrink-0 mt-0.5 bg-gray-100 rounded-sm border border-notion-border overflow-hidden">
+                                              <div className="w-8 h-8 flex-shrink-0 mt-0.5 bg-notion-sidebar rounded-md border border-notion-border overflow-hidden">
                                                   {projectType === 'github' && repo.private && post.thumbnailUrl ? (
                                                       <ThumbnailWithAuth gitService={gitService} imagePath={post.thumbnailUrl} className="w-full h-full object-cover" />
                                                   ) : (() => {
@@ -748,32 +748,32 @@ const PostList: React.FC<PostListProps> = ({
                                       </td>
                                       
                                       {visibleFields.map(field => (
-                                          <td key={field} className="px-4 py-2 border-r border-notion-border align-top overflow-hidden">
+                                          <td key={field} className="px-4 py-2.5 border-r border-notion-border align-top overflow-hidden">
                                               {renderDynamicCell(post, field)}
                                           </td>
                                       ))}
 
-                                      <td className="px-4 py-2 text-right">
+                                      <td className="px-4 py-2.5 text-right">
                                           <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                               <button
                                                   disabled onClick={(e) => { e.stopPropagation(); handleUpdatePostFile(post); }}
-                                                  className="p-1 text-notion-muted hover:text-notion-text hover:bg-gray-200 rounded-sm transition-colors"
+                                                  className="p-1 text-notion-muted hover:text-notion-text hover:bg-notion-hover rounded-md transition-colors cursor-pointer"
                                                   title={t('postList.updateFile')}
                                               >
-                                                  <DocumentIcon className="w-4 h-4" />
+                                                  <DocumentIcon className="w-3.5 h-3.5" />
                                               </button>
                                               <button
                                                   disabled onClick={(e) => { e.stopPropagation(); handleUpdateImage(post); }}
-                                                  className="p-1 text-notion-muted hover:text-notion-text hover:bg-gray-200 rounded-sm transition-colors"
+                                                  className="p-1 text-notion-muted hover:text-notion-text hover:bg-notion-hover rounded-md transition-colors cursor-pointer"
                                                   title={t('postList.updateImage')}
                                               >
-                                                  <ImageIcon className="w-4 h-4" />
+                                                  <ImageIcon className="w-3.5 h-3.5" />
                                               </button>
                                               <button 
                                                 disabled onClick={(e) => { e.stopPropagation(); setPostToDelete(post); }} 
-                                                className="text-notion-muted hover:text-red-600 hover:bg-red-50 p-1 rounded-sm transition-colors"
+                                                className="text-notion-muted hover:text-red-500 hover:bg-red-500/10 p-1 rounded-md transition-colors cursor-pointer"
                                               >
-                                                  <TrashIcon className="w-4 h-4" />
+                                                  <TrashIcon className="w-3.5 h-3.5" />
                                               </button>
                                           </div>
                                       </td>
@@ -786,21 +786,21 @@ const PostList: React.FC<PostListProps> = ({
 
               {/* Pagination */}
               {totalPages > 1 && (
-                  <div className="mt-4 flex justify-center gap-2">
+                  <div className="mt-4 flex justify-center items-center gap-2">
                       <button 
                         disabled={currentPage === 1} 
                         onClick={() => setCurrentPage(p => p - 1)}
-                        className="px-3 py-1 bg-white border border-notion-border rounded-sm text-xs disabled:opacity-50 hover:bg-notion-hover"
+                        className="px-3 py-1 bg-notion-sidebar/60 border border-notion-border rounded-lg text-xs text-notion-text disabled:opacity-40 hover:bg-notion-hover transition-colors shadow-2xs cursor-pointer"
                       >
                           {t('postList.pagination.prev')}
                       </button>
-                      <span className="text-xs flex items-center text-notion-muted">
+                      <span className="text-xs flex items-center text-notion-muted font-mono">
                           {t('postList.pagination.pageInfo', { current: currentPage, total: totalPages })}
                       </span>
                       <button 
                         disabled={currentPage === totalPages} 
                         onClick={() => setCurrentPage(p => p + 1)}
-                        className="px-3 py-1 bg-white border border-notion-border rounded-sm text-xs disabled:opacity-50 hover:bg-notion-hover"
+                        className="px-3 py-1 bg-notion-sidebar/60 border border-notion-border rounded-lg text-xs text-notion-text disabled:opacity-40 hover:bg-notion-hover transition-colors shadow-2xs cursor-pointer"
                       >
                           {t('postList.pagination.next')}
                       </button>

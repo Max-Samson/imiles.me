@@ -301,53 +301,55 @@ export function ComponentInspector() {
   return (
     <div className="flex flex-col">
       {/* 3 Tabs Header: 文章 ｜ 组件库 ｜ 当前组件 */}
-      <div
-        className="cms-inspector-tabs sticky top-0 z-10 flex border-b border-notion-border bg-notion-sidebar/90 backdrop-blur-xs p-1 text-xs gap-1"
-        role="group"
-        aria-label="右栏属性面板切换"
-      >
-        <button
-          type="button"
-          aria-pressed={state.mode === 'article'}
-          onClick={() => state.setMode('article')}
-          className={`flex-1 flex items-center justify-center gap-1.5 rounded py-1.5 font-medium transition-all ${
-            state.mode === 'article'
-              ? 'bg-white dark:bg-slate-800 text-notion-text shadow-2xs font-semibold'
-              : 'text-notion-muted hover:text-notion-text hover:bg-notion-hover/50'
-          }`}
+      <div className="p-2 border-b border-notion-border bg-notion-sidebar sticky top-0 z-10 backdrop-blur-md">
+        <div
+          className="grid grid-cols-3 p-1 rounded-lg bg-notion-bg border border-notion-border shadow-2xs gap-1"
+          role="group"
+          aria-label="右栏属性面板切换"
         >
-          <FileText className="h-3.5 w-3.5 opacity-70" />
-          <span>文章</span>
-        </button>
-        <button
-          type="button"
-          aria-pressed={state.mode === 'library'}
-          onClick={() => state.setMode('library')}
-          className={`flex-1 flex items-center justify-center gap-1.5 rounded py-1.5 font-medium transition-all ${
-            state.mode === 'library'
-              ? 'bg-white dark:bg-slate-800 text-notion-text shadow-2xs font-semibold'
-              : 'text-notion-muted hover:text-notion-text hover:bg-notion-hover/50'
-          }`}
-        >
-          <Boxes className="h-3.5 w-3.5 opacity-70" />
-          <span>组件库</span>
-        </button>
-        <button
-          type="button"
-          aria-pressed={state.mode === 'component'}
-          onClick={() => state.setMode('component')}
-          className={`flex-1 flex items-center justify-center gap-1.5 rounded py-1.5 font-medium transition-all relative ${
-            state.mode === 'component'
-              ? 'bg-white dark:bg-slate-800 text-notion-text shadow-2xs font-semibold'
-              : 'text-notion-muted hover:text-notion-text hover:bg-notion-hover/50'
-          }`}
-        >
-          <Sliders className="h-3.5 w-3.5 opacity-70" />
-          <span>当前组件</span>
-          {Boolean(state.selectedComponent) && (
-            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-          )}
-        </button>
+          <button
+            type="button"
+            aria-pressed={state.mode === 'article'}
+            onClick={() => state.setMode('article')}
+            className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs transition-all cursor-pointer ${
+              state.mode === 'article'
+                ? 'bg-notion-hover text-notion-text font-semibold shadow-xs'
+                : 'text-notion-muted hover:text-notion-text font-medium'
+            }`}
+          >
+            <FileText className="h-3.5 w-3.5 opacity-75" />
+            <span>文章</span>
+          </button>
+          <button
+            type="button"
+            aria-pressed={state.mode === 'library'}
+            onClick={() => state.setMode('library')}
+            className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs transition-all cursor-pointer ${
+              state.mode === 'library'
+                ? 'bg-notion-hover text-notion-text font-semibold shadow-xs'
+                : 'text-notion-muted hover:text-notion-text font-medium'
+            }`}
+          >
+            <Boxes className="h-3.5 w-3.5 opacity-75" />
+            <span>组件库</span>
+          </button>
+          <button
+            type="button"
+            aria-pressed={state.mode === 'component'}
+            onClick={() => state.setMode('component')}
+            className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs transition-all cursor-pointer relative ${
+              state.mode === 'component'
+                ? 'bg-notion-hover text-notion-text font-semibold shadow-xs'
+                : 'text-notion-muted hover:text-notion-text font-medium'
+            }`}
+          >
+            <Sliders className="h-3.5 w-3.5 opacity-75" />
+            <span>当前组件</span>
+            {Boolean(state.selectedComponent) && (
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse ml-0.5" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Component Library Panel */}

@@ -65,21 +65,22 @@
 .cms-properties .space-y-0 > div > div { width: 100%; }
 .cms-properties .space-y-0 input { width: 100%; }
 html.dark .cms-workbench {
-  --color-notion-text: #e4e7ec;
-  --color-notion-muted: #a0a8b5;
-  --color-notion-border: #30353e;
-  --color-notion-bg: #191c22;
-  --color-notion-sidebar: #15181d;
-  --color-notion-hover: #282e38;
-  background: #191c22;
+  --color-notion-text: #f1f5f9;
+  --color-notion-muted: #94a3b8;
+  --color-notion-border: rgba(255, 255, 255, 0.08);
+  --color-notion-bg: #0b0f17;
+  --color-notion-sidebar: #131722;
+  --color-notion-hover: #1c2232;
+  --color-notion-blue: #38bdf8;
+  background: #0b0f17;
   color-scheme: dark;
 }
 
 html.dark .cms-workbench .bg-white:not(button):not([role="button"]),
 html.dark .cms-workbench header,
-html.dark .pageel-editor-slot [role="toolbar"] { background: #191c22; }
+html.dark .pageel-editor-slot [role="toolbar"] { background: #131722; }
 html.dark .cms-workbench .bg-gray-50:not(button):not([role="button"]),
-html.dark .cms-workbench .bg-gray-100:not(button):not([role="button"]) { background: #252a33; }
+html.dark .cms-workbench .bg-gray-100:not(button):not([role="button"]) { background: #1c2232; }
 html.dark .cms-workbench input,
 html.dark .cms-workbench select,
 html.dark .cms-workbench textarea {
@@ -111,8 +112,19 @@ html.dark .cms-component-select {
 
 /* 嵌入时高度由后台内容区分配，不占用第二个视口，不添加第二套全局导航。 */
 .pageel-host .cms-workbench { height: 100%; min-height: 0; }
-.cms-collection-toolbar { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-bottom: 1px solid var(--color-notion-border); flex-shrink: 0; font-size: 12px; }
-.cms-collection-toolbar select { padding: 6px 10px; border: 1px solid var(--color-notion-border); border-radius: 6px; background: var(--color-notion-bg); }
+.cms-collection-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--color-notion-border);
+  background: var(--color-notion-sidebar);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.cms-collection-toolbar select { padding: 5px 10px; border: 1px solid var(--color-notion-border); border-radius: 8px; background: var(--color-notion-bg); }
 .cms-collection-toolbar > span { margin-left: auto; color: var(--color-notion-muted); }
 @media (max-width: 640px) { .cms-collection-toolbar { padding: 10px 12px; flex-wrap: wrap; } .cms-collection-toolbar > span { margin-left: 0; width: 100%; } }
 
@@ -215,7 +227,19 @@ html.dark .cms-component-select {
 
 .cms-jsx-block > [class*="_blockEditor_"] { background: transparent; padding: 12px; }
 .cms-jsx-block > [class*="_blockEditor_"] > [class*="_genericComponentName_"] { display: none; }
-.cms-jsx-help { font-size: 12px; color: var(--color-notion-muted); line-height: 1.7; margin-bottom: 12px; }
+.cms-jsx-help {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-notion-muted);
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
 
 /* 行内配置悬浮气泡 */
 .cms-component-select {

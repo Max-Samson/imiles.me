@@ -9,7 +9,7 @@ import { adminApiRequest } from './api-client';
 /** 将 Pageel 仓库协议映射到同源管理 API；令牌与权限校验始终留在服务端。 */
 export class PageelReadAdapter implements IGitService {
   private call<T>(action: string, params: Record<string, unknown> = {}): Promise<T> {
-    return adminApiRequest<T>('/api/v1/admin/cms/git', undefined, fetch, {
+    return adminApiRequest<T>('/api/v1/admin/cms/repository', undefined, fetch, {
       method: 'POST',
       body: { action, params },
     });

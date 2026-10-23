@@ -1,6 +1,8 @@
 import { ComponentInspector, useComponentInspector } from '../../integration/components/InspectorContext';
 import { useWorkbench } from '../../integration/context';
 import { fieldLabel } from '../../integration/labels';
+import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
+import { ArrowLeft, SlidersHorizontal, Save, Info } from 'lucide-react';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { marked } from 'marked';
@@ -140,15 +142,15 @@ const CoverImage: React.FC<{
     if (!thumbnailUrl) return null;
 
     return (
-        <div className={`relative overflow-hidden group bg-gray-50 ${className}`}>
+        <div className={`relative overflow-hidden group bg-notion-sidebar/40 ${className}`}>
             {isLoading ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                <div className="absolute inset-0 flex items-center justify-center bg-notion-sidebar">
                     <SpinnerIcon className="w-6 h-6 animate-spin text-notion-muted" />
                 </div>
             ) : imageUrl && !imageFailed ? (
                 <img src={imageUrl} onError={() => setImageFailed(true)} alt="文章封面" className="w-full h-full object-cover" />
             ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-notion-muted">
+                <div className="absolute inset-0 flex items-center justify-center bg-notion-sidebar text-notion-muted">
                     <span className="text-xs px-4 text-center">图片加载失败，请检查图片地址</span>
                 </div>
             )}
@@ -810,9 +812,10 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
           return (
               <input 
                 type="date"
-                className="w-full bg-transparent border-b border-transparent focus:border-notion-blue focus:ring-0 text-sm py-0.5 px-1 hover:bg-notion-hover/50 rounded-sm transition-colors cursor-pointer"
+                className="w-full bg-notion-bg border border-notion-border rounded-lg text-xs py-1.5 px-2.5 text-notion-text focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue transition-all cursor-pointer shadow-2xs"
                 value={dateStr}
                 onChange={(e) => handleFrontmatterChange(key, e.target.value)}
+                style={{ colorScheme: 'inherit' }}
               />
           );
       }
@@ -821,11 +824,12 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       if (isComplex) {
           return (
               <button
+                type="button"
                 onClick={() => openFieldModal(key, value)}
-                className="w-full text-left flex items-center gap-1.5 px-1 py-0.5 text-sm text-notion-blue hover:bg-notion-hover/50 rounded-sm transition-colors group"
+                className="w-full text-left flex items-center justify-between px-2.5 py-1.5 text-xs text-notion-text bg-notion-bg border border-notion-border rounded-lg hover:border-notion-blue/40 transition-colors group shadow-2xs cursor-pointer"
               >
-                <span className="truncate text-xs">{formatComplexPreview(value)}</span>
-                <EditIcon className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                <span className="truncate text-xs font-mono">{formatComplexPreview(value)}</span>
+                <EditIcon className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 text-notion-blue transition-opacity flex-shrink-0" />
               </button>
           );
       }
@@ -833,20 +837,21 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       // String/number — inline edit + expand button for long values
       const isLongValue = typeof value === 'string' && value.length > 50;
       return (
-        <div className="flex items-center w-full gap-1">
+        <div className="flex items-center w-full gap-1.5">
           <input 
               type="text" 
-              className="flex-grow bg-transparent border-b border-transparent focus:border-notion-blue focus:ring-0 text-sm py-0.5 px-1 hover:bg-notion-hover/50 rounded-sm transition-colors min-w-0"
+              className="flex-grow bg-notion-bg border border-notion-border rounded-lg text-xs py-1.5 px-2.5 text-notion-text focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue transition-all min-w-0 shadow-2xs"
               value={String(value || '')}
               onChange={(e) => handleFrontmatterChange(key, e.target.value)}
           />
           {isLongValue && (
             <button
+              type="button"
               onClick={() => openFieldModal(key, value)}
-              className="p-0.5 text-notion-muted hover:text-notion-blue rounded-sm transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
-              title="Expand to edit"
+              className="p-1 text-notion-muted hover:text-notion-blue rounded-md border border-notion-border bg-notion-bg hover:bg-notion-hover transition-colors flex-shrink-0 cursor-pointer shadow-2xs"
+              title="展开编辑"
             >
-              <EditIcon className="w-3 h-3" />
+              <EditIcon className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -863,7 +868,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   const hasCoverImage = !!(editableFrontmatter.image || editableFrontmatter.cover || editableFrontmatter.thumbnail || editableFrontmatter.heroImage || post.thumbnailUrl);
 
   return (
-    <div className="cms-post-detail h-full flex flex-col bg-white animate-fade-in relative">
+    <div className="cms-post-detail h-full flex flex-col bg-notion-bg animate-fade-in relative">
       <input type="file" ref={updatePostFileInputRef} className="hidden" accept=".md,.mdx" onChange={confirmUpdateFile} />
       
       {isImageModalOpen && (
@@ -899,11 +904,11 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
       {/* Frontmatter Field Edit Modal */}
       {fieldModalKey && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className={`bg-white rounded-lg shadow-xl w-full flex flex-col border border-notion-border overflow-hidden ${
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className={`bg-notion-bg text-notion-text rounded-xl shadow-2xl w-full flex flex-col border border-notion-border overflow-hidden ${
             fieldModalIsGallery ? 'max-w-2xl max-h-[85vh]' : 'max-w-lg max-h-[80vh]'
           }`}>
-            <header className="px-5 py-3 border-b border-notion-border flex items-center justify-between bg-white flex-shrink-0">
+            <header className="px-5 py-3.5 border-b border-notion-border flex items-center justify-between bg-notion-sidebar/40 flex-shrink-0">
               <div className="flex items-center gap-2">
                 {fieldModalIsGallery 
                   ? <ImageIcon className="w-4 h-4 text-notion-muted" />
@@ -911,14 +916,14 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                 }
                 <h3 className="text-sm font-semibold text-notion-text capitalize">{fieldModalKey}</h3>
                 {fieldModalIsGallery ? (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-sm font-medium">
+                  <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-full font-medium">
                     {fieldModalGalleryItems.length} images
                   </span>
                 ) : fieldModalIsComplex ? (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-sm font-medium">JSON</span>
+                  <span className="text-[10px] px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-full font-medium">JSON</span>
                 ) : null}
               </div>
-              <button onClick={() => setFieldModalKey(null)} className="text-notion-muted hover:text-notion-text p-1 hover:bg-notion-hover rounded-sm transition-colors">
+              <button onClick={() => setFieldModalKey(null)} className="text-notion-muted hover:text-notion-text p-1 hover:bg-notion-hover rounded-md transition-colors cursor-pointer">
                 <CloseIcon className="w-4 h-4" />
               </button>
             </header>
@@ -947,11 +952,11 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                             onDragEnd={handleGalleryDragEnd}
                             className={`group/card relative rounded-lg border transition-all cursor-grab active:cursor-grabbing ${
                               galleryDragIndex === index 
-                                ? 'border-notion-blue shadow-md ring-2 ring-blue-200 scale-[0.97]' 
-                                : 'border-notion-border hover:border-notion-blue/40 hover:shadow-sm'
+                                ? 'border-notion-blue shadow-md ring-2 ring-blue-500/30 scale-[0.97]' 
+                                : 'border-notion-border hover:border-notion-blue/40 hover:shadow-xs'
                             }`}
                           >
-                            <div className="aspect-square bg-gray-50 rounded-t-lg overflow-hidden relative">
+                            <div className="aspect-square bg-notion-sidebar/40 rounded-t-lg overflow-hidden relative">
                               <GalleryThumbnail 
                                 src={imgSrc} 
                                 label={label} 
@@ -960,12 +965,12 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                                 projectType={projectType} 
                                 domainUrl={domainUrl} 
                               />
-                              <span className="absolute top-1.5 left-1.5 text-[10px] bg-black/50 text-white px-1.5 py-0.5 rounded-full font-medium">
+                              <span className="absolute top-1.5 left-1.5 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded-full font-medium">
                                 {index + 1}
                               </span>
                               <button
                                 onClick={() => handleGalleryRemove(index)}
-                                className="absolute top-1.5 right-1.5 p-1 bg-red-500/80 hover:bg-red-600 text-white rounded-full opacity-0 group-hover/card:opacity-100 transition-opacity"
+                                className="absolute top-1.5 right-1.5 p-1 bg-red-500/80 hover:bg-red-600 text-white rounded-full opacity-0 group-hover/card:opacity-100 transition-opacity cursor-pointer"
                                 title="Remove"
                               >
                                 <CloseIcon className="w-3 h-3" />
@@ -992,7 +997,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                       })}
                       <button
                         onClick={() => setIsGalleryPickerOpen(true)}
-                        className="aspect-square rounded-lg border-2 border-dashed border-notion-border hover:border-notion-blue/50 flex flex-col items-center justify-center gap-2 text-notion-muted hover:text-notion-blue transition-colors group/add"
+                        className="aspect-square rounded-lg border-2 border-dashed border-notion-border hover:border-notion-blue/50 flex flex-col items-center justify-center gap-2 text-notion-muted hover:text-notion-blue transition-colors group/add cursor-pointer"
                       >
                         <PlusIcon className="w-6 h-6 opacity-40 group-hover/add:opacity-70 transition-opacity" />
                         <span className="text-[10px] font-medium">Add Image</span>
@@ -1000,11 +1005,11 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     </div>
                   )}
                 </div>
-                <footer className="px-4 py-3 border-t border-notion-border flex items-center justify-between bg-gray-50 flex-shrink-0">
-                  <p className="text-[10px] text-notion-muted">💡 Drag to reorder • Click × to remove</p>
+                <footer className="px-4 py-3 border-t border-notion-border flex items-center justify-between bg-notion-sidebar/30 flex-shrink-0">
+                  <p className="text-[10px] text-notion-muted">💡 拖拽排序 · 点击 × 移除</p>
                   <div className="flex gap-2">
-                    <button onClick={() => setFieldModalKey(null)} className="px-3 py-1.5 text-sm text-notion-text border border-notion-border rounded-sm hover:bg-notion-hover transition-colors">取消</button>
-                    <button onClick={handleFieldModalSave} className="px-4 py-1.5 text-sm text-white bg-notion-blue rounded-sm hover:bg-blue-600 transition-colors font-medium">应用到当前页面</button>
+                    <button onClick={() => setFieldModalKey(null)} className="px-3 py-1.5 text-xs text-notion-text border border-notion-border rounded-md hover:bg-notion-hover transition-colors cursor-pointer">取消</button>
+                    <button onClick={handleFieldModalSave} className="px-3.5 py-1.5 text-xs text-white bg-notion-blue rounded-md hover:opacity-90 transition-opacity font-medium cursor-pointer shadow-2xs">应用到当前页面</button>
                   </div>
                 </footer>
               </>
@@ -1012,8 +1017,8 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
               <>
                 <div className="flex-grow p-4 overflow-y-auto">
                   <textarea
-                    className={`w-full h-60 p-3 text-sm border border-notion-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y bg-notion-sidebar/20 ${
-                      fieldModalIsComplex ? 'font-mono text-xs leading-relaxed' : 'leading-normal'
+                    className={`w-full h-60 p-3 text-xs border border-notion-border rounded-lg focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue resize-y bg-notion-sidebar/30 text-notion-text ${
+                      fieldModalIsComplex ? 'font-mono leading-relaxed' : 'leading-normal'
                     }`}
                     value={fieldModalValue}
                     onChange={(e) => setFieldModalValue(e.target.value)}
@@ -1021,12 +1026,12 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     placeholder={fieldModalIsComplex ? 'Edit JSON...' : 'Edit value...'}
                   />
                   {fieldModalIsComplex && (
-                    <p className="text-[10px] text-notion-muted mt-2">💡 Edit as JSON format.</p>
+                    <p className="text-[10px] text-notion-muted mt-2">💡 请以标准 JSON 格式编辑。</p>
                   )}
                 </div>
-                <footer className="px-4 py-3 border-t border-notion-border flex justify-end gap-2 bg-gray-50 flex-shrink-0">
-                  <button onClick={() => setFieldModalKey(null)} className="px-3 py-1.5 text-sm text-notion-text border border-notion-border rounded-sm hover:bg-notion-hover transition-colors">取消</button>
-                  <button onClick={handleFieldModalSave} className="px-4 py-1.5 text-sm text-white bg-notion-blue rounded-sm hover:bg-blue-600 transition-colors font-medium">应用到当前页面</button>
+                <footer className="px-4 py-3 border-t border-notion-border flex justify-end gap-2 bg-notion-sidebar/30 flex-shrink-0">
+                  <button onClick={() => setFieldModalKey(null)} className="px-3 py-1.5 text-xs text-notion-text border border-notion-border rounded-md hover:bg-notion-hover transition-colors cursor-pointer">取消</button>
+                  <button onClick={handleFieldModalSave} className="px-3.5 py-1.5 text-xs text-white bg-notion-blue rounded-md hover:opacity-90 transition-opacity font-medium cursor-pointer shadow-2xs">应用到当前页面</button>
                 </footer>
               </>
             )}
@@ -1034,33 +1039,62 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
         </div>
       )}
 
-      {/* Sticky Header - Aligned to Content */}
-      <header className="h-12 border-b border-notion-border bg-white sticky top-0 z-30 flex-shrink-0 backdrop-blur-md bg-white/85">
+      {/* Sticky Header - Aligned to System Console & LiquidGlass styling */}
+      <header className="h-14 border-b border-notion-border bg-notion-bg/90 sticky top-0 z-30 flex-shrink-0 backdrop-blur-md">
         <div className="px-6 h-full flex justify-between items-center w-full">
-            <div className="flex items-center gap-2 overflow-hidden">
-                <button 
-                        onClick={() => { if (confirmLeave()) onBack(); }}
-                        className="flex items-center text-sm text-notion-text hover:bg-notion-hover px-2 py-1 rounded-sm transition-colors"
+            <div className="flex items-center gap-3 overflow-hidden">
+                <LiquidGlassButton
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => { if (confirmLeave()) onBack(); }}
+                  className="gap-1.5 h-8 text-xs font-medium text-notion-text"
                 >
-                    <ArrowUturnLeftIcon className="w-4 h-4 mr-1.5 text-notion-muted" />
-                    <span className="font-medium">返回列表</span>
-                </button>
-                <span className="text-notion-border text-lg font-light">|</span>
-                <div className="flex items-center text-sm text-notion-muted truncate">
-                        <span className="truncate font-medium text-notion-text text-sm max-w-[200px]">{post.sha === "" ? t('postList.createButton') : (editableFrontmatter.title || post.name)}</span>
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>返回列表</span>
+                </LiquidGlassButton>
+                <span className="text-notion-border text-sm font-light">/</span>
+                <div className="flex items-center text-xs text-notion-muted truncate">
+                  <span className="truncate font-semibold text-notion-text text-xs max-w-[240px]">
+                    {post.sha === "" ? t('postList.createButton') : (editableFrontmatter.title || post.name)}
+                  </span>
                 </div>
             </div>
             
-            <div className="flex items-center space-x-2">
-                <span className="cms-memory-status">修改仅在当前页面保留</span>
-                <button type="button" className="cms-properties-toggle" aria-expanded={propertiesOpen} aria-controls="cms-properties" onClick={() => setPropertiesOpen(value => !value)}>{propertiesOpen ? '收起属性' : '文章属性'}</button>
-                <button disabled title="兼容性验证阶段，尚未开放保存与发布" className="cms-disabled-save">保存未开放</button>
+            <div className="flex items-center gap-2.5">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                  <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  仅内存保留
+                </span>
+                <LiquidGlassButton
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  aria-expanded={propertiesOpen}
+                  aria-controls="cms-properties"
+                  onClick={() => setPropertiesOpen(value => !value)}
+                  className="gap-1.5 h-8 text-xs font-medium text-notion-text"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-notion-muted" />
+                  <span>{propertiesOpen ? '收起属性' : '文章属性'}</span>
+                </LiquidGlassButton>
+                <LiquidGlassButton
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled
+                  title="兼容性验证阶段，尚未开放保存与发布"
+                  className="gap-1.5 h-8 text-xs font-medium text-notion-muted opacity-60 cursor-not-allowed border-dashed"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>保存未开放</span>
+                </LiquidGlassButton>
             </div>
         </div>
       </header>
 
       {/* Main Scrollable Content — 2-column WordPress-style layout */}
-      <div id="post-detail-container" className="flex-grow overflow-y-auto bg-white custom-scrollbar">
+      <div id="post-detail-container" className="flex-grow overflow-y-auto bg-notion-bg custom-scrollbar">
             <div className="flex flex-col lg:flex-row w-full h-full">
 
               {/* LEFT COLUMN — Content Editor */}
@@ -1082,53 +1116,60 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
                 <div className="border-t border-notion-border mb-6"></div>
 
-                {/* Tabs — 2/3 tab system (#csa-tab-architecture-consolidation) */}
-                {/* @para-doc [#csa-tab-architecture-consolidation] */}
-                <div className="flex items-center gap-6 mb-6">
+                {/* Tabs — segmented pill control aligned with System Console */}
+                <div className="inline-flex items-center p-1 rounded-xl bg-notion-sidebar border border-notion-border mb-6 shadow-2xs">
                     {hasWysiwygPlugin && (
                         <button
+                            type="button"
                             onClick={() => handleTabChange('edit')}
-                            className={`flex items-center gap-1.5 pb-1 text-sm font-medium transition-all ${
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                                 activeTab === 'edit'
-                                ? 'text-notion-text border-b-2 border-notion-text'
-                                : 'text-notion-muted hover:text-notion-text border-b-2 border-transparent'
+                                ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
+                                : 'text-notion-muted hover:text-notion-text'
                             }`}
                         >
-                            <EditIcon className="w-4 h-4" /> 编辑
+                            <EditIcon className="w-3.5 h-3.5" />
+                            <span>编辑</span>
                         </button>
                     )}
                     {hasWysiwygPlugin ? (
                         <button
+                            type="button"
                             onClick={() => handleTabChange('code')}
-                            className={`flex items-center gap-1.5 pb-1 text-sm font-medium transition-all ${
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                                 activeTab === 'code'
-                                ? 'text-notion-text border-b-2 border-notion-text'
-                                : 'text-notion-muted hover:text-notion-text border-b-2 border-transparent'
+                                ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
+                                : 'text-notion-muted hover:text-notion-text'
                             }`}
                         >
-                            <span className="flex items-center gap-1.5"><CodeIcon className="w-4 h-4" /> 源码</span>
+                            <CodeIcon className="w-3.5 h-3.5" />
+                            <span>源码</span>
                         </button>
                     ) : (
                         <button
+                            type="button"
                             onClick={() => handleTabChange('edit')}
-                            className={`flex items-center gap-1.5 pb-1 text-sm font-medium transition-all ${
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                                 activeTab === 'edit'
-                                ? 'text-notion-text border-b-2 border-notion-text'
-                                : 'text-notion-muted hover:text-notion-text border-b-2 border-transparent'
+                                ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
+                                : 'text-notion-muted hover:text-notion-text'
                             }`}
                         >
-                            <span className="flex items-center gap-1.5"><CodeIcon className="w-4 h-4" /> 源码</span>
+                            <CodeIcon className="w-3.5 h-3.5" />
+                            <span>源码</span>
                         </button>
                     )}
                     <button
+                        type="button"
                         onClick={() => handleTabChange('preview')}
-                        className={`flex items-center gap-1.5 pb-1 text-sm font-medium transition-all ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                             activeTab === 'preview'
-                            ? 'text-notion-text border-b-2 border-notion-text'
-                            : 'text-notion-muted hover:text-notion-text border-b-2 border-transparent'
+                            ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
+                            : 'text-notion-muted hover:text-notion-text'
                         }`}
                     >
-                        <EyeIcon className="w-4 h-4" /> {t('postPreview.tabPreview')}
+                        <EyeIcon className="w-3.5 h-3.5" />
+                        <span>{t('postPreview.tabPreview')}</span>
                     </button>
                 </div>
 
@@ -1138,7 +1179,11 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                 )}
                 {/* Content Area */}
                 <div className="pb-20">
-                {importError && <p role="alert" className="p-3 bg-yellow-50 text-yellow-900">可视化解析失败，已保留原文并切换源码：{importError}</p>}
+                {importError && (
+                  <div role="alert" className="p-3 mb-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
+                    可视化解析失败，已保留原文并切换源码：{importError}
+                  </div>
+                )}
                 {activeTab === 'edit' ? (
                     // @para-doc [#csa-native-fallback-settings-bypass]
                     <SlotRenderer
@@ -1173,24 +1218,24 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     />
                 ) : (
                     <div
-                        className="prose prose-slate prose-sm sm:prose-base max-w-none text-notion-text
-                        prose-headings:font-semibold prose-headings:text-gray-900
-                        prose-h1:text-4xl prose-h1:font-bold prose-h1:tracking-tight prose-h1:mt-10 prose-h1:mb-6 prose-h1:pb-2 prose-h1:border-b prose-h1:border-gray-200
-                        prose-h2:text-2xl prose-h2:font-semibold prose-h2:tracking-tight prose-h2:mt-8 prose-h2:mb-4 prose-h2:pb-2 prose-h2:border-b prose-h2:border-gray-200
+                        className="prose prose-slate dark:prose-invert prose-sm sm:prose-base max-w-none text-notion-text
+                        prose-headings:font-semibold prose-headings:text-notion-text
+                        prose-h1:text-4xl prose-h1:font-bold prose-h1:tracking-tight prose-h1:mt-10 prose-h1:mb-6 prose-h1:pb-2 prose-h1:border-b prose-h1:border-notion-border
+                        prose-h2:text-2xl prose-h2:font-semibold prose-h2:tracking-tight prose-h2:mt-8 prose-h2:mb-4 prose-h2:pb-2 prose-h2:border-b prose-h2:border-notion-border
                         prose-h3:text-xl prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-3
                         prose-h4:text-lg prose-h4:font-semibold prose-h4:mt-4 prose-h4:mb-2
                         prose-h5:text-base prose-h5:font-semibold prose-h5:mt-4 prose-h5:mb-2
-                        prose-h6:text-sm prose-h6:font-bold prose-h6:text-gray-600 prose-h6:uppercase prose-h6:mt-4 prose-h6:mb-2
-                        prose-p:text-gray-800 prose-p:leading-7 prose-p:my-4
-                        prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
+                        prose-h6:text-sm prose-h6:font-bold prose-h6:text-notion-muted prose-h6:uppercase prose-h6:mt-4 prose-h6:mb-2
+                        prose-p:text-notion-text prose-p:leading-7 prose-p:my-4
+                        prose-a:text-notion-blue prose-a:no-underline hover:prose-a:underline
                         prose-ul:list-disc prose-ul:pl-6 prose-ul:my-4
                         prose-ol:list-decimal prose-ol:pl-6 prose-ol:my-4
-                        prose-li:my-1.5 prose-li:text-gray-800
-                        prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:text-gray-600 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:my-6
+                        prose-li:my-1.5 prose-li:text-notion-text
+                        prose-blockquote:border-l-4 prose-blockquote:border-notion-border prose-blockquote:text-notion-muted prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:my-6
                         prose-img:rounded-lg prose-img:shadow-sm prose-img:my-6
-                        prose-code:text-sm prose-code:bg-gray-100 prose-code:text-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:font-mono prose-code:font-medium prose-code:before:content-none prose-code:after:content-none
-                        prose-pre:bg-gray-50 prose-pre:border prose-pre:border-gray-200 prose-pre:text-gray-800 prose-pre:rounded-lg prose-pre:p-4 prose-pre:shadow-sm prose-pre:my-6
-                        prose-hr:my-8 prose-hr:border-gray-200"
+                        prose-code:text-xs prose-code:bg-notion-sidebar prose-code:text-notion-text prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:font-mono prose-code:font-medium prose-code:before:content-none prose-code:after:content-none
+                        prose-pre:bg-notion-sidebar prose-pre:border prose-pre:border-notion-border prose-pre:text-notion-text prose-pre:rounded-lg prose-pre:p-4 prose-pre:shadow-sm prose-pre:my-6
+                        prose-hr:my-8 prose-hr:border-notion-border"
                         dangerouslySetInnerHTML={createMarkup(editableBody)}
                     />
                 )}
@@ -1288,12 +1333,18 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
                   <div className="border-t border-notion-border"></div>
 
-                  {/* File Info */}
+                  {/* File Info Spec Box */}
                   <div>
                     <p className="text-[10px] uppercase font-bold text-notion-muted mb-2 tracking-wider">文件信息</p>
-                    <div className="text-xs text-notion-muted space-y-1">
-                      <p className="truncate" title={post.path}>📄 {post.name}</p>
-                      <p className="truncate" title={post.path}>📁 {post.path}</p>
+                    <div className="space-y-1.5 rounded-lg border border-notion-border bg-notion-sidebar/40 p-2.5 text-xs text-notion-muted shadow-2xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] text-notion-muted">文件名</span>
+                        <span className="font-mono text-[11px] text-notion-text truncate max-w-[170px]" title={post.name}>{post.name}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] text-notion-muted">路径</span>
+                        <span className="font-mono text-[11px] text-notion-text truncate max-w-[170px]" title={post.path}>{post.path}</span>
+                      </div>
                     </div>
                   </div>
 

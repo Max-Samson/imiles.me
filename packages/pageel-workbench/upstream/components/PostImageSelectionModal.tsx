@@ -51,8 +51,8 @@ const RepoImagePreview: React.FC<{ gitService: IGitService, path: string, name: 
 
     return (
         <div className={`
-            w-full aspect-square flex items-center justify-center bg-gray-50 overflow-hidden relative rounded-sm border cursor-pointer transition-all
-            ${isSelected ? 'ring-2 ring-notion-blue border-notion-blue' : 'border-notion-border hover:bg-gray-100'}
+            w-full aspect-square flex items-center justify-center bg-notion-sidebar/40 overflow-hidden relative rounded-lg border cursor-pointer transition-all
+            ${isSelected ? 'ring-2 ring-notion-blue border-notion-blue' : 'border-notion-border hover:bg-notion-hover'}
         `}>
             {loading ? (
                 <SpinnerIcon className="w-4 h-4 text-notion-muted animate-spin" />
@@ -71,7 +71,7 @@ const RepoImagePreview: React.FC<{ gitService: IGitService, path: string, name: 
                 </div>
             )}
             
-            <div className="absolute bottom-0 left-0 right-0 bg-white/90 p-1 border-t border-notion-border">
+            <div className="absolute bottom-0 left-0 right-0 bg-notion-bg/90 p-1 border-t border-notion-border backdrop-blur-xs">
                 <p className="text-[10px] text-notion-text truncate text-center">{name}</p>
             </div>
         </div>
@@ -179,22 +179,22 @@ const PostImageSelectionModal: React.FC<PostImageSelectionModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-            <div className="bg-white rounded-lg shadow-xl border border-notion-border w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
-                <header className="px-5 py-3.5 border-b border-notion-border flex justify-between items-center bg-white flex-shrink-0">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+            <div className="bg-notion-bg text-notion-text rounded-xl shadow-2xl border border-notion-border w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+                <header className="px-5 py-3.5 border-b border-notion-border flex justify-between items-center bg-notion-sidebar/40 flex-shrink-0">
                     <div className="flex items-center gap-2">
                         <ImageIcon className="w-5 h-5 text-notion-blue" />
-                        <h3 className="text-base font-semibold text-notion-text">{t('postList.imageSelection.title')}</h3>
+                        <h3 className="text-sm font-semibold text-notion-text">{t('postList.imageSelection.title')}</h3>
                     </div>
-                    <button onClick={onClose} className="text-notion-muted hover:text-notion-text p-1.5 rounded hover:bg-notion-hover transition-colors" title="Close">
+                    <button onClick={onClose} className="text-notion-muted hover:text-notion-text p-1.5 rounded-md hover:bg-notion-hover transition-colors cursor-pointer" title="Close">
                         <CloseIcon className="w-4 h-4" />
                     </button>
                 </header>
 
-                <div className="flex border-b border-notion-border bg-notion-sidebar px-5 pt-2 gap-1">
+                <div className="flex border-b border-notion-border bg-notion-sidebar/30 px-5 pt-2 gap-1">
                     <button
                         onClick={() => setActiveTab('upload')}
-                        className={`flex items-center gap-1.5 pb-2.5 px-3 text-sm font-medium transition-colors border-b-2 ${
+                        className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
                             activeTab === 'upload' ? 'text-notion-text border-notion-text' : 'text-notion-muted border-transparent hover:text-notion-text'
                         }`}
                     >
@@ -203,7 +203,7 @@ const PostImageSelectionModal: React.FC<PostImageSelectionModalProps> = ({
                     </button>
                     <button
                         onClick={() => setActiveTab('select')}
-                        className={`flex items-center gap-1.5 pb-2.5 px-3 text-sm font-medium transition-colors border-b-2 ${
+                        className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
                             activeTab === 'select' ? 'text-notion-text border-notion-text' : 'text-notion-muted border-transparent hover:text-notion-text'
                         }`}
                     >
@@ -212,12 +212,12 @@ const PostImageSelectionModal: React.FC<PostImageSelectionModalProps> = ({
                     </button>
                 </div>
 
-                <div className="flex-grow overflow-y-auto p-6 bg-white">
+                <div className="flex-grow overflow-y-auto p-6 bg-notion-bg">
                     {activeTab === 'upload' ? (
                         <div className="space-y-4">
                             <div 
                                 onClick={() => fileInputRef.current?.click()}
-                                className="border-2 border-dashed border-gray-300 rounded-lg p-10 text-center cursor-pointer hover:border-notion-blue/50 hover:bg-blue-50/30 transition-all bg-notion-sidebar/50 group"
+                                className="border-2 border-dashed border-notion-border rounded-xl p-10 text-center cursor-pointer hover:border-notion-blue/50 hover:bg-notion-hover/30 transition-all bg-notion-sidebar/40 group"
                             >
                                 {previewUrl ? (
                                     <div className="relative inline-block">
@@ -246,8 +246,8 @@ const PostImageSelectionModal: React.FC<PostImageSelectionModalProps> = ({
                             </div>
 
                             {selectedFile && (
-                                <div className="bg-notion-sidebar p-3 rounded-sm border border-notion-border">
-                                    <p className="text-sm font-medium text-notion-text mb-1">Selected: {selectedFile.name}</p>
+                                <div className="bg-notion-sidebar/40 p-3 rounded-lg border border-notion-border">
+                                    <p className="text-xs font-medium text-notion-text mb-1">Selected: {selectedFile.name}</p>
                                     
                                     {conflictCheckStatus === 'checking' && (
                                         <span className="text-xs text-notion-muted flex items-center">
@@ -255,13 +255,13 @@ const PostImageSelectionModal: React.FC<PostImageSelectionModalProps> = ({
                                         </span>
                                     )}
                                     {conflictCheckStatus === 'exists' && (
-                                        <span className="text-xs text-yellow-600 flex items-center font-medium">
+                                        <span className="text-xs text-amber-500 flex items-center font-medium">
                                             <ExclamationTriangleIcon className="w-3.5 h-3.5 mr-1" />
                                             {t('postList.imageSelection.fileExistsWarning', { name: selectedFile.name })}
                                         </span>
                                     )}
                                     {conflictCheckStatus === 'clear' && (
-                                        <span className="text-xs text-green-600 flex items-center font-medium">
+                                        <span className="text-xs text-emerald-500 flex items-center font-medium">
                                             <CheckCircleIcon className="w-3.5 h-3.5 mr-1" />
                                             Ready to upload
                                         </span>
@@ -277,7 +277,7 @@ const PostImageSelectionModal: React.FC<PostImageSelectionModalProps> = ({
                                     placeholder={t('postList.imageSelection.selectPlaceholder')}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-1.5 border border-notion-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-notion-blue focus:bg-white bg-notion-sidebar transition-all"
+                                    className="w-full pl-9 pr-3 py-1.5 border border-notion-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue bg-notion-bg text-notion-text transition-all"
                                 />
                                 <SearchIcon className="absolute left-2.5 top-2 h-4 w-4 text-notion-muted" />
                             </div>
@@ -287,7 +287,7 @@ const PostImageSelectionModal: React.FC<PostImageSelectionModalProps> = ({
                                     <SpinnerIcon className="w-6 h-6 text-notion-muted animate-spin" />
                                 </div>
                             ) : filteredImages.length === 0 ? (
-                                <p className="text-center text-notion-muted text-sm py-8">{t('postList.imageSelection.noImagesFound')}</p>
+                                <p className="text-center text-notion-muted text-xs py-8">{t('postList.imageSelection.noImagesFound')}</p>
                             ) : (
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -309,9 +309,9 @@ const PostImageSelectionModal: React.FC<PostImageSelectionModalProps> = ({
                                         <div className="text-center pt-2">
                                             <button 
                                                 onClick={handleLoadMore}
-                                                className="text-xs text-notion-muted hover:text-notion-text font-medium px-3 py-1 bg-notion-sidebar rounded-sm hover:bg-notion-hover border border-notion-border transition-colors"
+                                                className="text-xs text-notion-text hover:bg-notion-hover font-medium px-4 py-1.5 bg-notion-sidebar/60 rounded-lg border border-notion-border transition-colors cursor-pointer shadow-2xs"
                                             >
-                                                Load More
+                                                Load More ({filteredImages.length - visibleCount} remaining)
                                             </button>
                                         </div>
                                     )}
@@ -321,7 +321,7 @@ const PostImageSelectionModal: React.FC<PostImageSelectionModalProps> = ({
                     )}
                 </div>
 
-                <footer className="px-5 py-3.5 border-t border-notion-border bg-notion-sidebar/30 flex items-center justify-between">
+                <footer className="px-5 py-3 border-t border-notion-border bg-notion-sidebar/30 flex items-center justify-between flex-shrink-0">
                     <p className="text-xs text-notion-muted">
                         {activeTab === 'upload' 
                             ? (selectedFile ? `📎 ${selectedFile.name}` : 'No file selected') 
@@ -331,7 +331,7 @@ const PostImageSelectionModal: React.FC<PostImageSelectionModalProps> = ({
                     <div className="flex gap-2">
                         <button 
                             onClick={onClose} 
-                            className="px-4 py-2 bg-white border border-notion-border rounded-md text-notion-text font-medium hover:bg-notion-hover transition-colors text-sm shadow-sm"
+                            className="px-3.5 py-1.5 bg-notion-sidebar/60 border border-notion-border rounded-md text-notion-text font-medium hover:bg-notion-hover transition-colors text-xs cursor-pointer shadow-2xs"
                         >
                             {t('directoryPicker.cancel')}
                         </button>
@@ -341,7 +341,7 @@ const PostImageSelectionModal: React.FC<PostImageSelectionModalProps> = ({
                                 (activeTab === 'upload' && !selectedFile) ||
                                 (activeTab === 'select' && !selectedRepoImage)
                             }
-                            className="px-5 py-2 bg-notion-blue text-white font-medium rounded-md hover:bg-blue-600 transition-all text-sm shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                            className="px-4 py-1.5 bg-notion-blue text-white font-medium rounded-md hover:opacity-90 transition-opacity text-xs shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 cursor-pointer"
                         >
                             {activeTab === 'upload' ? (
                                 <><UploadIcon className="w-3.5 h-3.5" /> Upload &amp; Use</>

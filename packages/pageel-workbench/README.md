@@ -192,3 +192,19 @@ component-editing/
 - `tests/server/component-editing.test.ts`：覆盖正文组件解析、嵌套层级推导、摘要提取、集合插入门禁（Stories 严格禁止）、行内/块级 AST 载荷构建与注册表元数据校验。
 - `tests/server/jsx-attributes.test.ts`：覆盖白名单字面量修改、表达式/spread 保护、安全字符串字段更新与节点注册保留。
 - 全量 59 项服务端测试均在 CI 与本地闭环验证通过（`pnpm test:server`）。
+
+### 7. 控制台视觉规范与暗色模式对齐（2026-10-23）
+
+- **深邃黑曜石调色板**：工作台全面对齐系统控制台（System Console / Dashboard）的 Obsidian 配色方案：
+  - 背景色：主工作区 `--color-notion-bg: #0b0f17`，卡片与侧栏 `--color-notion-sidebar: #131722`。
+  - 边框与微光：精致微边框 `rgba(255, 255, 255, 0.08)` / `border-notion-border`，半透明悬停高亮 `#1c2232`。
+  - 文本层级：主标题 `#f1f5f9`，正文与摘要高对比度清晰渲染，辅助信息 `#94a3b8`，天蓝点缀 `#38bdf8`。
+- **状态徽章与呼吸灯**：
+  - 集合工具栏与编辑台顶部统一使用琥珀色呼吸灯徽章（`仅内存保留 · 保存与发布暂未开放`）。
+  - 组件库「当前组件」激活标签配备蓝色呼吸灯（`animate-pulse`），状态实时联动。
+- **分段胶囊控制（Segmented Pill Controls）**：
+  - 顶部三栏切换（`文章 ｜ 组件库 ｜ 当前组件`）与编辑器视图（`编辑 ｜ 源码 ｜ 预览`）统一升级为分段胶囊组件。
+  - 具备清晰的聚焦环与激活卡片投影，与 System Console 统一设计语言。
+- **LiquidGlass 控件与规格说明盒**：
+  - 返回列表、属性面板开关、保存按钮、筛选与文章操作按键均集成 `LiquidGlassButton`。
+  - 文件信息、属性列表及 Frontmatter 复杂弹窗统一升级为 Spec Box 规范盒，彻底消除页面间的样式割裂。
