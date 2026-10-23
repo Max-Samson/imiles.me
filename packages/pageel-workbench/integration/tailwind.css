@@ -1,4 +1,5 @@
 @reference "tailwindcss";
+@custom-variant dark (&:is(.dark, .dark *));
 /* 宿主边界：不重复注入 Tailwind preflight；所有工作台 utilities 限定在包容器内。 */
 @source "../upstream";
 @source "../plugin-mdx";

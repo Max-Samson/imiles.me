@@ -14,6 +14,8 @@ export const zh: Record<string, string> = {
   'postList.error.dirNotFound': '内容目录不存在：{{path}}',
   'postPreview.tabPreview': '预览', 'postPreview.delete': '删除（暂未开放）',
   'dashboard.setup.scanning': '正在读取工作台配置…',
+  'filterBar.title': '筛选条件',
+  'filterBar.clearAll': '清空筛选',
 };
 
 export const editorZh: Record<string, string> = {

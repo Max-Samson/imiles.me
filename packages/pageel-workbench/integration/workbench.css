@@ -80,6 +80,15 @@ html.dark .cms-workbench header,
 html.dark .pageel-editor-slot [role="toolbar"] { background: #191c22; }
 html.dark .cms-workbench .bg-gray-50:not(button):not([role="button"]),
 html.dark .cms-workbench .bg-gray-100:not(button):not([role="button"]) { background: #252a33; }
+html.dark .cms-workbench input,
+html.dark .cms-workbench select,
+html.dark .cms-workbench textarea {
+  color-scheme: dark;
+}
+html.dark .cms-workbench input::placeholder,
+html.dark .cms-workbench textarea::placeholder {
+  color: #6b7280;
+}
 html.dark .cms-properties input:hover { background: #282e38; }
 html.dark .cms-workbench .prose :is(p, li, h1, h2, h3, h4, code) { color: #e4e7ec; }
 html.dark .cms-workbench .prose pre { background: #252a33; border-color: #30353e; }

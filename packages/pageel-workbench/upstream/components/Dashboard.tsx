@@ -420,7 +420,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         }
-        <main className="flex-1 overflow-y-auto bg-white">
+        <main className="flex-1 overflow-y-auto bg-notion-bg text-notion-text transition-colors">
           <div className="w-full mx-auto py-8 px-4 sm:px-6 lg:px-6">
             {/* Notion-style Page Header */}
             <div className="cms-page-heading mb-8 group">

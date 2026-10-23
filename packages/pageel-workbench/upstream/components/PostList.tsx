@@ -521,7 +521,7 @@ const PostList: React.FC<PostListProps> = ({
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
             }}
-            className="w-full pl-8 pr-4 py-1.5 bg-white/80 dark:bg-slate-800/80 border border-notion-border dark:border-slate-700 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all text-notion-text dark:text-slate-100 placeholder-notion-muted/70 shadow-2xs"
+            className="w-full pl-8 pr-4 py-1.5 bg-notion-bg border border-notion-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue transition-all text-notion-text placeholder-notion-muted/70 shadow-2xs"
             />
             <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
             <SearchIcon className="h-3.5 w-3.5 text-notion-muted" />
@@ -556,10 +556,10 @@ const PostList: React.FC<PostListProps> = ({
                 <select 
                     value={sortOption}
                     onChange={(e) => setSortOption(e.target.value as SortOption)}
-                    className="appearance-none pl-2.5 pr-7 py-1 bg-white dark:bg-slate-800 border border-notion-border dark:border-slate-700 rounded-lg text-xs font-medium text-notion-text dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/60 transition-all"
+                    className="appearance-none pl-2.5 pr-7 py-1 bg-notion-bg border border-notion-border rounded-lg text-xs font-medium text-notion-text focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue shadow-2xs cursor-pointer hover:bg-notion-hover transition-all"
                 >
                     {dynamicSortOptions.map(opt => (
-                      <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">{opt.label}</option>
+                      <option key={opt.value} value={opt.value} className="bg-notion-bg text-notion-text">{opt.label}</option>
                     ))}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-notion-muted">
@@ -567,11 +567,11 @@ const PostList: React.FC<PostListProps> = ({
                 </div>
             </div>
 
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-notion-border dark:border-slate-700 shadow-2xs">
+            <div className="flex bg-notion-sidebar p-0.5 rounded-lg border border-notion-border shadow-2xs">
                 <button 
                     type="button"
                     onClick={() => setViewMode('table')}
-                    className={`p-1 rounded-md transition-all ${viewMode === 'table' ? 'bg-white dark:bg-slate-900 shadow-xs text-notion-text dark:text-white' : 'text-notion-muted hover:text-notion-text hover:bg-gray-200/50 dark:hover:bg-slate-700/50'}`}
+                    className={`p-1 rounded-md transition-all ${viewMode === 'table' ? 'bg-notion-bg shadow-xs text-notion-text' : 'text-notion-muted hover:text-notion-text'}`}
                     title={t('postList.viewMode.table')}
                 >
                     <ViewListIcon className="w-3.5 h-3.5" />
@@ -579,7 +579,7 @@ const PostList: React.FC<PostListProps> = ({
                 <button 
                     type="button"
                     onClick={() => setViewMode('grid')}
-                    className={`p-1 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-900 shadow-xs text-notion-text dark:text-white' : 'text-notion-muted hover:text-notion-text hover:bg-gray-200/50 dark:hover:bg-slate-700/50'}`}
+                    className={`p-1 rounded-md transition-all ${viewMode === 'grid' ? 'bg-notion-bg shadow-xs text-notion-text' : 'text-notion-muted hover:text-notion-text'}`}
                     title={t('postList.viewMode.grid')}
                 >
                     <ViewGridIcon className="w-3.5 h-3.5" />
