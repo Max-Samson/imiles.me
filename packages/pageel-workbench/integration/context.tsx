@@ -4,11 +4,13 @@ import { createContext, useContext } from 'react';
 export interface WorkbenchContextValue {
   dark: boolean;
   onDirtyChange: (dirty: boolean) => void;
-  confirmLeave: () => boolean;
+  confirmLeave: () => Promise<boolean>;
+  registerSaveDraft: (save: () => Promise<boolean>) => () => void;
 }
 export const WorkbenchContext = createContext<WorkbenchContextValue>({
   dark: false,
   onDirtyChange: () => {},
-  confirmLeave: () => true,
+  confirmLeave: async () => true,
+  registerSaveDraft: () => () => {},
 });
 export const useWorkbench = () => useContext(WorkbenchContext);

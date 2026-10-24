@@ -1,9 +1,15 @@
 import { validatePublicationFields } from '../../integration/publication-validation';
 import { ComponentInspector, useComponentInspector } from '../../integration/components/InspectorContext';
 import { useWorkbench } from '../../integration/context';
+import { composeDraftSource } from '../../integration/draft-source';
+import { resolveImportedDraftTarget, suggestedImportSlug } from '../../integration/import-content';
+import { cmsDocumentClient, type CmsDraftSummary, type CmsPublicationResult } from '../../../../src/lib/admin/cms-document-client';
+import { AdminApiError } from '../../../../src/lib/admin/api-error';
+import { resolveNewContentTarget } from '../../../../src/lib/content-routing';
+import { parseSourceDocument } from '../../../../src/lib/content-source';
 import { fieldLabel } from '../../integration/labels';
 import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
-import { ArrowLeft, SlidersHorizontal, Save, Info } from 'lucide-react';
+import { ArrowLeft, SlidersHorizontal, Save, Info, Send, Globe, Copy, Check, ExternalLink } from 'lucide-react';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { marked } from 'marked';
@@ -14,11 +20,12 @@ import { useCollectionStore } from '../features/collections/store';
 import { DocumentIcon } from './icons/DocumentIcon';
 import { ArrowUturnLeftIcon } from './icons/ArrowUturnLeftIcon';
 import { ClockIcon } from './icons/ClockIcon';
-import { GithubRepo, IGitService } from '../types';
+import type { GithubRepo, IGitService } from '../types';
 import { SpinnerIcon } from './icons/SpinnerIcon';
 import { ImageIcon } from './icons/ImageIcon';
-import { updateFrontmatter, slugify } from '../utils/parsing';
+import { updateFrontmatter } from '../utils/parsing';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
+import { CheckIcon } from './icons/CheckIcon';
 import { resolveImageSource } from '../utils/github';
 import { PlusIcon } from './icons/PlusIcon';
 import { EditIcon } from './icons/EditIcon';
@@ -42,6 +49,9 @@ interface PostData {
   html_url: string;
   thumbnailUrl: string | null;
   imported?: boolean;
+  draft?: CmsDraftSummary;
+  publication?: CmsPublicationResult | null;
+  newTarget?: { collection: 'blog' | 'stories'; lang: 'en' | 'zh'; slug: string; format: 'md' | 'mdx' };
 }
 
 interface PostDetailViewProps {
@@ -57,35 +67,6 @@ interface PostDetailViewProps {
   imageFileTypes: string;
   onAction: () => void;
 }
-
-// --- Diagnostic structured loggers ---
-const logDiagnostic = (code: string, message: string, data?: any) => {
-    console.info(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'INFO',
-        code,
-        message,
-        ...data
-    }));
-};
-const logDiagnosticWarn = (code: string, message: string, data?: any) => {
-    console.warn(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'WARN',
-        code,
-        message,
-        ...data
-    }));
-};
-const logDiagnosticError = (code: string, message: string, data?: any) => {
-    console.error(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: 'ERROR',
-        code,
-        message,
-        ...data
-    }));
-};
 
 // --- Cover Image Component (Handles Auth/Lazy loading) ---
 const CoverImage: React.FC<{ 
@@ -109,6 +90,11 @@ const CoverImage: React.FC<{
 
         if (thumbnailUrl.startsWith('http')) {
             setImageUrl(thumbnailUrl);
+            return;
+        }
+        const staged = /^\/images\/blog\/(cma_[a-f0-9]{32})\.(?:png|jpe?g|webp)$/.exec(thumbnailUrl);
+        if (staged) {
+            setImageUrl(`/api/v1/admin/cms/assets/${staged[1]}/preview`);
             return;
         }
 
@@ -245,16 +231,13 @@ const GalleryThumbnail: React.FC<{
 
 const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete, gitService, repo, projectType, domainUrl, onUpdate, imagesPath, imageFileTypes, onAction }) => {
   // @para-doc [#csa-new-post-editor-mode]
-  const [activeTab, setActiveTab] = useState<'edit' | 'code' | 'preview'>('edit');
   const { t, language } = useI18n();
   const pluginConfig = usePluginConfig();
-  const hasWysiwygPlugin = !isPluginFallback(pluginConfig.plugins?.editor);
-
-  useEffect(() => {
-      if (!hasWysiwygPlugin && activeTab === 'code') {
-          setActiveTab('edit');
-      }
-  }, [hasWysiwygPlugin, activeTab]);
+  // Stories 为纯文字排版；其他集合（如 Blog）在配置了插件时启用富文本可视化编辑器。
+  const hasWysiwygPlugin = !isPluginFallback(pluginConfig.plugins?.editor) && !post.path.startsWith('content/stories/');
+  const [activeTab, setActiveTab] = useState<'edit' | 'code' | 'preview'>(() =>
+    !isPluginFallback(pluginConfig.plugins?.editor) && !post.path.startsWith('content/stories/') ? 'edit' : 'code'
+  );
 
   const [externalMarkdownVersion, setExternalMarkdownVersion] = useState(0);
   const editorRef = useRef<any>(null);
@@ -273,14 +256,53 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   // --- Editable State ---
   const [editableFrontmatter, setEditableFrontmatter] = useState<Record<string, any>>(post.frontmatter);
   const [editableBody, setEditableBody] = useState<string>(post.body);
+  const [importSlug, setImportSlug] = useState(() => suggestedImportSlug(post.name, post.frontmatter));
+  const [importLang, setImportLang] = useState<'en' | 'zh'>(() =>
+    post.frontmatter.lang === 'zh' || (post.frontmatter.lang !== 'en' && /[\u3400-\u9fff]/u.test(post.name)) ? 'zh' : 'en'
+  );
   const [importError, setImportError] = useState('');
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
-  const { onDirtyChange, confirmLeave } = useWorkbench();
+  // 新建和导入的文稿尚未写入 D1，即使未再次键入也不能静默丢弃。
+  const [isDirty, setIsDirty] = useState(Boolean(post.newTarget || post.imported));
+  const [saveMessage, setSaveMessage] = useState('');
+  const [saveError, setSaveError] = useState(false);
+  const [publishMessage, setPublishMessage] = useState('');
+  const [publishing, setPublishing] = useState(false);
+  const [checkingDeployment, setCheckingDeployment] = useState(false);
+  const [publishMode, setPublishMode] = useState<'loading' | 'snapshot' | 'github'>('loading');
+  const [publication, setPublication] = useState<CmsPublicationResult | null>(post.publication ?? null);
+  const [lastCommit, setLastCommit] = useState<CmsPublicationResult | null>(post.publication?.status === 'committed' ? post.publication : null);
+  const operationRef = useRef<{ id: string; revision: number } | null>(post.publication ? { id: post.publication.operationId, revision: post.publication.draftRevision } : null);
+  const draftRef = useRef<CmsDraftSummary | undefined>(post.draft);
+  const publishedBaseRef = useRef<string | null>(post.sha || null);
+  const sourceRef = useRef(post.rawContent);
+  const savedFieldsRef = useRef<Record<string, any>>(post.frontmatter);
+  const savedBodyRef = useRef(post.body);
+  const editSerialRef = useRef(0);
+  const { onDirtyChange, confirmLeave, registerSaveDraft } = useWorkbench();
+  useEffect(() => {
+    let active = true;
+    cmsDocumentClient.session().then(value => { if (active) setPublishMode(value.mode); })
+      .catch(() => { if (active) setPublishMode('snapshot'); });
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
+    // 页面刷新后按仓库文件身份找回最近一次发布操作；版本不一致则不能冒充当前文章的部署结果。
+    if (!/^[a-f0-9]{40}$/i.test(post.sha)) return;
+    let active = true;
+    cmsDocumentClient.latestPublication(post.path)
+      .then(result => {
+        if (active && result?.resultBlobSha === post.sha) setLastCommit(result);
+      })
+      .catch(() => {
+        // 查询失败不会阻止正文编辑；发布操作仍可通过其操作 ID 单独查询。
+      });
+    return () => { active = false; };
+  }, [post.path, post.sha]);
   const componentInspector = useComponentInspector();
   // 将修改状态通知宿主；详情卸载时清除保护，不将正文写入额外缓存。
-  useEffect(() => { onDirtyChange(isDirty); }, [isDirty, onDirtyChange]);
+  useEffect(() => { onDirtyChange(isDirty || isSaving || publishing); }, [isDirty, isSaving, publishing, onDirtyChange]);
   useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
 
   // 同步正文与集合类型至组件检查器，驱动「本文已用」导航与插入限制
@@ -293,12 +315,31 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
     componentInspector.setCollection(coll);
   }, [post.path, componentInspector.setCollection]);
   
-  const publicationIssues = useMemo(() => validatePublicationFields(
-    editableFrontmatter,
-    post.path.includes('content/stories') ? 'stories' : 'blog',
-  ), [editableFrontmatter, post.path]);
+  const publicationIssues = useMemo(() => {
+    const issues = validatePublicationFields(
+      editableFrontmatter,
+      post.path.includes('content/stories') ? 'stories' : 'blog',
+    );
+    if (post.imported && !draftRef.current && !importSlug.trim()) {
+      return [{ field: 'slug', message: '请在文章属性中补充地址标识 (slug)' }, ...issues];
+    }
+    return issues;
+  }, [editableFrontmatter, post.path, post.imported, importSlug]);
+  const slugInputRef = useRef<HTMLInputElement>(null);
+  const [copiedPath, setCopiedPath] = useState(false);
+  const collection = post.path.startsWith('content/stories/') ? 'stories' : 'blog';
+  const currentLang = String(editableFrontmatter.lang || importLang || 'zh');
+  const resolvedPublicPath = draftRef.current
+    ? draftRef.current.publicPath
+    : post.imported
+    ? `${currentLang === 'zh' ? '/zh' : ''}/${collection}/${importSlug.trim() || '...'}`
+    : collection === 'blog'
+    ? `${currentLang === 'zh' || post.name.endsWith('-zh.mdx') ? '/zh' : ''}/blog/${post.name.replace(/\.mdx?$/, '').replace(/-zh$/, '')}`
+    : `/stories/${post.name.replace(/\.md$/, '')}`;
   // Updates specific to Detail View
   const updatePostFileInputRef = useRef<HTMLInputElement>(null);
+  const sourceImageInputRef = useRef<HTMLInputElement>(null);
+  const coverImageInputRef = useRef<HTMLInputElement>(null);
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isEditorImageModalOpen, setIsEditorImageModalOpen] = useState(false);
@@ -337,6 +378,8 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
   // Handle Input Changes
   const handleFrontmatterChange = (key: string, value: any) => {
+      editSerialRef.current += 1;
+      setPublication(previous => previous?.status === 'committed' ? null : previous);
       setEditableFrontmatter(prev => ({
           ...prev,
           [key]: value
@@ -345,20 +388,26 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   };
 
   const handleBodyChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      editSerialRef.current += 1;
+      setPublication(previous => previous?.status === 'committed' ? null : previous);
       setEditableBody(e.target.value);
       setIsDirty(true);
   };
 
   const handleEditorChange = useCallback((markdown: string) => {
+      editSerialRef.current += 1;
+      setPublication(previous => previous?.status === 'committed' ? null : previous);
       setEditableBody(markdown);
-      setIsDirty(true);
+      if (markdown !== savedBodyRef.current) {
+          setIsDirty(true);
+      }
   }, []);
 
   const handleAddMissingField = (key: string) => {
       let defaultValue: any = "";
       if (key === 'date' || key === 'publishDate' || key === 'pubDate' || key === 'updatedDate') defaultValue = new Date().toISOString().split('T')[0];
       if (key === 'tags') defaultValue = [];
-      if (key === 'draft') defaultValue = true;
+      if (key === 'draft') defaultValue = !publishedBaseRef.current;
       if (key === 'llms') defaultValue = false;
       if (key === 'lang') defaultValue = 'en';
       
@@ -367,104 +416,182 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   };
 
   const handleSave = useCallback(async () => {
-      if (!isDirty && post.sha !== "") return;
+      if (isSaving || (!isDirty && (draftRef.current || publishedBaseRef.current || (!post.newTarget && !post.imported)))) return;
       setIsSaving(true);
-      
-      // 1. Validate empty title (csa-validation-title)
-      // @para-doc [#csa-validation-title]
-      if (!editableFrontmatter.title || String(editableFrontmatter.title).trim() === "") {
-          logDiagnosticWarn('POST_CREATION_MISSING_TITLE', 'User attempted to save with empty title.');
-          alert(t('postList.error.emptyTitle'));
-          setIsSaving(false);
-          return;
-      }
-
+      setSaveMessage('');
+      setSaveError(false);
+      const editSerial = editSerialRef.current;
+      const submittedFields = { ...editableFrontmatter, ...(post.imported ? { lang: importLang } : {}) };
       try {
           let currentBody = editableBody;
-          // Get latest content from markdown editor if edit tab is active
-          if (activeTab === 'edit' && editorRef.current) {
+          if (activeTab === 'edit' && hasWysiwygPlugin && editorRef.current) {
               const latestMd = editorRef.current.getMarkdown();
-              if (latestMd !== undefined) {
+              if (latestMd !== undefined && latestMd !== currentBody) {
                   currentBody = latestMd;
-                  setEditableBody(latestMd); // Sync state in case user changes tabs later
+                  setEditableBody(latestMd);
               }
           }
-          
-          const finalContent = updateFrontmatter(currentBody, editableFrontmatter);
-
-          // 2. Create Mode
-          if (post.sha === "") {
-              // 2a. Generate slug and filename (csa-filename-slugify)
-              // @para-doc [#csa-filename-slugify]
-              const slug = slugify(String(editableFrontmatter.title));
-              const fileExtension = 'md'; // AC-5 default
-              const filename = `${slug}.${fileExtension}`;
-              
-              // 2b. Sanitize path to prevent Path Traversal (csa-path-safety)
-              // @para-doc [#csa-path-safety]
-              if (!/^[a-z0-9-]+$/.test(slug)) {
-                  logDiagnosticWarn('POST_CREATION_INVALID_SLUG', 'Invalid characters in title for filename generation.', { title: editableFrontmatter.title, slug });
-                  alert(t('postList.error.invalidSlug'));
-                  setIsSaving(false);
-                  return;
+          let source: string;
+          try {
+              parseSourceDocument(sourceRef.current);
+              source = composeDraftSource(
+                  sourceRef.current,
+                  savedFieldsRef.current,
+                  submittedFields,
+                  currentBody,
+                  currentBody !== savedBodyRef.current,
+              );
+          } catch {
+              // YAML 尚未写完时，正文编辑区承载完整源文；直接保存当前源码。
+              if (Object.keys(submittedFields).some(key => JSON.stringify(submittedFields[key]) !== JSON.stringify(savedFieldsRef.current[key]))) {
+                  throw new Error('请先在源码区修复 YAML 语法，再修改文章属性');
               }
-              
-              const { getActiveCollection } = useCollectionStore.getState();
-              const activeCollection = getActiveCollection();
-              const postsPath = activeCollection?.postsPath || '';
-              const newPath = postsPath ? `${postsPath}/${filename}` : filename;
-              
-              logDiagnostic('POST_CREATION_START', 'Attempting to create a new post.', { filename, newPath });
-
-              // 2c. Check for file collision (csa-filename-collision)
-              // @para-doc [#csa-filename-collision]
-              const existingSha = await gitService.getFileSha(newPath);
-              if (existingSha) {
-                  logDiagnosticWarn('POST_CREATION_DUPLICATE_FILE', 'File collision detected.', { newPath, existingSha });
-                  alert(t('postList.error.duplicateFile'));
-                  setIsSaving(false);
-                  return;
-              }
-              logDiagnostic('POST_CREATION_NO_CONFLICT', 'No collision. Safe to write.', { newPath });
-
-              // 2d. Create file on Git (csa-create-file-git)
-              // @para-doc [#csa-create-file-git]
-              const commitMsg = `feat(content): create post "${filename}"`;
-              await gitService.createFileFromString(newPath, finalContent, commitMsg);
-              logDiagnostic('POST_CREATION_WRITE_SUCCESS', 'Successfully wrote post to Git.', { newPath });
-
-              // 2e. Fetch new file SHA to update local state (AI-3 / Phase 3)
-              const newSha = await gitService.getFileSha(newPath);
-              logDiagnostic('POST_CREATION_FETCH_SHA', 'Fetched new SHA for edit mode redirection.', { newPath, newSha });
-
-              // 2f. Redirect to edit mode and trigger callbacks (csa-post-creation-complete)
-              // @para-doc [#csa-post-creation-complete]
-              if (newSha) {
-                  post.path = newPath;
-                  post.sha = newSha;
-                  post.name = filename;
-              }
-
-              onAction(); // Trigger sync
-              onUpdate(); // Refresh parent list
-              setIsDirty(false);
-              setIsSaving(false);
-              return;
+              source = currentBody;
           }
-
-          // 3. Edit Mode (normal updates)
-          const commitMessage = `fix(content): update post "${post.name}" from editor`;
-          await gitService.updateFileContent(post.path, finalContent, commitMessage, post.sha);
-          onAction(); // Trigger sync
-          onUpdate(); // Refresh parent list logic
-          setIsDirty(false);
-      } catch (e) {
-          logDiagnosticError('POST_CREATION_GIT_FAIL', 'Failed to save post.', { error: e instanceof Error ? e.message : String(e) });
-          alert(`Failed to save: ${e instanceof Error ? e.message : String(e)}`);
+          let draft = draftRef.current;
+          if (draft) {
+              draft = await cmsDocumentClient.save(draft.id, draft.revision, source);
+          } else {
+              const collection = post.newTarget?.collection ?? (post.path.startsWith('content/stories/') ? 'stories' : 'blog');
+              const lang = post.newTarget?.lang ?? (post.imported ? importLang : submittedFields.lang === 'zh' || post.name.endsWith('-zh.mdx') ? 'zh' : 'en');
+              const name = post.name.replace(/\.mdx?$/, '');
+              const slug = post.newTarget?.slug ?? (post.imported ? importSlug : collection === 'blog' && lang === 'zh' ? name.replace(/-zh$/, '') : name);
+              if (post.imported && !slug.trim()) {
+                  setPropertiesOpen(true);
+                  componentInspector.setMode('article');
+                  setTimeout(() => slugInputRef.current?.focus(), 50);
+                  throw new Error('请在右侧文章属性中填写保存地址标识，例如 google-seo-guide');
+              }
+              const format = post.newTarget?.format ?? (post.path.endsWith('.mdx') ? 'mdx' : 'md');
+              const target = post.imported
+                  ? resolveImportedDraftTarget(collection, lang, post.name, slug)
+                  : resolveNewContentTarget({ collection, lang, slug, format });
+              draft = await cmsDocumentClient.create({
+                  collection, lang, slug: target.slug, format: target.format,
+                  ...(publishedBaseRef.current ? { path: post.path, baseBlobSha: publishedBaseRef.current } : {}),
+                  source,
+              });
+          }
+          draftRef.current = draft;
+          sourceRef.current = source;
+          savedFieldsRef.current = submittedFields;
+          savedBodyRef.current = currentBody;
+          if (post.imported) setEditableFrontmatter(submittedFields);
+          if (editSerialRef.current === editSerial) setIsDirty(false);
+          setSaveMessage(`草稿已保存 · 修订 ${draft.revision}`);
+          return draft;
+      } catch (error) {
+          setSaveError(true);
+          setSaveMessage(error instanceof AdminApiError && error.status === 409
+              ? '草稿版本冲突：当前输入仍在编辑台，请重新打开并比较后保存。'
+              : error instanceof Error ? error.message : '草稿保存失败');
       } finally {
           setIsSaving(false);
       }
-  }, [isDirty, post, editableFrontmatter, editableBody, activeTab, gitService, onAction, onUpdate, t]);
+  }, [isDirty, isSaving, post, editableFrontmatter, editableBody, activeTab, hasWysiwygPlugin, importSlug, importLang]);
+
+  const handleCmsImageUpload = useCallback(async (file: File): Promise<string> => {
+      if (post.path.startsWith('content/stories/')) throw new Error('Stories 不支持图片');
+      const draft = draftRef.current ?? await handleSave();
+      if (!draft) throw new Error('请先保存草稿，再上传图片');
+      const asset = await cmsDocumentClient.uploadAsset(draft.id, file);
+      setSaveMessage('图片已暂存；文章发布后公开地址才可匿名访问。');
+      return asset.publicUrl;
+  }, [post.path, handleSave]);
+
+  const handleSourceImage = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = '';
+      if (!file) return;
+      try {
+          setIsUploading(true);
+          const url = await handleCmsImageUpload(file);
+          // 源码模式不经过 MDXEditor 序列化，保留文稿原有 JSX 和空白。
+          const alt = file.name.replace(/\.[^.]+$/, '').replace(/[^\p{L}\p{N} -]/gu, '').trim() || '图片';
+          handleEditorChange(`${editableBody.trimEnd()}\n\n![${alt}](${url})\n`);
+      } catch (error) {
+          setSaveMessage(error instanceof Error ? error.message : '图片上传失败');
+      } finally {
+          setIsUploading(false);
+      }
+  }, [handleCmsImageUpload, editableBody]);
+
+  const handleCoverImage = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = '';
+      if (!file) return;
+      try {
+          setIsUploading(true);
+          const url = await handleCmsImageUpload(file);
+          handleFrontmatterChange('heroImage', url);
+      } catch (error) {
+          setSaveMessage(error instanceof Error ? error.message : '封面上传失败');
+      } finally {
+          setIsUploading(false);
+      }
+  }, [handleCmsImageUpload]);
+
+  useEffect(() => registerSaveDraft(async () => {
+    const editSerial = editSerialRef.current;
+    const draft = await handleSave();
+    return Boolean(draft) && editSerialRef.current === editSerial;
+  }), [handleSave, registerSaveDraft]);
+
+  const handlePublish = useCallback(async () => {
+      if (publishing || publishMode !== 'github') return;
+      setPublishing(true);
+      setPublishMessage('');
+      try {
+          // 请求丢失回执时仍沿用原操作 ID；先对账，避免第二次 Git 提交。
+          const pending = Boolean(operationRef.current) && (!publication || ['prepared', 'in_flight', 'unknown'].includes(publication.status));
+          const draft = pending ? draftRef.current : isDirty || !draftRef.current ? await handleSave() : draftRef.current;
+          if (!draft) return;
+          const operation = pending && operationRef.current
+              ? operationRef.current
+              : { id: crypto.randomUUID(), revision: draft.revision };
+          operationRef.current = operation;
+          const submittedSerial = editSerialRef.current;
+          const result = await cmsDocumentClient.publish(draft.id, operation.revision, operation.id);
+          setPublication(result.status === 'committed' && editSerialRef.current !== submittedSerial ? null : result);
+          if (['committed', 'conflict', 'failed'].includes(result.status)) operationRef.current = null;
+          if (result.status === 'committed') {
+              setLastCommit(result);
+              publishedBaseRef.current = result.resultBlobSha;
+              if (draftRef.current?.revision === result.draftRevision) draftRef.current = undefined;
+              setPublishMessage('Git 已提交；线上部署尚未核实。');
+          }
+          else if (result.status === 'conflict') setPublishMessage('仓库版本或目标地址冲突；草稿已保留，请比较后处理。');
+          else if (result.status === 'failed') setPublishMessage('发布失败；草稿仍在 D1，可修复后重新发起。');
+          else setPublishMessage('提交结果待对账；请使用同一操作 ID 再次查询，勿创建新发布。');
+      } catch (error) {
+          const details = error instanceof AdminApiError && Array.isArray(error.details)
+              ? `：${error.details.filter(item => typeof item === 'string').join('；')}` : '';
+          setPublishMessage(`${error instanceof Error ? error.message : '发布失败'}${details}`);
+      } finally {
+          setPublishing(false);
+      }
+  }, [publishing, publishMode, publication, isDirty, handleSave]);
+
+  const handleVerifyDeployment = useCallback(async () => {
+      if (!lastCommit || checkingDeployment) return;
+      setCheckingDeployment(true);
+      try {
+          const result = await cmsDocumentClient.verifyDeployment(lastCommit.operationId);
+          setLastCommit(result);
+          setPublishMessage({
+              verified: 'Deploy 工作流成功，且部署提交包含这篇文章的已发布版本。',
+              pending: 'Deploy 工作流尚在排队。',
+              running: 'Deploy 工作流正在运行。',
+              failed: '对应的 Deploy 工作流失败；Git 提交仍保留。',
+              cancelled: '对应的 Deploy 工作流被取消；Git 提交仍保留。',
+              unverified: '尚无足够证据确认此版本已部署。',
+          }[result.deploymentStatus]);
+      } catch (error) {
+          setPublishMessage(error instanceof Error ? error.message : '部署核验失败');
+      } finally {
+          setCheckingDeployment(false);
+      }
+  }, [lastCommit, checkingDeployment]);
 
   // --- External Actions (Update File / Image) ---
   
@@ -618,6 +745,8 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       
       const resolveUrl = (url: string) => {
           if (url.startsWith('http') || url.startsWith('https') || url.startsWith('data:')) return url;
+          const staged = /^\/images\/blog\/(cma_[a-f0-9]{32})\.(?:png|jpe?g|webp)$/.exec(url);
+          if (staged) return `/api/v1/admin/cms/assets/${staged[1]}/preview`;
           
           // BUG-11: Use central utility for consistent image source resolution in markdown/HTML preview
           return resolveImageSource(url, repo, projectType, domainUrl);
@@ -798,20 +927,48 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       // Simple arrays (tags, etc.) — inline edit + click to expand
       if (isArray) {
           return (
-              <div className="flex items-center w-full gap-1">
+              <div className="flex items-center w-full gap-1.5">
                 <input 
                   type="text" 
-                  className="flex-grow bg-transparent border-b border-transparent focus:border-notion-blue focus:ring-0 text-sm py-0.5 px-1 hover:bg-notion-hover/50 rounded-sm transition-colors min-w-0"
+                  className="flex-grow bg-notion-bg border border-notion-border rounded-lg text-xs py-1.5 px-2.5 text-notion-text focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue transition-all min-w-0 shadow-2xs"
                   value={value.join(', ')}
+                  placeholder="以逗号分隔，如 tag1, tag2"
                   onChange={(e) => handleFrontmatterChange(key, e.target.value.split(',').map((s: string) => s.trim()).filter((s: string) => s))}
                 />
                 <button
+                  type="button"
                   onClick={() => openFieldModal(key, value)}
-                  className="p-0.5 text-notion-muted hover:text-notion-blue rounded-sm transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
-                  title="Expand to edit"
+                  className="p-1 text-notion-muted hover:text-notion-blue rounded-md border border-notion-border bg-notion-bg hover:bg-notion-hover transition-colors flex-shrink-0 cursor-pointer shadow-2xs"
+                  title="展开编辑标签列表"
                 >
-                  <EditIcon className="w-3 h-3" />
+                  <EditIcon className="w-3.5 h-3.5" />
                 </button>
+              </div>
+          );
+      }
+
+      // Boolean switch (draft, llms, etc.)
+      if (typeof value === 'boolean') {
+          return (
+              <div className="flex items-center gap-2 py-1">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={value}
+                  onClick={() => handleFrontmatterChange(key, !value)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-notion-blue ${
+                    value ? 'bg-notion-blue' : 'bg-notion-border'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block size-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      value ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+                <span className="text-xs text-notion-muted font-medium select-none">
+                  {value ? '开启 (true)' : '关闭 (false)'}
+                </span>
               </div>
           );
       }
@@ -879,6 +1036,8 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   return (
     <div className="cms-post-detail h-full flex flex-col bg-notion-bg animate-fade-in relative">
       <input type="file" ref={updatePostFileInputRef} className="hidden" accept=".md,.mdx" onChange={confirmUpdateFile} />
+      <input type="file" ref={sourceImageInputRef} className="hidden" accept="image/png,image/jpeg,image/webp" onChange={handleSourceImage} />
+      <input type="file" ref={coverImageInputRef} className="hidden" accept="image/png,image/jpeg,image/webp" onChange={handleCoverImage} />
       
       {isImageModalOpen && (
           <PostImageSelectionModal
@@ -1055,10 +1214,10 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
             <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden justify-start">
                 <LiquidGlassButton
                   type="button"
-                  variant="secondary"
+                  variant="default"
                   size="sm"
                   icon={<ArrowLeft className="w-3.5 h-3.5 shrink-0" />}
-                  onClick={() => { if (confirmLeave()) onBack(); }}
+                  onClick={() => { void confirmLeave().then((allowed) => { if (allowed) onBack(); }); }}
                   className="gap-1.5 h-8 text-xs font-medium text-notion-text shrink-0 whitespace-nowrap select-none"
                 >
                   <span className="whitespace-nowrap">返回列表</span>
@@ -1092,33 +1251,18 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                             <span className="whitespace-nowrap">编辑</span>
                         </button>
                     )}
-                    {hasWysiwygPlugin ? (
-                        <button
-                            type="button"
-                            onClick={() => handleTabChange('code')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                                activeTab === 'code'
-                                ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
-                                : 'text-notion-muted hover:text-notion-text'
-                            }`}
-                        >
-                            <CodeIcon className="w-3.5 h-3.5 shrink-0" />
-                            <span className="whitespace-nowrap">源码</span>
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={() => handleTabChange('edit')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                                activeTab === 'edit'
-                                ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
-                                : 'text-notion-muted hover:text-notion-text'
-                            }`}
-                        >
-                            <CodeIcon className="w-3.5 h-3.5 shrink-0" />
-                            <span className="whitespace-nowrap">源码</span>
-                        </button>
-                    )}
+                    <button
+                        type="button"
+                        onClick={() => handleTabChange('code')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                            activeTab === 'code'
+                            ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
+                            : 'text-notion-muted hover:text-notion-text'
+                        }`}
+                    >
+                        <CodeIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="whitespace-nowrap">源码</span>
+                    </button>
                     <button
                         type="button"
                         onClick={() => handleTabChange('preview')}
@@ -1132,14 +1276,31 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                         <span className="whitespace-nowrap">{t('postPreview.tabPreview')}</span>
                     </button>
                 </div>
+                {!post.path.startsWith('content/stories/') && (activeTab === 'code' || !hasWysiwygPlugin) && (
+                    <button type="button" disabled={isUploading || isSaving} onClick={() => sourceImageInputRef.current?.click()} className="rounded-lg border border-notion-border px-2.5 py-1.5 text-xs text-notion-text disabled:opacity-50">
+                        {isUploading ? '上传中…' : '插入图片'}
+                    </button>
+                )}
 
-                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap shrink-0 select-none">
-                  <span className="size-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
-                  <span className="whitespace-nowrap">仅内存保留</span>
-                </span>
+                {isDirty ? (
+                  <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap shrink-0 select-none">
+                    <span className="size-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                    <span className="whitespace-nowrap">有未保存修改</span>
+                  </span>
+                ) : draftRef.current ? (
+                  <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap shrink-0 select-none">
+                    <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span className="whitespace-nowrap">{`草稿已同步 · 修订 ${draftRef.current.revision}`}</span>
+                  </span>
+                ) : (
+                  <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-notion-border bg-notion-sidebar/60 px-2.5 py-1 text-[11px] font-medium text-notion-muted whitespace-nowrap shrink-0 select-none">
+                    <span className="size-1.5 rounded-full bg-notion-muted/50 shrink-0" />
+                    <span className="whitespace-nowrap">尚未保存为草稿</span>
+                  </span>
+                )}
                 <LiquidGlassButton
                   type="button"
-                  variant="secondary"
+                  variant="default"
                   size="sm"
                   icon={<SlidersHorizontal className="w-3.5 h-3.5 text-notion-muted shrink-0" />}
                   aria-expanded={propertiesOpen}
@@ -1151,18 +1312,40 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                 </LiquidGlassButton>
                 <LiquidGlassButton
                   type="button"
-                  variant="outline"
+                  variant="default"
                   size="sm"
-                  disabled
+                  disabled={isSaving || publishing || (!isDirty && (!!draftRef.current || !!publishedBaseRef.current || (!post.newTarget && !post.imported)))}
                   icon={<Save className="w-3.5 h-3.5 shrink-0" />}
-                  title="兼容性验证阶段，尚未开放保存与发布"
-                  className="gap-1.5 h-8 text-xs font-medium text-notion-muted opacity-60 cursor-not-allowed border-dashed whitespace-nowrap shrink-0 hidden md:inline-flex"
+                  onClick={() => void handleSave()}
+                  title="保存到 D1 工作草稿"
+                  className="gap-1.5 h-8 text-xs font-medium whitespace-nowrap shrink-0"
                 >
-                  <span className="whitespace-nowrap">保存未开放</span>
+                  <span className="whitespace-nowrap">{isSaving ? '保存中…' : '保存草稿'}</span>
+                </LiquidGlassButton>
+                <LiquidGlassButton
+                  type="button"
+                  variant="blue"
+                  size="sm"
+                  disabled={publishMode !== 'github' || publishing || isSaving || publication?.status === 'committed'}
+                  onClick={() => void handlePublish()}
+                  icon={<Send className="w-3.5 h-3.5 shrink-0" />}
+                  title={publishMode === 'snapshot' ? '本地发布适配尚未开放' : '保存当前输入并发布固定草稿修订'}
+                  className="gap-1.5 h-8 text-xs font-medium whitespace-nowrap shrink-0"
+                >
+                  <span>{publishing ? '发布中…' : publication && ['prepared', 'in_flight', 'unknown'].includes(publication.status) ? '对账' : '发布'}</span>
                 </LiquidGlassButton>
             </div>
         </div>
       </header>
+      {saveMessage && <p role={saveError ? 'alert' : 'status'} className={`border-b px-6 py-2 text-xs ${saveError ? 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400' : 'border-notion-border text-notion-muted'}`}>{saveMessage}</p>}
+      {(publishMessage || lastCommit) && <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-notion-border px-6 py-2 text-xs text-notion-muted">
+        {publishMessage && <span>{publishMessage}</span>}
+        {lastCommit?.resultCommitSha && <span className="font-mono">Git {lastCommit.resultCommitSha.slice(0, 12)}</span>}
+        {lastCommit && <span>部署：{{ unverified: '未核实', pending: '排队中', running: '运行中', verified: '已核实', failed: '失败', cancelled: '已取消' }[lastCommit.deploymentStatus]}</span>}
+        {lastCommit && <button type="button" disabled={checkingDeployment} onClick={() => void handleVerifyDeployment()} className="underline disabled:opacity-50">{checkingDeployment ? '检查中…' : '检查部署'}</button>}
+        {lastCommit?.deploymentRef && /^\d+$/.test(lastCommit.deploymentRef) && /^[\w.-]+\/[\w.-]+$/.test(repo.full_name) && <a className="underline" href={`https://github.com/${repo.full_name}/actions/runs/${lastCommit.deploymentRef}`} target="_blank" rel="noopener noreferrer">查看 Deploy 记录</a>}
+        {lastCommit && <a className="underline" href={lastCommit.publicPath} target="_blank" rel="noopener noreferrer">查看当前线上版</a>}
+      </div>}
 
       {/* Main Scrollable Content — 2-column WordPress-style layout */}
       <div id="post-detail-container" className="flex-grow overflow-y-auto bg-notion-bg custom-scrollbar">
@@ -1200,7 +1383,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                         可视化解析失败，已保留原文并切换源码：{importError}
                       </div>
                     )}
-                {activeTab === 'edit' ? (
+                {activeTab === 'edit' && hasWysiwygPlugin ? (
                     // @para-doc [#csa-native-fallback-settings-bypass]
                     <SlotRenderer
                         slot="editor"
@@ -1225,14 +1408,21 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                             externalMarkdown: editableBody,
                             externalMarkdownVersion,
                             onRequestImage: handleRequestImage,
+                            onUploadImage: handleCmsImageUpload,
                         } satisfies EditorProps as Record<string, unknown>}
                     />
-                ) : activeTab === 'code' ? (
+                ) : activeTab === 'code' || (activeTab === 'edit' && !hasWysiwygPlugin) ? (
                     <NativePlainEditor
                         value={editableBody}
                         onChange={handleEditorChange}
                     />
                 ) : (
+                    <>
+                    {post.name.endsWith('.mdx') && (
+                      <p role="note" className="mb-4 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+                        这里是 Markdown 近似预览。MDX 组件与交互只在站点构建部署后按实际页面渲染；发布前请检查源码及组件属性。
+                      </p>
+                    )}
                     <div
                         className="prose prose-slate dark:prose-invert prose-sm sm:prose-base max-w-none text-notion-text
                         prose-headings:font-semibold prose-headings:text-notion-text
@@ -1254,6 +1444,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                         prose-hr:my-8 prose-hr:border-notion-border"
                         dangerouslySetInnerHTML={createMarkup(editableBody)}
                     />
+                    </>
                 )}
                   </div>
                 </div>
@@ -1264,16 +1455,31 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                 <ComponentInspector />
                 <div hidden={componentInspector.mode !== 'article'} className="p-5 space-y-5">
 
-                  <section aria-label="发布前属性检查" className="rounded-lg border border-notion-border p-3 text-xs space-y-2">
-                    <h3 className="font-semibold text-notion-text">发布前属性检查</h3>
-                    <p className="text-notion-muted">这里的文章属性对应文件顶部的 YAML frontmatter。可先导入编辑，再补齐发布信息。</p>
-                    {publicationIssues.length ? <ul className="list-disc pl-4 space-y-1 text-amber-600 dark:text-amber-400">
-                      {publicationIssues.map(issue => <li key={issue.field}>{issue.message}</li>)}
-                    </ul> : <p className="text-notion-muted">文章属性检查通过；不代表已发布。保存与发布当前尚未开放。</p>}
+                  <section aria-label="发布前属性检查" className={`rounded-xl border p-3.5 text-xs space-y-2 shadow-2xs transition-colors ${
+                    publicationIssues.length
+                      ? 'border-amber-500/30 bg-amber-500/[0.04]'
+                      : 'border-notion-border bg-notion-sidebar/40'
+                  }`}>
+                    <h3 className="font-semibold text-notion-text flex items-center gap-1.5">
+                      <span className={`size-1.5 rounded-full ${publicationIssues.length ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                      <span>发布前属性检查</span>
+                    </h3>
+                    <p className="text-notion-muted text-xs leading-relaxed">这里的文章属性对应文件顶部的 YAML frontmatter。可先导入编辑，再补齐发布信息。</p>
+                    {publicationIssues.length ? (
+                      <ul className="list-disc pl-4 space-y-1 text-amber-600 dark:text-amber-400 font-medium">
+                        {publicationIssues.map(issue => <li key={issue.field}>{issue.message}</li>)}
+                      </ul>
+                    ) : (
+                      <p className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                        <CheckIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span>文章属性检查通过；发布还会由服务端检查正文、图片及仓库版本。</span>
+                      </p>
+                    )}
                   </section>
                   {/* 封面图片 Section */}
-                  <div>
-                    <p className="text-xs font-semibold text-notion-muted mb-2.5">封面图片</p>
+                  {!post.path.startsWith('content/stories/') && (
+                    <div>
+                      <p className="text-xs font-semibold text-notion-muted mb-2.5">封面图片</p>
                     {hasCoverImage ? (
                       <div className="relative group">
                         <CoverImage 
@@ -1285,7 +1491,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                             className="w-full h-40 object-cover rounded-lg border border-notion-border"
                         />
                         <button
-                          disabled title="图片上传暂未开放" onClick={handleUpdateImage}
+                          disabled={isUploading || isSaving} title="上传新封面到当前草稿" onClick={() => coverImageInputRef.current?.click()}
                           className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center rounded-lg transition-all"
                         >
                           <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-medium bg-black/60 px-3 py-1.5 rounded-md transition-opacity">
@@ -1295,22 +1501,136 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                       </div>
                     ) : (
                       <button
-                        disabled title="图片上传暂未开放" onClick={handleUpdateImage}
-                        className="w-full h-28 rounded-xl border border-dashed border-notion-border/80 hover:border-notion-blue/50 bg-notion-sidebar/20 hover:bg-notion-sidebar/40 flex flex-col items-center justify-center gap-2 text-notion-muted hover:text-notion-blue transition-colors group cursor-not-allowed"
+                        disabled={isUploading || isSaving} title="上传封面到当前草稿" onClick={() => coverImageInputRef.current?.click()}
+                        className="w-full h-28 rounded-xl border border-dashed border-notion-border/80 hover:border-notion-blue/50 bg-notion-sidebar/20 hover:bg-notion-sidebar/40 flex flex-col items-center justify-center gap-2 text-notion-muted hover:text-notion-blue transition-colors group disabled:opacity-50"
                       >
                         <ImageIcon className="w-5 h-5 opacity-40 group-hover:opacity-70 transition-opacity" />
-                        <span className="text-xs font-medium">设置封面（暂未开放）</span>
+                        <span className="text-xs font-medium">{isUploading ? '上传中…' : '上传封面'}</span>
                       </button>
                     )}
-                  </div>
+                    </div>
+                  )}
 
                   <div className="border-t border-notion-border"></div>
 
                   {/* Metadata Fields */}
                   <div>
-                    <p className="text-xs font-semibold text-notion-muted mb-2.5">文章属性</p>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <p className="text-xs font-semibold text-notion-muted">文章属性</p>
+                      {post.imported && !draftRef.current && (
+                        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                          待设定地址标识
+                        </span>
+                      )}
+                    </div>
                     <div className="space-y-0">
-                      {Object.entries(editableFrontmatter).filter(([k]) => k !== 'title').map(([key, value]) => (
+                      {/* 1. 地址标识 (Slug) / 访问路径 */}
+                      {post.imported && !draftRef.current ? (
+                        <div className="flex py-1.5 group items-start">
+                          <div className="w-24 flex-shrink-0 flex items-center text-notion-muted pt-1">
+                            <div className="flex items-center px-1 py-0.5 rounded-sm transition-colors cursor-default">
+                              <Globe className="w-3 h-3 mr-1.5 opacity-60 flex-shrink-0 text-notion-blue" />
+                              <span className="capitalize truncate text-[11px] font-medium text-notion-text">
+                                地址标识
+                                <span className="text-red-500 ml-0.5">*</span>
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex-grow min-w-0 space-y-1">
+                            <input
+                              ref={slugInputRef}
+                              type="text"
+                              value={importSlug}
+                              maxLength={100}
+                              placeholder="例如 google-seo-guide"
+                              autoCapitalize="off"
+                              spellCheck={false}
+                              onChange={(e) => {
+                                editSerialRef.current += 1;
+                                const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                                setImportSlug(val);
+                                setIsDirty(true);
+                                setSaveMessage('');
+                                setSaveError(false);
+                              }}
+                              className={`w-full bg-notion-bg border rounded-lg text-xs py-1.5 px-2.5 text-notion-text font-mono focus:outline-none focus:ring-2 focus:ring-notion-blue/20 transition-all shadow-2xs ${
+                                saveError && !importSlug.trim()
+                                  ? 'border-red-500 ring-2 ring-red-500/20'
+                                  : 'border-notion-border focus:border-notion-blue'
+                              }`}
+                            />
+                            <p className="text-[10px] text-notion-muted font-mono truncate" title={resolvedPublicPath}>
+                              预览: <span className="text-notion-text font-medium">{resolvedPublicPath}</span>
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex py-1.5 group items-start">
+                          <div className="w-24 flex-shrink-0 flex items-center text-notion-muted pt-1">
+                            <div className="flex items-center px-1 py-0.5 rounded-sm transition-colors cursor-default">
+                              <Globe className="w-3 h-3 mr-1.5 opacity-60 flex-shrink-0" />
+                              <span className="capitalize truncate text-[11px] font-medium">访问路径</span>
+                            </div>
+                          </div>
+                          <div className="flex-grow min-w-0 flex items-center gap-1.5">
+                            <span className="text-xs font-mono text-notion-text/90 truncate bg-notion-sidebar/60 px-2 py-1 rounded-md border border-notion-border flex-grow min-w-0" title={resolvedPublicPath}>
+                              {resolvedPublicPath}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (navigator.clipboard) {
+                                  void navigator.clipboard.writeText(resolvedPublicPath);
+                                  setCopiedPath(true);
+                                  setTimeout(() => setCopiedPath(false), 2000);
+                                }
+                              }}
+                              className="p-1 rounded-md border border-notion-border text-notion-muted hover:text-notion-text hover:bg-notion-sidebar transition-colors cursor-pointer shrink-0"
+                              title="复制路径"
+                            >
+                              {copiedPath ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+                            </button>
+                            {post.sha && lastCommit?.publicPath && (
+                              <a
+                                href={lastCommit.publicPath}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1 rounded-md border border-notion-border text-notion-muted hover:text-notion-text hover:bg-notion-sidebar transition-colors cursor-pointer shrink-0"
+                                title="查看线上版"
+                              >
+                                <ExternalLink className="size-3" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 2. 语言 (Language) */}
+                      <div className="flex py-1.5 group items-start">
+                        <div className="w-24 flex-shrink-0 flex items-center text-notion-muted pt-1">
+                          <div className="flex items-center px-1 py-0.5 rounded-sm transition-colors cursor-default">
+                            <svg viewBox="0 0 16 16" className="w-3 h-3 mr-1.5 fill-current opacity-50 flex-shrink-0"><path d="M1.5 6.5a1 1 0 011-1h11a1 1 0 011 1v7a1 1 0 01-1 1h-11a1 1 0 01-1-1v-7z" opacity="0.6"/><path d="M1.5 2.5a1 1 0 011-1h11a1 1 0 011 1v2a1 1 0 01-1 1h-11a1 1 0 01-1-1v-2z"/></svg>
+                            <span className="capitalize truncate text-[11px] font-medium">语言</span>
+                          </div>
+                        </div>
+                        <div className="flex-grow min-w-0 flex items-center">
+                          <select
+                            value={String(editableFrontmatter.lang || importLang || 'zh')}
+                            onChange={(e) => {
+                              const newLang = e.target.value as 'en' | 'zh';
+                              handleFrontmatterChange('lang', newLang);
+                              if (post.imported) setImportLang(newLang);
+                            }}
+                            className="w-full bg-notion-bg border border-notion-border rounded-lg text-xs py-1.5 px-2.5 text-notion-text focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue transition-all cursor-pointer shadow-2xs"
+                          >
+                            <option value="zh">中文 (zh)</option>
+                            <option value="en">English (en)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* 3. 其它 frontmatter 属性 */}
+                      {Object.entries(editableFrontmatter).filter(([k]) => k !== 'title' && k !== 'lang' && k !== 'slug').map(([key, value]) => (
                           <div key={key} className="flex py-1.5 group items-start">
                               <div className="w-24 flex-shrink-0 flex items-center text-notion-muted pt-1">
                                   <div className="flex items-center px-1 py-0.5 rounded-sm transition-colors cursor-default">
@@ -1332,7 +1652,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                         <div className="border-t border-dashed border-notion-border"></div>
                         <div>
                           <p className="text-xs font-semibold text-notion-muted mb-2">可补充属性</p>
-                          {missingFields.map(field => (
+                          {missingFields.filter(f => f !== 'title' && f !== 'lang' && f !== 'slug').map(field => (
                               <div key={field} className="flex py-1.5 group items-center opacity-70 hover:opacity-100 transition-opacity">
                                   <div className="w-24 flex-shrink-0 flex items-center text-notion-muted">
                                       <div className="flex items-center px-1 py-0.5 rounded-sm">
@@ -1363,11 +1683,11 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     <div className="space-y-1.5 rounded-lg border border-notion-border bg-notion-sidebar/40 p-2.5 text-xs text-notion-muted shadow-2xs">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] text-notion-muted">文件名</span>
-                        <span className="font-mono text-[11px] text-notion-text truncate max-w-[170px]" title={post.name}>{post.name}</span>
+                        <span className="font-mono text-[11px] text-notion-text truncate max-w-[170px]" title={draftRef.current?.targetPath.split('/').pop() ?? post.name}>{draftRef.current?.targetPath.split('/').pop() ?? post.name}</span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] text-notion-muted">路径</span>
-                        <span className="font-mono text-[11px] text-notion-text truncate max-w-[170px]" title={post.path}>{post.path}</span>
+                        <span className="font-mono text-[11px] text-notion-text truncate max-w-[170px]" title={draftRef.current?.targetPath ?? post.path}>{draftRef.current?.targetPath ?? post.path}</span>
                       </div>
                     </div>
                   </div>

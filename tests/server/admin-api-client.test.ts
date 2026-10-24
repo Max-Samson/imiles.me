@@ -57,3 +57,21 @@ test('admin API client sends versioned review as same-origin JSON PATCH', async 
   assert.equal(new Headers(received?.headers).get('Content-Type'), 'application/json');
   assert.deepEqual(JSON.parse(String(received?.body)), { action: 'approve', expectedVersion: 1 });
 });
+
+test('admin API client sends image FormData without overriding multipart boundary', async () => {
+  let received: RequestInit | undefined;
+  const form = new FormData();
+  form.set('image', new Blob(['image bytes'], { type: 'image/png' }));
+  await adminApiRequest(
+    '/api/v1/admin/cms/drafts/cmd_test/assets',
+    undefined,
+    async (_input, init) => {
+      received = init;
+      return Response.json({ success: true, data: { id: 'cma_test' } });
+    },
+    { method: 'POST', body: form },
+  );
+  assert.equal(received?.credentials, 'same-origin');
+  assert.equal(new Headers(received?.headers).has('Content-Type'), false);
+  assert.equal(received?.body, form);
+});

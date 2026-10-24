@@ -1,5 +1,5 @@
 import { cmsConfig } from './config';
-import { contentPath, requireReadAction } from './policy';
+import { blogImagePath, contentPath, requireReadAction } from './policy';
 import type { CmsRepository } from './repository';
 
 export async function readCmsOperation(
@@ -13,10 +13,14 @@ export async function readCmsOperation(
   if (operation === 'findProductionUrl') return null;
   if (operation === 'getFileContent' && params.path === '.pageelrc.json')
     return JSON.stringify(cmsConfig);
-  const path = contentPath(
-    params.path,
-    ['getRepoContents', 'listFiles', 'getRepoTree'].includes(operation),
-  );
+  const directoryRead = ['getRepoContents', 'listFiles', 'getRepoTree'].includes(operation);
+  const imageDirectoryRead =
+    directoryRead &&
+    typeof params.path === 'string' &&
+    (params.path === 'public/images/blog' || params.path.startsWith('public/images/blog/'));
+  const path = imageDirectoryRead
+    ? blogImagePath(params.path, true)
+    : contentPath(params.path, directoryRead);
   if (operation === 'getFileContent') return repository.read(path);
   if (operation === 'getFileSha') return repository.sha(path);
   const entries = await repository.list(path);
@@ -28,7 +32,7 @@ export async function readCmsOperation(
     while (pending.length) {
       const directory = pending.shift();
       if (!directory) break;
-      contentPath(directory, true);
+      (imageDirectoryRead ? blogImagePath : contentPath)(directory, true);
       if (seen.has(directory)) continue;
       if (seen.size >= 100) throw new Error('内容目录过多，请缩小扫描范围');
       seen.add(directory);
@@ -39,7 +43,7 @@ export async function readCmsOperation(
   }
   return entries.filter((entry) => {
     try {
-      contentPath(entry.path, entry.type === 'dir');
+      (imageDirectoryRead ? blogImagePath : contentPath)(entry.path, entry.type === 'dir');
       return true;
     } catch {
       return false;

@@ -19,8 +19,12 @@ interface Props {
   ogImage?: string;
   ogType?: 'website' | 'article';
   publishedTime?: Date;
+  updatedTime?: Date;
   tags?: string[];
   articleSection?: string;
+  articleTitle?: string;
+  noindex?: boolean;
+  alternateLocales?: Locale[];
   loadKatex?: boolean;
 }
 const {
@@ -34,8 +38,12 @@ const {
   ogImage,
   ogType = 'website',
   publishedTime,
+  updatedTime,
   tags = [],
   articleSection,
+  articleTitle,
+  noindex = false,
+  alternateLocales,
   loadKatex = false,
 } = Astro.props;
 const lang = resolveLocale(Astro.currentLocale as Locale | undefined);
@@ -59,9 +67,12 @@ const shouldHideLanguage =
       image={ogImage}
       type={ogType}
       publishedTime={publishedTime}
+      updatedTime={updatedTime}
       tags={tags}
-      section={articleSection}
-      locale={lang}
+      articleSection={articleSection}
+      articleTitle={articleTitle}
+      noindex={noindex}
+      alternateLocales={alternateLocales}
     />
     {
       loadKatex && (

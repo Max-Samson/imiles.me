@@ -219,28 +219,28 @@ const PostUploadValidationModal: React.FC<PostUploadValidationModalProps> = ({ f
 
   const renderStatusIcon = (status: ValidationStatus) => {
       switch(status) {
-          case 'loading': return <SpinnerIcon className="w-4 h-4 animate-spin text-notion-blue shrink-0" />;
+          case 'loading': return <SpinnerIcon className="w-4 h-4 animate-spin text-blue-600 dark:text-sky-400 shrink-0" />;
           case 'success': return <CheckCircleIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />;
-          case 'warning': return <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" />;
-          case 'error': return <CloseIcon className="w-4 h-4 text-rose-500 dark:text-rose-400 shrink-0" />;
+          case 'warning': return <ExclamationTriangleIcon className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />;
+          case 'error': return <CloseIcon className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />;
           default: return <div className="w-4 h-4 shrink-0" />;
       }
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={(e) => e.stopPropagation()}>
-      <div className="bg-notion-bg text-notion-text rounded-2xl shadow-2xl border border-notion-border w-full max-w-lg flex flex-col overflow-hidden max-h-[85vh] transition-all">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs animate-fade-in" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200/90 dark:border-white/10 w-full max-w-lg flex flex-col overflow-hidden max-h-[85vh] transition-all">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-notion-border flex justify-between items-start bg-notion-sidebar/40 shrink-0">
+        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-white/10 flex justify-between items-start bg-slate-50/80 dark:bg-[#131722]/80 shrink-0">
             <div>
-                <h3 className="text-base font-semibold text-notion-text leading-snug">{localPreview ? '导入文章到编辑台' : t('uploadValidation.title')}</h3>
-                <p className="text-xs text-notion-muted mt-1 leading-relaxed">{localPreview ? `打开“${file.name}”，导入后可编辑正文与文章属性` : t('uploadValidation.subtitle', { name: file.name })}</p>
+                <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-snug">{localPreview ? '导入文章到编辑台' : t('uploadValidation.title')}</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">{localPreview ? `打开“${file.name}”，导入后可编辑正文与文章属性` : t('uploadValidation.subtitle', { name: file.name })}</p>
             </div>
             <button
                 type="button"
                 onClick={onCancel}
-                className="text-notion-muted hover:text-notion-text p-1.5 hover:bg-notion-hover rounded-lg transition-colors cursor-pointer shrink-0 ml-3"
+                className="text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 p-1.5 hover:bg-slate-200/60 dark:hover:bg-white/10 rounded-lg transition-colors cursor-pointer shrink-0 ml-3"
                 aria-label="关闭弹窗"
             >
                 <CloseIcon className="w-4 h-4" />
@@ -253,15 +253,27 @@ const PostUploadValidationModal: React.FC<PostUploadValidationModalProps> = ({ f
             {/* Frontmatter Check */}
             <div>
                 <div className="flex items-center gap-2 mb-2.5">
-                    <DocumentIcon className="w-4 h-4 text-notion-muted shrink-0" />
-                    <span className="text-xs font-semibold text-notion-muted">{localPreview ? '文章属性检查' : t('uploadValidation.frontmatter.section')}</span>
+                    <DocumentIcon className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{localPreview ? '文章属性检查' : t('uploadValidation.frontmatter.section')}</span>
                 </div>
-                <div className="bg-notion-sidebar/40 border border-notion-border rounded-xl p-3.5 shadow-2xs">
+                <div className={`border rounded-xl p-3.5 shadow-2xs transition-colors ${
+                    fmStatus.status === 'error' ? 'bg-rose-50/90 border-rose-300/80 text-rose-950 dark:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-100' :
+                    fmStatus.status === 'warning' ? 'bg-amber-50/90 border-amber-300/80 text-amber-950 dark:bg-amber-500/10 dark:border-amber-500/30 dark:text-amber-100' :
+                    'bg-slate-50 border-slate-200 text-slate-900 dark:bg-[#131722]/80 dark:border-white/10 dark:text-slate-100'
+                }`}>
                     <div className="flex items-start gap-3">
                         <div className="mt-0.5 shrink-0">{renderStatusIcon(fmStatus.status)}</div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-notion-text">{fmStatus.label}</p>
-                            {fmStatus.message && <p className="text-xs text-notion-muted mt-1 leading-relaxed">{fmStatus.message}</p>}
+                            <p className="text-sm font-semibold">{fmStatus.label}</p>
+                            {fmStatus.message && (
+                                <p className={`text-xs mt-1 leading-relaxed ${
+                                    fmStatus.status === 'error' ? 'text-rose-900/90 dark:text-rose-300' :
+                                    fmStatus.status === 'warning' ? 'text-amber-900/90 dark:text-amber-300' :
+                                    'text-slate-600 dark:text-slate-400'
+                                }`}>
+                                    {fmStatus.message}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -271,28 +283,28 @@ const PostUploadValidationModal: React.FC<PostUploadValidationModalProps> = ({ f
             <div>
                 <div className="flex items-center justify-between gap-2 mb-2.5">
                     <div className="flex items-center gap-2">
-                        <ImageIcon className="w-4 h-4 text-notion-muted shrink-0" />
-                        <span className="text-xs font-semibold text-notion-muted">{localPreview ? '图片引用' : t('uploadValidation.images.section')}</span>
+                        <ImageIcon className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{localPreview ? '图片引用' : t('uploadValidation.images.section')}</span>
                     </div>
                     {isCheckingImages && (
-                        <span className="text-xs text-notion-blue flex items-center gap-1.5 shrink-0">
-                            <SpinnerIcon className="w-3.5 h-3.5 animate-spin"/> {t('uploadValidation.images.scanning')}
+                        <span className="text-xs text-blue-600 dark:text-sky-400 flex items-center gap-1.5 shrink-0 font-medium">
+                            <SpinnerIcon className="w-3.5 h-3.5 animate-spin shrink-0"/> {t('uploadValidation.images.scanning')}
                         </span>
                     )}
                 </div>
                 
                 {imageChecks.length === 0 && !isCheckingImages ? (
-                    <div className="p-3.5 bg-notion-sidebar/30 border border-dashed border-notion-border rounded-xl text-xs text-notion-muted">
+                    <div className="p-3.5 bg-slate-50 dark:bg-slate-900/30 border border-dashed border-slate-300/80 dark:border-white/15 rounded-xl text-xs text-slate-600 dark:text-slate-400">
                         {localPreview ? '正文没有图片引用。' : t('uploadValidation.images.noImages')}
                     </div>
                 ) : (
-                    <div className="border border-notion-border rounded-xl divide-y divide-notion-border bg-notion-bg overflow-hidden shadow-2xs">
+                    <div className="border border-slate-200 dark:border-white/10 rounded-xl divide-y divide-slate-100 dark:divide-white/5 bg-slate-50/50 dark:bg-black/20 overflow-hidden shadow-2xs">
                         {imageChecks.map((check) => (
-                            <div key={check.id} className="p-3 flex items-start gap-3 hover:bg-notion-hover/40 transition-colors">
+                            <div key={check.id} className="p-3 flex items-start gap-3 hover:bg-slate-100/60 dark:hover:bg-white/5 transition-colors">
                                 <div className="mt-0.5 shrink-0">{renderStatusIcon(check.status)}</div>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-xs font-mono text-notion-text truncate font-medium" title={check.label}>{check.label}</p>
-                                    <p className="text-xs text-notion-muted mt-0.5 leading-relaxed">{check.message}</p>
+                                    <p className="text-xs font-mono text-slate-900 dark:text-slate-100 truncate font-semibold" title={check.label}>{check.label}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{check.message}</p>
                                 </div>
                             </div>
                         ))}
@@ -303,24 +315,24 @@ const PostUploadValidationModal: React.FC<PostUploadValidationModalProps> = ({ f
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 border-t border-notion-border bg-notion-sidebar/50 flex justify-between items-center gap-4 shrink-0">
+        <div className="px-6 py-3.5 border-t border-slate-200/80 dark:border-white/10 bg-slate-50/80 dark:bg-[#131722]/80 flex justify-between items-center gap-4 shrink-0">
             <div className="text-xs min-w-0 flex-1">
                 {overallStatus === 'error' && (
-                    <span className="text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5">
+                    <span className="text-rose-700 dark:text-rose-400 font-medium flex items-center gap-1.5">
                         <CloseIcon className="w-3.5 h-3.5 shrink-0" />
-                        <span>{localPreview ? '文件格式或语法有误，请修复后导入。' : t('uploadValidation.summary.error')}</span>
+                        <span className="truncate">{localPreview ? '文件格式或语法有误，请修复后导入。' : t('uploadValidation.summary.error')}</span>
                     </span>
                 )}
                 {overallStatus === 'warning' && (
-                    <span className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1.5">
+                    <span className="text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1.5">
                         <ExclamationTriangleIcon className="w-3.5 h-3.5 shrink-0" />
-                        <span>{localPreview ? '可以导入，待补充项不会阻止打开。' : t('uploadValidation.summary.warning')}</span>
+                        <span className="truncate">{localPreview ? '可以导入，待补充项不会阻止打开。' : t('uploadValidation.summary.warning')}</span>
                     </span>
                 )}
                 {overallStatus === 'success' && (
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5">
+                    <span className="text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1.5">
                         <CheckCircleIcon className="w-3.5 h-3.5 shrink-0" />
-                        <span>{localPreview ? '可以导入，尚未保存到仓库。' : t('uploadValidation.summary.success')}</span>
+                        <span className="truncate">{localPreview ? '可以导入，尚未保存到仓库。' : t('uploadValidation.summary.success')}</span>
                     </span>
                 )}
             </div>
@@ -328,7 +340,7 @@ const PostUploadValidationModal: React.FC<PostUploadValidationModalProps> = ({ f
                 <button 
                     type="button"
                     onClick={onCancel} 
-                    className="px-3.5 py-1.5 bg-notion-sidebar/60 border border-notion-border rounded-lg text-notion-text text-xs font-medium hover:bg-notion-hover transition-colors shadow-2xs cursor-pointer whitespace-nowrap"
+                    className="px-4 py-2 bg-white dark:bg-white/5 border border-slate-300 dark:border-white/15 rounded-lg text-slate-700 dark:text-slate-200 text-xs font-medium hover:bg-slate-100 dark:hover:bg-white/10 transition-colors shadow-2xs cursor-pointer whitespace-nowrap"
                 >
                     {localPreview ? '取消' : t('uploadValidation.cancel')}
                 </button>
@@ -336,11 +348,11 @@ const PostUploadValidationModal: React.FC<PostUploadValidationModalProps> = ({ f
                     type="button"
                     onClick={onConfirm}
                     disabled={busy || overallStatus === 'loading' || overallStatus === 'error'}
-                    className={`px-4 py-1.5 rounded-lg text-white text-xs font-medium shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50 ${
-                        overallStatus === 'loading' ? 'bg-notion-muted/50' :
-                        overallStatus === 'error' ? 'bg-rose-500/50' :
-                        overallStatus === 'warning' ? 'bg-amber-600 hover:bg-amber-700' :
-                        'bg-notion-blue hover:opacity-90'
+                    className={`px-4 py-2 rounded-lg text-white text-xs font-semibold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50 ${
+                        overallStatus === 'loading' ? 'bg-slate-400 dark:bg-slate-700' :
+                        overallStatus === 'error' ? 'bg-rose-500/60' :
+                        overallStatus === 'warning' ? 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800' :
+                        'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 dark:bg-sky-500 dark:hover:bg-sky-600'
                     }`}
                 >
                     {busy && <SpinnerIcon className="w-3.5 h-3.5 animate-spin shrink-0" />}

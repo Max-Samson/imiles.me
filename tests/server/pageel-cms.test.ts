@@ -59,6 +59,25 @@ test('snapshot is read-only and scoped by collection, with unique identities', a
   assert.equal(await repo.read('content/blog/a.md'), '# A');
 });
 
+test('Pageel 仪表盘可只读列出固定博客图片目录，仍拒绝其他 public 文件', async () => {
+  const repo = snapshotRepository({
+    'public/images/blog/cover.webp': 'binary-fixture',
+    'public/images/other/secret.webp': 'other',
+  });
+  const entries = await readCmsOperation(repo, 'getRepoContents', {
+    path: 'public/images/blog',
+  });
+  if (!Array.isArray(entries)) throw new Error('博客图片目录应返回文件列表');
+  assert.deepEqual(
+    entries.map((entry) => (typeof entry === 'string' ? entry : entry.path)),
+    ['public/images/blog/cover.webp'],
+  );
+  await assert.rejects(readCmsOperation(repo, 'getRepoContents', { path: 'public/images/other' }));
+  await assert.rejects(
+    readCmsOperation(repo, 'getFileContent', { path: 'public/images/blog/cover.webp' }),
+  );
+});
+
 test('virtual CMS config does not read or expose arbitrary repository configuration', async () => {
   const repo = snapshotRepository({});
   const config = JSON.parse(
@@ -86,6 +105,10 @@ test('GitHub reads use explicit branch and server token; upstream error bodies a
   };
   const repo = githubRepository(env, fetcher);
   assert.equal(await repo.read('content/blog/a.md'), 'hello');
+  assert.deepEqual(await repo.readVersion('content/blog/a.md'), {
+    content: 'hello',
+    blobSha: 'abc',
+  });
   assert.equal(new URL(calls[0].url).searchParams.get('ref'), 'cms/test');
   assert.equal(new Headers(calls[0].init?.headers).get('Authorization'), 'Bearer server-only-test');
   assert.equal(calls[0].init?.redirect, 'error');
@@ -103,6 +126,7 @@ test('GitHub reads use explicit branch and server token; upstream error bodies a
 test('GitHub 文件列表递归发现代码新增的嵌套 MDX', async () => {
   const repo = {
     mode: 'github' as const,
+    readVersion: async () => ({ content: '', blobSha: '' }),
     read: async () => '',
     sha: async () => null,
     list: async (path: string) =>

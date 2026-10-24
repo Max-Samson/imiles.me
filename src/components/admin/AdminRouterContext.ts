@@ -14,7 +14,7 @@ export interface AdminRoute {
 /** 路由上下文提供给各子组件的完整接口。 */
 export interface AdminRouterContextValue extends AdminRoute {
   /** 客户端无刷新路由跳转函数。 */
-  navigate: (href: string) => boolean;
+  navigate: (href: string) => Promise<boolean>;
 }
 
 /** 后台单页客户端路由上下文。 */
@@ -32,7 +32,7 @@ export function useAdminRouter(): AdminRouterContextValue {
       section: defaultNav.key,
       path: defaultNav.href,
       friendLinkId: undefined,
-      navigate: (href: string) => {
+      navigate: async (href: string) => {
         if (typeof window !== 'undefined') {
           window.location.assign(href);
         }

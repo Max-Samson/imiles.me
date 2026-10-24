@@ -11,6 +11,7 @@ export class AdminApiError extends Error {
     message: string,
     readonly requestId?: string,
     readonly status?: number,
+    readonly details?: unknown,
   ) {
     super(message);
     this.name = 'AdminApiError';

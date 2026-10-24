@@ -4,24 +4,26 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import ArticleLayout from '@/layouts/ArticleLayout.astro';
 import { getCollection, render } from 'astro:content';
 import { calculateReadTime } from '@/lib/readTime';
+import { resolveContentPublicPath } from '@/lib/content-routing';
 import CodeBlockEnhancer from '@/components/article/CodeBlockEnhancer';
 import HeadingLinkEnhancer from '@/components/article/HeadingLinkEnhancer';
 import MobileTOC from '@/components/article/MobileTOC';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('blog', ({ data }) => data.draft !== true && data.lang === 'en');
-  return posts.map((post) => ({
+  const posts = await getCollection('blog', ({ data }) => data.draft !== true);
+  const ids = new Set(posts.filter((post) => post.data.lang === 'zh').map((post) => post.id.replace(/-zh$/, '')));
+  return posts.filter((post) => post.data.lang === 'en').map((post) => ({
     params: { slug: post.id },
-    props: { post },
+    props: { post, alternateLocales: ids.has(post.id) ? (['en', 'zh'] as Array<'en' | 'zh'>) : (['en'] as Array<'en' | 'zh'>) },
   }));
 }
 
-const { post } = Astro.props;
+const { post, alternateLocales } = Astro.props;
 const { Content, headings } = await render(post);
 const readTime = calculateReadTime(post.body || '');
 
 const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://imiles.me';
-const postUrl = `${siteUrl}/blog/${post.id}`;
+const postUrl = `${siteUrl}${resolveContentPublicPath('blog', 'en', post.id)}`;
 
 const tocHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
 const showTOC = tocHeadings.length >= 3;
@@ -32,8 +34,12 @@ const showTOC = tocHeadings.length >= 3;
   description={post.data.description}
   ogType="article"
   publishedTime={post.data.pubDate}
+  updatedTime={post.data.updatedDate}
+  ogImage={post.data.heroImage}
+  alternateLocales={alternateLocales}
   tags={post.data.tags}
   articleSection="Blog"
+  articleTitle={post.data.title}
   loadKatex
 >
   <ArticleLayout

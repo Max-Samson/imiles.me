@@ -1,11 +1,13 @@
+import { contentCollections } from '../../../config/content-collections';
+
 /** Pageel collection config is code-reviewed and read-only from the CMS. */
 export const cmsConfig = {
   version: 2,
   activeCollectionId: 'blog',
-  collections: ['blog', 'stories'].map((id) => ({
+  collections: (['blog', 'stories'] as const).map((id) => ({
     id,
     name: id === 'blog' ? '博客 / Blog' : '故事 / Stories',
-    postsPath: `content/${id}`,
+    postsPath: contentCollections[id].directory,
     imagesPath: id === 'blog' ? 'public/images/blog' : '',
     template: {
       fields: [

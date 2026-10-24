@@ -9,10 +9,13 @@ interface Props {
   image?: string;
   type?: 'website' | 'article';
   publishedTime?: Date;
+  updatedTime?: Date;
   tags?: string[];
   author?: string;
   alternateLocales?: Locale[];
   articleSection?: string;
+  articleTitle?: string;
+  noindex?: boolean;
 }
 
 const {
@@ -21,15 +24,18 @@ const {
   image,
   type = 'website',
   publishedTime,
+  updatedTime,
   tags = [],
   author = siteAuthor.name,
   alternateLocales = ['en', 'zh'],
   articleSection,
+  articleTitle,
+  noindex = false,
 } = Astro.props;
 
 const siteUrl = Astro.site?.toString().replace(/\/$/, '') || siteAuthor.site.url;
 const pathname = Astro.url.pathname;
-const canonicalUrl = new URL(pathname, siteUrl).toString();
+const canonicalUrl = new URL(pathname.replace(/\/+$/, '') || '/', siteUrl).toString();
 const locale = getLocaleFromPathname(pathname);
 const unlocalizedPathname = stripLocaleFromPathname(pathname);
 const alternates = getLocalizedAlternates(unlocalizedPathname);
@@ -44,7 +50,10 @@ function getOgImagePath(pathname: string): string {
   // Extract the last meaningful segment (e.g., /blog/welcome/ -> welcome)
   const segments = pathname.split('/').filter(Boolean);
   const slug = segments[segments.length - 1];
-  return `/og/${slug}.png`;
+  if (/^\/(?:zh\/)?(?:blog|stories)\//.test(pathname)) {
+    return `/og/${segments.join('/')}.png`;
+  }
+  return '/og/index.png';
 }
 
 const ogImageUrl = image
@@ -55,40 +64,44 @@ const pageSchemas = type === 'article'
   ? [
       {
         '@context': 'https://schema.org',
-        '@type': 'BlogPosting',
-        headline: title,
+        '@type': articleSection === 'Stories' ? 'Article' : 'BlogPosting',
+        '@id': `${canonicalUrl}#article`,
+        headline: articleTitle ?? title,
         description,
         image: [ogImageUrl],
+        url: canonicalUrl,
         mainEntityOfPage: canonicalUrl,
         author: {
-          '@type': 'Person',
-          name: author,
+          '@id': `${siteUrl}/#person`,
         },
         publisher: {
-          '@type': 'Person',
-          name: author,
+          '@id': `${siteUrl}/#person`,
         },
         datePublished: publishedTime?.toISOString(),
+        dateModified: (updatedTime ?? publishedTime)?.toISOString(),
         articleSection,
         keywords: tags.join(', '),
         inLanguage: locale === 'zh' ? 'zh-CN' : 'en-US',
+        isPartOf: { '@id': `${siteUrl}/#website` },
       },
     ]
   : [
       {
         '@context': 'https://schema.org',
         '@type': 'WebPage',
+        '@id': `${canonicalUrl}#webpage`,
         name: title,
         description,
         url: canonicalUrl,
         inLanguage: locale === 'zh' ? 'zh-CN' : 'en-US',
+        isPartOf: { '@id': `${siteUrl}/#website` },
       },
     ];
 ---
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalUrl} />
-<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+<meta name="robots" content={noindex ? 'noindex,nofollow' : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1'} />
 <meta name="author" content={author} />
 <meta name="theme-color" content="#0a0a0a" />
 
@@ -101,12 +114,15 @@ const pageSchemas = type === 'article'
     />
   ))
 }
-<link rel="alternate" hreflang="x-default" href={new URL(alternates.en, siteUrl).toString()} />
+{alternateLocales.includes('en') && <link rel="alternate" hreflang="x-default" href={new URL(alternates.en, siteUrl).toString()} />}
 
 <!-- Open Graph -->
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
 <meta property="og:image" content={ogImageUrl} />
+<meta property="og:image:alt" content={articleTitle ?? title} />
+{!image && <meta property="og:image:width" content="1200" />}
+{!image && <meta property="og:image:height" content="630" />}
 <meta property="og:url" content={canonicalUrl} />
 <meta property="og:type" content={type} />
 <meta property="og:site_name" content={siteAuthor.site.name} />
@@ -124,6 +140,7 @@ const pageSchemas = type === 'article'
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={ogImageUrl} />
+<meta name="twitter:image:alt" content={articleTitle ?? title} />
 <meta name="twitter:site" content={siteAuthor.social.x.handle} />
 <meta name="twitter:creator" content={siteAuthor.social.x.handle} />
 
@@ -133,9 +150,10 @@ const pageSchemas = type === 'article'
     <meta property="article:published_time" content={publishedTime.toISOString()} />
   )
 }
+{type === 'article' && updatedTime && <meta property="article:modified_time" content={updatedTime.toISOString()} />}
 {type === 'article' && tags.map((tag) => <meta property="article:tag" content={tag} />)}
 {type === 'article' && articleSection && <meta property="article:section" content={articleSection} />}
 
-<script type="application/ld+json" set:html={JSON.stringify(siteSchemas.person)} />
-<script type="application/ld+json" set:html={JSON.stringify(siteSchemas.website)} />
-{pageSchemas.map((schema) => <script type="application/ld+json" set:html={JSON.stringify(schema)} />)}
+<script type="application/ld+json" set:html={JSON.stringify(siteSchemas.person).replaceAll('<', '\\u003c')} />
+<script type="application/ld+json" set:html={JSON.stringify(siteSchemas.website).replaceAll('<', '\\u003c')} />
+{pageSchemas.map((schema) => <script type="application/ld+json" set:html={JSON.stringify(schema).replaceAll('<', '\\u003c')} />)}

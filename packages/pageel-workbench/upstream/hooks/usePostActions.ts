@@ -10,9 +10,11 @@ import { inspectImportedContent } from '../../integration/import-content';
  * - Delete post
  */
 
-import React, { useState, useRef } from 'react';
-import { IGitService } from '../types';
+import React, { useState, useRef, useEffect } from 'react';
+import type { IGitService } from '../types';
 import { updateFrontmatter } from '../utils/parsing';
+import type { CmsDeletionResult, CmsDraftSummary, CmsPublicationResult } from '../../../../src/lib/admin/cms-document-client';
+import { cmsDocumentClient } from '../../../../src/lib/admin/cms-document-client';
 
 export interface PostData {
   frontmatter: Record<string, any>;
@@ -24,6 +26,10 @@ export interface PostData {
   html_url: string;
   thumbnailUrl: string | null;
   imported?: boolean;
+  draft?: CmsDraftSummary;
+  publication?: CmsPublicationResult | null;
+  deletion?: CmsDeletionResult | null;
+  newTarget?: { collection: 'blog' | 'stories'; lang: 'en' | 'zh'; slug: string; format: 'md' | 'mdx' };
 }
 
 interface UsePostActionsParams {
@@ -66,6 +72,8 @@ interface UsePostActionsReturn {
   setPostToDelete: (post: PostData | null) => void;
   confirmDelete: () => Promise<void>;
   isDeleting: boolean;
+  deleteError: string;
+  deleteNotice: string;
 }
 
 export function usePostActions({
@@ -96,6 +104,9 @@ export function usePostActions({
   // Delete state
   const [postToDelete, setPostToDelete] = useState<PostData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteNotice, setDeleteNotice] = useState('');
+  useEffect(() => setDeleteError(''), [postToDelete]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -211,17 +222,42 @@ export function usePostActions({
   const confirmDelete = async () => {
     if (!postToDelete) return;
     setIsDeleting(true);
+    setDeleteError('');
+    setDeleteNotice('');
     try {
-      const commitMsg = `chore(content): delete post "${postToDelete.name}"`;
-      await gitService.deleteFile(postToDelete.path, postToDelete.sha, commitMsg);
+      if (postToDelete.draft) {
+        await cmsDocumentClient.discard(postToDelete.draft.id, postToDelete.draft.revision);
+        setDeleteNotice('D1 工作草稿已废弃；已有 Git 文章与线上页面未变。');
+      } else {
+        if (!/^[a-f0-9]{40}$/i.test(postToDelete.sha))
+          throw new Error('请先刷新仓库文件版本；本地快照不支持删除已发布文章');
+        const pending = await cmsDocumentClient.pendingDeletion(postToDelete.path);
+        if (pending && pending.expectedBlobSha !== postToDelete.sha)
+          throw new Error('已有旧版本删除待对账，请刷新文章状态');
+        const operationId = pending?.operationId ?? crypto.randomUUID();
+        const result = await cmsDocumentClient.deleteArticle(
+          postToDelete.path,
+          postToDelete.sha,
+          operationId,
+        );
+        if (result.status !== 'committed') {
+          setDeleteError(result.status === 'unknown' || result.status === 'in_flight'
+            ? `Git 删除结果待对账，操作 ID：${operationId}。再次确认会沿用该操作。`
+            : result.status === 'conflict'
+              ? '仓库文章已变化，请刷新后比较版本。'
+              : '删除失败，仓库文章保持原状。');
+          return;
+        }
+        setDeleteNotice(`Git 删除已提交（${result.resultCommitSha?.slice(0, 12) ?? operationId}）；线上部署尚未核实。`);
+      }
       onAction();
       fetchPosts();
       if (selectedPost?.path === postToDelete.path) setSelectedPost(null);
-    } catch (e) {
-      alert("Delete failed");
+      setPostToDelete(null);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : '删除失败');
     } finally {
       setIsDeleting(false);
-      setPostToDelete(null);
     }
   };
 
@@ -246,5 +282,7 @@ export function usePostActions({
     setPostToDelete,
     confirmDelete,
     isDeleting,
+    deleteError,
+    deleteNotice,
   };
 }

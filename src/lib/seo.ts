@@ -12,19 +12,22 @@ export const siteSchemas = {
   person: {
     '@context': 'https://schema.org',
     '@type': 'Person',
+    '@id': `${siteUrl}/#person`,
     name: authorName,
     url: siteUrl,
+    description:
+      'Miles writes about frontend engineering, AI, software projects, and personal research.',
     sameAs,
   },
   website: {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': `${siteUrl}/#website`,
     name: siteName,
     url: siteUrl,
     inLanguage: ['en', 'zh-CN'],
     publisher: {
-      '@type': 'Person',
-      name: authorName,
+      '@id': `${siteUrl}/#person`,
     },
   },
 };

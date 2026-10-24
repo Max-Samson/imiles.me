@@ -1,6 +1,7 @@
 import { getCollection } from 'astro:content';
 import rss from '@astrojs/rss';
 import type { APIContext } from 'astro';
+import { resolveContentPublicPath } from '../lib/content-routing';
 
 export async function GET(context: APIContext) {
   const posts = await getCollection('blog', ({ data }) => data.draft !== true);
@@ -14,7 +15,7 @@ export async function GET(context: APIContext) {
       title: post.data.title,
       description: post.data.description,
       pubDate: post.data.pubDate,
-      link: `/blog/${post.id}`,
+      link: resolveContentPublicPath('blog', post.data.lang === 'zh' ? 'zh' : 'en', post.id),
       categories: post.data.tags,
     })),
     customData: `<language>en-us</language>`,

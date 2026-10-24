@@ -8,6 +8,27 @@
       "when": 1790266667585,
       "tag": "0000_friend_links",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792740064314,
+      "tag": "0001_marvelous_ares",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792745533174,
+      "tag": "0002_modern_dragon_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792776602348,
+      "tag": "0003_yielding_sasquatch",
+      "breakpoints": true
     }
   ]
 }

@@ -4,18 +4,27 @@ import { join } from 'node:path';
 import type { APIRoute, GetStaticPaths } from 'astro';
 import satori from 'satori';
 import sharp from 'sharp';
+import { resolveContentPublicPath } from '../../lib/content-routing';
 import { calculateReadTime } from '../../lib/readTime';
+
+// OG 图片在构建期生成静态资源，Worker 请求阶段不读取本地字体文件。
+export const prerender = true;
 
 // Load fonts at module level for reuse
 const interRegular = readFileSync(join(process.cwd(), 'public/fonts/Inter-Regular.ttf'));
 const interBold = readFileSync(join(process.cwd(), 'public/fonts/Inter-Bold.ttf'));
+const notoSansSc = readFileSync(join(process.cwd(), 'src/assets/fonts/NotoSansSC-Regular.ttf'));
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const posts = await getCollection('blog');
-  const stories = await getCollection('stories');
+  const posts = await getCollection('blog', ({ data }) => data.draft !== true);
+  const stories = await getCollection('stories', ({ data }) => data.draft !== true);
 
   const blogPaths = posts.map((post) => ({
-    params: { slug: post.id },
+    params: {
+      slug: resolveContentPublicPath('blog', post.data.lang === 'zh' ? 'zh' : 'en', post.id).slice(
+        1,
+      ),
+    },
     props: {
       title: post.data.title,
       description: post.data.description,
@@ -25,7 +34,13 @@ export const getStaticPaths: GetStaticPaths = async () => {
   }));
 
   const storyPaths = stories.map((story) => ({
-    params: { slug: story.id },
+    params: {
+      slug: resolveContentPublicPath(
+        'stories',
+        story.data.lang === 'zh' ? 'zh' : 'en',
+        story.id,
+      ).slice(1),
+    },
     props: {
       title: story.data.title,
       description: story.data.description,
@@ -84,7 +99,7 @@ function OGImage({ title, description, pubDate, readTime }: OGImageProps) {
         justifyContent: 'space-between',
         backgroundColor: BRAND_HEX.bg,
         padding: '60px',
-        fontFamily: 'Inter',
+        fontFamily: 'Inter, Noto Sans SC',
       },
       children: [
         {
@@ -189,6 +204,12 @@ export const GET: APIRoute = async ({ props }) => {
         name: 'Inter',
         data: interBold,
         weight: 700,
+        style: 'normal',
+      },
+      {
+        name: 'Noto Sans SC',
+        data: notoSansSc,
+        weight: 400,
         style: 'normal',
       },
     ],

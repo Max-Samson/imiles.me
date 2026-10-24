@@ -104,7 +104,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
         if (uniqueValues.length === 0) return null;
         return (
           <div key={field.name} className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold text-notion-muted uppercase tracking-wider">
+            <label className="text-xs font-medium text-notion-muted">
               {field.name}
             </label>
             <select
@@ -140,7 +140,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
         const range = getDateRange(posts, field.name);
         return (
           <div key={field.name} className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold text-notion-muted uppercase tracking-wider">
+            <label className="text-xs font-medium text-notion-muted">
               {field.name}
             </label>
             <div className="flex items-center gap-1.5">
@@ -198,7 +198,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
         const selectedTags: string[] = currentFilter?.value || [];
         return (
           <div key={field.name} className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold text-notion-muted uppercase tracking-wider">
+            <label className="text-xs font-medium text-notion-muted">
               {field.name}
             </label>
             <div className="flex flex-wrap gap-1.5 max-w-lg">
@@ -248,7 +248,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
         const currentVal = currentFilter?.value; // true | false | undefined (all)
         return (
           <div key={field.name} className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold text-notion-muted uppercase tracking-wider">
+            <label className="text-xs font-medium text-notion-muted">
               {field.name}
             </label>
             <div className="inline-flex items-center p-0.5 rounded-lg bg-notion-bg border border-notion-border shadow-2xs">
@@ -292,7 +292,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
         const range = getNumberRange(posts, field.name);
         return (
           <div key={field.name} className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold text-notion-muted uppercase tracking-wider">
+            <label className="text-xs font-medium text-notion-muted">
               {field.name}
             </label>
             <div className="flex items-center gap-1.5">

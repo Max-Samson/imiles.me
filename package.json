@@ -16,7 +16,7 @@
   "scripts": {
     "dev": "astro dev",
     "generate:llms": "node scripts/generate-llms-txt.mjs",
-    "build": "astro build && node scripts/prepare-wrangler-assets.mjs",
+    "build": "node scripts/generate-llms-txt.mjs && astro build && node scripts/prepare-wrangler-assets.mjs",
     "perf:budget": "node scripts/check-homepage-performance.mjs",
     "preview": "astro preview",
     "astro": "astro",
@@ -86,6 +86,7 @@
     "tailwindcss": "^4.1.18",
     "three": "^0.182.0",
     "unified": "11.0.5",
+    "yaml": "2.9.0",
     "zustand": "5.0.15"
   },
   "devDependencies": {

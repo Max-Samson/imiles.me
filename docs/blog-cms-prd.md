@@ -1,7 +1,7 @@
 # Blog CMS 产品与实施计划（v4）
 
 > 状态：历史需求与方案记录；自建编辑器实验已于 2026-10-22 退役。
-> 当前实施设计见 [Pageel CMS Spec](specs/pageel-cms-spec.md)。部署限定为现有 Astro / Cloudflare Worker，同源接入 Pageel 工作台，复用本站 Access 与 REST，不单独部署 Node 服务。下文 v4 自建架构及勾选项不代表当前工作区能力，也不代表 Pageel 已验收。
+> 当前实施设计见 [Pageel CMS Spec](specs/pageel-cms-spec.md) 第 17 节。部署限定为现有 Astro / Cloudflare Worker，同源接入 Pageel 工作台，复用本站 Access 与 REST，不单独部署 Node 服务。下文 v4 自建架构及旧“草稿直接提交 Git”流程不代表当前工作区能力，也不代表 Pageel 已验收。
 > 需求约束继续作为迁移基线；Pageel 的认证、本地存储、MDX 兼容性缺口在新 spec 单独列明。
 
 ## 1. 产品目标与约束
@@ -56,7 +56,7 @@ MDXEditor 的 JSX descriptor 能描述组件属性与 import 来源，但不会�
 - `/admin/edit` 默认展示文章列表：标题、集合、语言、格式、草稿状态、发布日期和更新日期。
 - 支持标题/文件名搜索，集合、语言、草稿筛选。列表单篇解析失败应显示问题项，不能使整个列表不可用。
 - 新建时选择博客或故事；博客选择 Markdown 或 MDX，故事固定 Markdown。
-- 支持恢复当前浏览器未提交的编辑；文章路径、集合、格式和语言在创建后锁定。首版不提供改名、删除、移动和格式转换。
+- 支持恢复当前浏览器未提交的编辑；文章路径、集合、格式和语言在创建后锁定。改名、移动和格式转换暂不提供。删除需求于 2026-10-23 追加：未发布草稿废弃与已发布仓库文章删除必须分开，参见 [Pageel CMS Spec](specs/pageel-cms-spec.md) 17.11。
 - 服务端返回规范文件身份与公开 URL；客户端不能自行拼接文件路径或通过文件名猜测语言。
 
 ### 4.2 写作页

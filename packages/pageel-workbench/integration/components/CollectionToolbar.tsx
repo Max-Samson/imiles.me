@@ -22,7 +22,10 @@ export function CollectionToolbar({ className = '' }: CollectionToolbarProps) {
           id="cms-collection"
           value={workspace?.activeCollectionId ?? ''}
           onChange={(event) => {
-            if (confirmLeave()) setActiveCollection(event.target.value);
+            const nextCollection = event.target.value;
+            void confirmLeave().then((allowed) => {
+              if (allowed) setActiveCollection(nextCollection);
+            });
           }}
           className="rounded-lg border border-notion-border bg-notion-bg px-2.5 py-1 text-xs font-semibold text-notion-text focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue transition-all cursor-pointer shadow-2xs"
         >
@@ -37,7 +40,7 @@ export function CollectionToolbar({ className = '' }: CollectionToolbarProps) {
       <div className="flex items-center">
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-2xs whitespace-nowrap">
           <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
-          仅内存编辑 · 保存与发布暂未开放
+          草稿保存在 D1 · Git 提交与线上部署分别确认
         </span>
       </div>
     </div>

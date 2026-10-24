@@ -7,7 +7,7 @@ interface SuccessEnvelope<T> {
 
 interface ErrorEnvelope {
   success: false;
-  error?: { message?: string };
+  error?: { message?: string; details?: unknown };
 }
 
 export async function adminApiRequest<T>(
@@ -18,14 +18,17 @@ export async function adminApiRequest<T>(
 ): Promise<T> {
   let response: Response;
   try {
+    const multipart = options?.body instanceof FormData;
     response = await fetcher(path, {
       credentials: 'same-origin',
       method: options?.method ?? 'GET',
       headers: {
         Accept: 'application/json',
-        ...(options ? { 'Content-Type': 'application/json' } : {}),
+        ...(options && !multipart ? { 'Content-Type': 'application/json' } : {}),
       },
-      ...(options ? { body: JSON.stringify(options.body) } : {}),
+      ...(options
+        ? { body: multipart ? (options.body as FormData) : JSON.stringify(options.body) }
+        : {}),
       redirect: 'follow',
       signal,
     });
@@ -56,7 +59,13 @@ export async function adminApiRequest<T>(
 
   if (!response.ok || payload.success !== true) {
     const message = payload.success === false ? payload.error?.message : undefined;
-    throw new AdminApiError('api', message ?? '管理服务请求失败', requestId, response.status);
+    throw new AdminApiError(
+      'api',
+      message ?? '管理服务请求失败',
+      requestId,
+      response.status,
+      payload.success === false ? payload.error?.details : undefined,
+    );
   }
   return payload.data;
 }

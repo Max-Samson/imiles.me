@@ -1,6 +1,6 @@
 {
   "repository": "https://github.com/pageel/pageel-cms",
   "commit": "545483babb0258b9493dcc844856ff9326bd592d",
-  "integrationStatus": "compatibility-prototype-read-only",
+  "integrationStatus": "d1-draft-and-server-git-publish",
   "source": "src browser workbench; packages/plugin-mdx/src; packages/plugin-types/src"
 }

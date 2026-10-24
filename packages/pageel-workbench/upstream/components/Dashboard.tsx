@@ -360,7 +360,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <PluginConfigProvider config={pluginConfig}>
-    <div className="cms-workbench flex h-screen bg-white font-sans overflow-hidden text-notion-text">
+    <div className="cms-workbench flex h-screen bg-notion-bg font-sans overflow-hidden text-notion-text">
       {/* Mobile Sidebar Overlay */}
       {!embedded && isSidebarOpen && (
         <div
@@ -426,15 +426,14 @@ const Dashboard: React.FC<DashboardProps> = ({
             {/* Unified Page Header matching Admin Console */}
             {!isEditingPost && (
               <div className="cms-page-heading mb-8 group">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="flex size-2 animate-pulse rounded-full bg-emerald-500" />
-                  <p className="text-xs font-semibold text-notion-blue tracking-wider uppercase">Content Management</p>
-                </div>
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     {getPageIcon()}
                     <div>
-                      <h1 className="text-2xl font-bold text-notion-text tracking-tight md:text-3xl">{getPageTitle()}</h1>
+                      <h1 className="text-2xl font-bold text-notion-text tracking-tight md:text-3xl flex items-center gap-2.5">
+                        <span>{getPageTitle()}</span>
+                        <span className="flex size-2 animate-pulse rounded-full bg-emerald-500 shrink-0" title="服务已就绪" />
+                      </h1>
                       <p className="text-xs text-notion-muted hidden sm:block mt-0.5">
                         全站内容管理 · 支持 MDX 交互组件与双语文章编排
                       </p>

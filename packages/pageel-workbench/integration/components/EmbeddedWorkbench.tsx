@@ -12,7 +12,7 @@ export interface EmbeddedWorkbenchProps extends WorkbenchContextValue {
 }
 
 /** 包的公共入口：复用上游内容工作区，不运行上游 App 的登录和 body 样式副作用。 */
-export default function EmbeddedWorkbench({ user, gitService, dark, onDirtyChange, confirmLeave }: EmbeddedWorkbenchProps) {
+export default function EmbeddedWorkbench({ user, gitService, dark, onDirtyChange, confirmLeave, registerSaveDraft }: EmbeddedWorkbenchProps) {
   const [repo, setRepo] = useState<GithubRepo | null>(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
@@ -27,7 +27,7 @@ export default function EmbeddedWorkbench({ user, gitService, dark, onDirtyChang
   }, [gitService, attempt]);
   return (
     <div className="pageel-host h-full min-h-0">
-      <WorkbenchContext.Provider value={{ dark, onDirtyChange, confirmLeave }}>
+      <WorkbenchContext.Provider value={{ dark, onDirtyChange, confirmLeave, registerSaveDraft }}>
         {error ? <div role="alert" className="p-6">{error}<button className="ml-3 underline" onClick={() => setAttempt(value => value + 1)}>重试</button></div>
           : repo ? <I18nProvider><Dashboard embedded gitService={gitService} repo={repo} user={user} serviceType="github" onLogout={() => {}} /></I18nProvider>
           : <p role="status" className="p-6">正在读取文章工作台…</p>}

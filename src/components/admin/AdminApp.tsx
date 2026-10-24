@@ -80,8 +80,8 @@ export default function AdminApp({
    * 客户端无刷新路由切换函数。
    * 更新组件内路由状态、同步 HTML5 历史记录、刷新网页标题并将主内容区平滑回滚至顶部。
    */
-  const navigate = useCallback((href: string) => {
-    if (href !== window.location.pathname && !canLeaveAdminModule()) return false;
+  const navigate = useCallback(async (href: string) => {
+    if (href !== window.location.pathname && !(await canLeaveAdminModule())) return false;
     if (findNavItemByPath(href)?.navigation === 'document') {
       window.location.assign(href);
       return true;
@@ -107,12 +107,13 @@ export default function AdminApp({
 
   // 监听浏览器前进、后退操作（popstate），实现与浏览器历史导航的无缝同步
   useEffect(() => {
-    const onPopState = () => {
-      if (!canLeaveAdminModule()) {
+    const onPopState = async () => {
+      const targetPath = window.location.pathname;
+      if (!(await canLeaveAdminModule())) {
         window.history.pushState(null, '', route.path);
         return;
       }
-      const nextRoute = parseAdminPath(window.location.pathname);
+      const nextRoute = parseAdminPath(targetPath);
       setRoute(nextRoute);
       updatePageTitle(nextRoute);
       const mainEl = document.getElementById('admin-main');
@@ -166,7 +167,7 @@ export default function AdminApp({
         e.button === 0
       ) {
         e.preventDefault();
-        navigate(href);
+        void navigate(href);
       }
     };
     document.addEventListener('click', handleDocumentClick);

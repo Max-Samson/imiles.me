@@ -49,6 +49,7 @@ const resolvedBadge = Astro.props.badge ?? fm.badge ?? current?.badge ?? 'UI Pri
   title={`${resolvedTitle} | UI Playground`}
   description={resolvedDescription}
   hideLanguageSwitcher={true}
+  alternateLocales={['en']}
 >
   {/* 统一全页背景色 (bg-background)，彻底移除仅覆盖第一屏的绝对定位光线层，消除滚动色差 */}
   <div

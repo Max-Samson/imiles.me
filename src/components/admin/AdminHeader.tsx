@@ -137,7 +137,7 @@ export function AdminHeader({
    * 关闭指定标签页。
    * 若关闭的是当前正在激活的页面，自动平滑回退至相邻标签页；若全部关闭则回退至默认主页。
    */
-  const handleCloseTab = (tabToClose: AdminTab) => {
+  const handleCloseTab = async (tabToClose: AdminTab) => {
     const defaultNav = adminNavigation[0] ?? {
       key: 'dashboard',
       label: '概览',
@@ -158,7 +158,7 @@ export function AdminHeader({
     if (tabToClose.id === currentTab.id) {
       const closedIndex = tabs.findIndex((t) => t.id === tabToClose.id);
       const target = closedIndex > 0 ? tabs[closedIndex - 1] : fallbackTabs[0];
-      if (!navigate(target.href)) return;
+      if (!(await navigate(target.href))) return;
     }
 
     try {
@@ -188,7 +188,7 @@ export function AdminHeader({
   };
 
   /** 一键关闭所有标签页并重置回到默认主页 */
-  const handleCloseAll = () => {
+  const handleCloseAll = async () => {
     const defaultNav = adminNavigation[0] ?? {
       key: 'dashboard',
       label: '概览',
@@ -203,7 +203,7 @@ export function AdminHeader({
     };
 
     if (currentTab.id !== defaultTab.id) {
-      if (!navigate(defaultTab.href)) return;
+      if (!(await navigate(defaultTab.href))) return;
     }
 
     try {

@@ -1,5 +1,6 @@
 import { getCollection } from 'astro:content';
 import { research as notes } from '@/data/notes';
+import { getAllPlaygroundItems } from '@/data/playgroundNav';
 import { projects } from '@/data/projects';
 
 export const prerender = true;
@@ -57,6 +58,9 @@ export async function GET() {
     { path: '/zh/about' },
     { path: '/notes' },
     { path: '/zh/notes' },
+    { path: '/friends' },
+    { path: '/zh/friends' },
+    ...getAllPlaygroundItems().map((item) => ({ path: item.href })),
     ...blogPosts.map((post) => ({
       path:
         post.data.lang === 'zh' ? `/zh/blog/${post.id.replace(/-zh$/, '')}` : `/blog/${post.id}`,

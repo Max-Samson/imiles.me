@@ -1,7 +1,7 @@
 # Pageel 文章后台接入 Spec
 
 - 日期：2026-10-22
-- 状态：Pageel 已集成本地编辑台，UI 已完成；写入、上传、发布尚未开放。下一阶段以第 14 节为准。
+- 状态：Pageel 编辑台已接入 D1 草稿、受保护的 Git 发布和删除操作；发布后的固定 Deploy 工作流核验已接入。草稿图片的私有暂存与受保护预览接口已接入，但编辑器上传入口、媒体 Git 提交及失败恢复尚未接线，因此图片编辑入口继续关闭。本地受控文件写入、真实测试分支及生产部署验收仍未完成。草稿与发布的现行设计以第 17 节为准；第 14、15 节的直接提交草稿方案保留为历史分析。
 - 决策：退役本站自建文章工作台；复用 Pageel 完整 React 工作台，集成现有 Astro / Cloudflare Worker。通过固定版本的上游源码包与小型适配补丁维护，不拆散复制后重建同类后台。
 - 需求来源：[Blog CMS PRD](../blog-cms-prd.md)。本文替代旧 PRD 中的自建工作台、文章 REST API 和 Worker 写入实现方案。
 
@@ -44,7 +44,7 @@
 | --- | --- |
 | `astro.config.mjs`：Astro 5、`output: server`、Cloudflare adapter、React / MDX 集成 | 保留现有宿主，不整站升级到上游 Astro 6 |
 | `wrangler.toml`：`dist/_worker.js`、ASSETS、`nodejs_compat`、compatibility date 2026-03-31 | 同一构建、同一 Worker 部署；不认为 nodejs_compat 等同完整 Node 环境 |
-| D1 `DB`、业务缓存 `KV`、Astro `SESSION` | 首版不新增文章数据库或 CMS session 存储；文章继续以 Git 文件为事实来源 |
+| D1 `DB`、业务缓存 `KV`、Astro `SESSION` | 只读原型未使用 D1；第 17 节将现有 D1 用于非公开工作草稿，Git 文件仍是站点构建来源 |
 | `src/server/env.ts` 的 `getServerEnv` | 从请求 runtime bindings 读取 CMS secret，避免构建期内联 |
 | `src/server/security/access/` | 复用 Access JWT、管理员身份、capabilities 与本地开发策略 |
 | `src/server/rest/` | 复用请求上下文、request ID、错误响应与 no-store |
@@ -104,7 +104,7 @@ HTTP POST 的 git dispatcher 可能同时承载查询与写入，必须先对 op
 - 上游 upload 使用 File、arrayBuffer、Uint8Array，可先沿用并使用现有 bounded body 工具限制读取；在 workerd 验证 multipart、二进制编码和媒体响应。
 - 配置扫描、插件打包只发生在开发/CI。生产不执行 node:fs 写仓库、不启动 shell/git、不动态 npm install，也不从任意 URL 加载插件。
 - Workers 的 node:fs 是虚拟文件系统，临时写入不是持久化 Git checkout；线上文章与图片写入 GitHub，不能依靠 `/tmp` 保存。
-- 首版不引入 D1 草稿表、KV 文件存储、R2 或新的 SESSION 用法。已有资源不等于必须用于 CMS；若后续明确需跨设备草稿，再单独设计。
+- 只读原型不引入 D1 草稿表、KV 文件存储、R2 或新的 SESSION 用法。跨设备草稿需求现已明确，第 17 节给出 D1 设计。
 - 在现有 compatibility date 下做 wrangler dry-run 和 workerd 冒烟测试；只有出现确切 API 缺口才考虑升级日期/flag，并回归现有服务。
 
 ## 4. 复用现有 Access 认证
@@ -404,6 +404,8 @@ enabled 控制属性编辑接入；关闭时仍保留识别描述符，避免旧
 
 ### 14.2 明确保存、修改和发布的含义
 
+> 本节记录旧的“草稿直接提交部署分支”方案。用户随后明确要求已发布文章可多次暂存修改；当前实施以第 17 节的 D1 工作草稿方案为准。
+
 继续既定“直接提交部署分支”方案，避免暗中引入另一套草稿系统：
 
 - 新建文章默认 `draft:true`；“保存草稿”表示文件已入 Git，公开详情页不生成。
@@ -475,6 +477,8 @@ URL 必须复用/抽取站点路由规则，不使用 Pageel 通用标题 slug �
 
 ### 14.6 模块边界、顺序与验收
 
+> 下列旧批次不包含 D1 工作草稿；当前开发顺序与放行条件以第 17.7 节为准。
+
 | 顺序 | 模块 | 完成标准 |
 | --- | --- | --- |
 | 1 | plugin-mdx + integration + 现有 parsing | 真实 MD/MDX 编辑往返通过，Stories 限制生效；未编辑字段不重写 |
@@ -544,11 +548,13 @@ interface ContentCollectionDefinition {
 
 示例：blog + zh + hello → content/blog/hello-zh.mdx → /zh/blog/hello；stories + zh + hello → content/stories/hello.md → /zh/stories/hello。已有 stories/hello-zh.md 仍对应 /zh/stories/hello-zh。
 
-首次成功保存后锁定 collection、lang、slug、path，普通修改只更新内容。语言变化也可能迁移 URL，必须走未来独立迁移操作；不能仅锁定文件名却允许语言切换引发旧地址消失。
+最新决策见第 17.3 节：新文稿保存为 D1 草稿期间可按唯一性约束调整候选目标；首次成功提交 Git 后锁定 collection、lang、slug、path。语言变化也可能迁移 URL，必须走未来独立迁移操作；不能仅锁定文件名却允许语言切换引发旧地址消失。
 
 UI 预览不能替代服务端校验：创建时检查路径占用，以及全体相关文档按同一规则计算后的 URL 冲突。预检查存在竞态，发布前构建必须有重复路由检查作为最终门槛；若要求“并发创建阶段绝不产生冲突”，需采用分支 head 条件更新的 Git tree/commit 写入方案，不能把单文件 SHA 校验声称为跨文件事务。首版仍复用单文件写入，明确可能需要修复冲突提交。
 
 ### 15.3 读取、保存与发布的最小契约
+
+> 以下写入契约属于旧方案。当前草稿保存与 Git 发布必须分成两个操作，详见第 17 节。
 
 继续现有 `/api/v1/admin/cms/repository`，动作白名单按读写分类；客户端适配 Pageel 方法，不另造工作台。以下字段是实施契约，具体 action 名应与已锁定上游类型对齐：
 
@@ -584,6 +590,8 @@ previewUrl 指向服务器校验的固定仓库资源引用，不允许任意 UR
 
 ### 15.5 发布状态与 URL 面板
 
+> 以下状态描述需按第 17 节增加 D1 草稿修订维度，不能再以 Git 文件的 `draft` 字段代表全部草稿状态。
+
 把编辑状态、仓库状态、部署状态分开维护：
 
 | 维度 | 状态示例 | 依据 |
@@ -601,6 +609,8 @@ URL 面板展示“文件位置、预计发布地址、最近提交、部署记�
 draft 路由隐藏仍须验收 Blog/Stories 列表、详情、RSS、搜索索引、sitemap 与 LLM 导出，防止从其他入口泄漏文章文本。Git 仓库公开性独立于 draft；本轮不把 draft 定义为安全访问控制。
 
 ### 15.6 推荐开发批次与放行条件
+
+> 下列旧批次中的“首版不包含私密修改草稿”已经失效；以第 17.7 节为准。
 
 1. **配置和编辑保真**：统一集合/路由映射；完成实际样本往返与 Stories 限制；修复已有组件插入缺口。此阶段不开写入。
 2. **测试分支保存闭环**：创建 MDX/MD → 保存 → 重开 → 修改 → 冲突恢复；为新增接口和 SHA 行为做定向验证。测试分支与线上分支隔离。
@@ -635,3 +645,202 @@ draft 路由隐藏仍须验收 Blog/Stories 列表、详情、RSS、搜索索引
 无 YAML frontmatter、缺少属性或属性值待修正，不再阻止导入。无属性时以文件名填初始标题，摘要/发布日期留空、tags 默认 []、draft 默认 true；已有属性不被静默替换，原始正文与原文件内容保留。导入校验提示待补充项但允许打开。
 
 右侧“发布前属性检查”实时显示字段级中文提示：标题、摘要、发布日期、更新日期、标签、语言、草稿值、AI 索引，以及 Blog 专属的封面路径与分享文案。补齐或修正后提示消除；Stories 不检查 Blog 专属字段。该检查仅表示属性完整，不能冒充发布成功。未来发布接口必须复用同等服务端校验并结合路径、正文、资源与构建验证；当前保存与发布仍未开放。YAML 语法错误、错误文件格式、大小超限及不支持的 Stories 内容继续阻止导入。
+
+## 17. 当前实施方案：D1 工作草稿与 Git 发布版本（2026-10-23）
+
+用户确认的完整流程是：新建文稿 → 编辑 → 保存草稿 → 多次修改和保存 → 发布 → 再次修改并暂存 → 更新发布。第 7、14、15 节中“保存草稿直接提交部署分支”和“已发布文章不能服务端暂存修改”的设计由本节取代。草稿服务端基础已按本节开始实施，Pageel 仓库兼容接口和编辑台仍只读；不得据此开启现有上游保存按钮。
+
+### 17.1 四种内容版本与操作语义
+
+| 版本 | 来源 | 含义 |
+| --- | --- | --- |
+| 浏览器编辑态 | Pageel / MDXEditor 内存，必要时本机恢复缓存 | 尚未收到服务端保存回执；离开保护不能冒充草稿持久化 |
+| 工作草稿 | 受 Access 保护的现有 D1 `DB` | 可不完整、可多次保存、可跨页面重开；已发布文章的新草稿不改变 Git 文件 |
+| 仓库版本 | 固定部署分支的 MD/MDX 文件与 Git blob/commit SHA | Astro 构建的内容来源；提交成功仍需等待部署 |
+| 线上版本 | 已核实成功部署的构建 | 可能落后于仓库版本；公开 URL 显示此版本 |
+
+`draft` YAML 字段只控制**Git 文件进入公开构建**，不表示 D1 工作草稿状态。新文稿第一次“保存草稿”只进入 D1，不创建 Git MDX/MD 文件；第一次“发布”才创建文件并明确写 `draft: false`。已有代码手工添加的 `draft: true` Git 文件仍可读取、建立 D1 工作草稿，并在发布时原路径更新为 `draft: false`。已发布文章再次“保存草稿”只修改 D1，Git 和线上版本保持原样。
+
+| 当前状态 | 动作 | 成功后的状态 | 失败时保留 |
+| --- | --- | --- | --- |
+| 新建未保存 | 保存草稿 | D1 新建活动草稿，返回 `draftId`、`revision` | 浏览器全文 |
+| D1 活动草稿 | 继续保存 | 同一草稿 `revision + 1`，发布版本不变 | 当前输入与上一次已保存修订 |
+| 新建草稿 | 发布 | 固定修订 → 创建 Git 文件 → 待部署 | D1 固定修订和输入，不标记已上线 |
+| Git 已发布，无活动草稿 | 开始修改 | 从同一次 Git 读取取得原文和 blob SHA，建立 D1 工作草稿 | Git/线上原文 |
+| 已发布且有活动草稿 | 保存草稿 | 更新 D1；Git 及线上均不变 | 当前输入 |
+| 已发布且有活动草稿 | 更新发布 | 固定修订 → 校验基准 SHA → 更新 Git 原路径 → 待部署 | 冲突时保留 D1 草稿 |
+
+发布按钮若遇到浏览器尚未保存的输入，先保存该输入并取得修订号，再发布**该修订号**。Git 已提交、部署处理中、部署失败和已上线分别显示；发布成功不自动清除请求期间产生的新编辑。已发布内容不得通过改同一路径的 `draft: true` 来暂存，否则可能下线文章。
+
+### 17.2 D1 数据所有权与规范表结构
+
+复用 `wrangler.toml` 的 `DB`，在 `src/server/db/schema/` 声明并生成 `drizzle/migrations/` 迁移。公开网站、RSS、sitemap 和 Astro 构建仍以 Git 文件为来源；D1 只管理非公开工作草稿与发布操作，不建立第二套 `cms_articles` 发布正文表。标题等列表信息是从完整源文提取的可重建投影；发布内容只以固定发布快照和 Git 文件为准。所有时间列用 UTC Unix 毫秒 `INTEGER`，哈希用小写十六进制 SHA-256 `TEXT`；草稿 ID 由服务端生成，操作 ID 由客户端在发起发布前生成 UUID 并跨重试保持不变，服务端验证格式和作用域。枚举必须同时有应用校验和数据库 `CHECK`。
+
+**`cms_drafts`：一行表示一轮工作草稿；发布后再次编辑新建一行，旧行保留审计。**
+
+| 列与类型 | 空值/约束 | 含义 |
+| --- | --- | --- |
+| `id TEXT PRIMARY KEY` | 非空 | 草稿 ID；不充当公开 slug |
+| `collection TEXT`、`format TEXT`、`lang TEXT` | 非空；`CHECK` 限定 blog/stories、md/mdx、en/zh 及 Stories 只能 md | 集合与格式身份 |
+| `slug TEXT`、`target_path TEXT`、`public_path TEXT` | 非空；服务端规范化，目标限定 content 允许目录，公开地址以 `/` 起始且无查询串 | 候选或已锁定的文件路径与公开路由；不保存任意完整 URL |
+| `source TEXT`、`source_hash TEXT`、`source_bytes INTEGER` | 非空；`source_bytes BETWEEN 1 AND 1048576`，服务端按 UTF-8 计算并复核哈希 | 原样保存的 frontmatter + 正文；允许未达到发布标准 |
+| `base_blob_sha TEXT` | 可空；已有 Git 文件非空，新建未发布为空 | 打开仓库版本时的 Git blob SHA；不能在普通保存时自动刷新 |
+| `revision INTEGER` | 非空，默认 1，`CHECK revision > 0` | 草稿乐观并发版本，每次实际保存加 1 |
+| `status TEXT` | 非空，`CHECK IN ('active','published','discarded')` | `published` 表示该轮草稿已提交到 Git，不表示已上线 |
+| `title_cache TEXT` | 可空 | 仅供后台列表展示；解析失败回退到路径/ID，不参与发布 |
+| `created_by TEXT`、`updated_by TEXT`、`created_at INTEGER`、`updated_at INTEGER` | 非空 | Access 管理员身份和审计时间 |
+| `closed_at INTEGER`、`published_commit_sha TEXT` | active 时为空，published/discarded 时 `closed_at` 非空；published 时 commit SHA 非空，discarded 时为空 | 关闭原因与已确认提交引用 |
+
+迁移建立 `UNIQUE(target_path) WHERE status='active'` 和 `UNIQUE(public_path) WHERE status='active'`；同一篇 Git 文章最多一个活动草稿，两个新文稿不能预占同一目标。建立 `(status, updated_at DESC, id)` 列表索引和 `(target_path, created_at DESC)` 历史索引。数据库 `CHECK` 负责枚举、正数和简单组合；路径规范化、实际 UTF-8 长度、哈希与字段间语义由服务端统一验证。发布前还须重新查 Git 与归一化 URL：局部 D1 唯一索引无法覆盖仓库中的已有文件。
+
+**`cms_publication_attempts`：一行表示一次不可变发布意图；重试请求复用同一个 `operation_id`。**
+
+| 列与类型 | 空值/约束 | 含义 |
+| --- | --- | --- |
+| `operation_id TEXT PRIMARY KEY`、`draft_id TEXT REFERENCES cms_drafts(id)` | 非空；外键限制删除草稿 | 幂等键与所属草稿 |
+| `draft_revision INTEGER`、`request_hash TEXT` | 非空；revision > 0 | 捕获的修订号和规范请求指纹；同 ID 不同请求返回 409 |
+| `source_snapshot TEXT`、`source_hash TEXT`、`source_bytes INTEGER` | 创建时非空，最大 1 MiB；仅确定终态且过保留期后可清空 snapshot，摘要和字节数始终非空 | **实际送往 Git 的文本**，已由服务端写 `draft: false`；不能在重试时读取草稿最新版替换 |
+| `target_path TEXT`、`public_path TEXT`、`expected_blob_sha TEXT` | 路径非空；首次创建时 SHA 为空，更新时非空 | 固定目标和期望 Git 基准版本 |
+| `status TEXT` | 非空；`prepared/in_flight/unknown/committed/conflict/failed` 的 `CHECK` | Git 写入状态；`unknown` 必须先对账 |
+| `result_blob_sha TEXT`、`result_commit_sha TEXT` | 仅确认 `committed` 后非空 | GitHub 回执或可信对账所得结果 |
+| `deployment_status TEXT`、`deployment_ref TEXT`、`deployed_at INTEGER` | 默认 `unverified`；允许 `unverified/pending/running/verified/failed/cancelled` | 与 Git 状态分开；只有匹配提交的部署证据才能 verified |
+| `error_code TEXT`、`created_by TEXT`、`created_at INTEGER`、`updated_at INTEGER`、`completed_at INTEGER` | 错误码可空，其余审计字段非空；完成时间可空 | 故障恢复与审计；不存 Git token 或任意异常全文 |
+
+建 `(draft_id, created_at DESC)` 与 `(status, updated_at)` 索引，并以 `UNIQUE(draft_id) WHERE status IN ('prepared','in_flight','unknown')` 阻止同一草稿并发发布。已结束操作保留 `operation_id`、请求指纹、摘要、提交引用；固定源文在结果确定并超过明确保留期后才可清理，`unknown` 操作不得清理快照。若以后需严格历史版本，另增有界修订表；普通保存目前只保留活动草稿最新版。媒体批次再加入 `cms_draft_assets`（`draft_id`、私有对象 key、hash、MIME、字节数、目标公开路径、状态），图片字节不进 D1。
+
+普通保存执行 `UPDATE cms_drafts SET source=?, source_hash=?, source_bytes=?, revision=revision+1, ... WHERE id=? AND status='active' AND revision=?`；影响行数为零时返回 409。发布操作认领和最终状态更新分别通过 D1 条件更新/批处理完成；批处理只能保证 D1 内部原子性，**D1 与 GitHub 无跨系统事务**。[D1 当前单字符串或单行上限为 2,000,000 字节](https://developers.cloudflare.com/d1/platform/limits/)，1 MiB 是本站预留元数据余量的产品限制，不等于所有文章都能由 GitHub Contents API 的 JSON 响应完整读取；超过适配器可读范围必须明确拒绝或切换受验证的读取方式。
+
+### 17.3 文件身份、URL 与正文保真
+
+新建表单明确选择 Blog/Stories、格式、语言、标题和独立 slug。Blog 新建默认 `.mdx`，也可选 `.md`；Stories 固定 `.md`。中文标题不调用上游 `slugify(title)` 自动推文件名。服务端统一解析候选目标：英文 Blog `/blog/{id}`、中文 Blog `/zh/blog/{id 去末尾 -zh}`、英文 Stories `/stories/{id}`、中文 Stories `/zh/stories/{id}`；站点域名来自受信任配置。新建草稿首次保存后仍可修改候选地址，但修改必须在同一条件更新里重新检查活动草稿唯一索引；发布操作处于 prepared/in_flight/unknown 时禁止修改身份或目标。首次成功提交 Git 后路径、集合、格式和语言锁定；普通修改标题不改 URL。已有文件保留历史路径，不用新建命名规则强制迁移。
+
+导入文件、代码中新增的文件和现有 Git 文章共用“打开文档”流程：先读取同一版本的原文与 blob SHA，再查该身份的活动 D1 草稿；有草稿时提示继续草稿或查看仓库/线上版，不静默覆盖。后台列表合并 Git 文章与 D1 新草稿；已发布文章的活动草稿显示在**同一篇**记录下，不复制成第二篇文章。未提交的本地代码文件不会神奇地出现在远端 Git 列表。
+
+编辑器必须保留原始源文、YAML、正文与编辑修订。写草稿之前生成可回读的完整源文：只改正文时保留未编辑 YAML 与注释，只改属性时保留正文原始字节；无操作打开/关闭不写 D1 或 Git。当前上游 `parseMarkdown` 的 `trim()` 与 `updateFrontmatter` 的 YAML 全量 `dump()` 不符合此门槛，必须先替换为保留源文的字段级更新。复杂 MDX 若可视化往返不可靠，使用源码模式并明确提示，不能静默删节点。
+
+### 17.4 服务端接口与职责
+
+保留 Pageel 编辑器与列表；新增宿主的文档操作接口，不把 D1 修订号硬塞进上游 `IGitService.createFileFromString` / `updateFileContent`。现有 repository dispatcher 继续提供受保护的 Git 读取；新增接口只承载草稿与发布的明确意图：
+
+| 请求 | 输入核心字段 | 成功结果 |
+| --- | --- | --- |
+| `POST /api/v1/admin/cms/drafts` | 集合、格式、语言、slug、source；已有文件则给受限 path | `draftId`、`revision: 1`、候选 URL、校验提示 |
+| `GET /api/v1/admin/cms/drafts/:id` | 草稿 ID | 源文、修订号、工作状态、基准 Git SHA |
+| `PUT /api/v1/admin/cms/drafts/:id` | `expectedRevision`、完整 source、发布前可变的目标信息 | 新修订号、保存时间、校验提示 |
+| `POST /api/v1/admin/cms/drafts/:id/publish` | `expectedRevision`、稳定 `operationId` | 操作状态；确认提交后返回目标 path、blob SHA、commit SHA、预计 URL 与独立部署状态 |
+| `GET /api/v1/admin/cms/publications/:operationId` | 操作 ID | 确定的提交结果或“待对账”，部署状态仅在有可靠证据时给出 |
+
+所有读接口调用 `authorizeAdmin(..., 'admin:read')`；保存、发布和媒体操作调用 `authorizeAdminMutation(..., 'admin:write')`，沿用 Access 与同源限制。服务端固定仓库、分支和允许目录，不接收浏览器提供的 Git token、任意仓库 URL 或部署分支。请求体有界读取；D1 和 Git 写入错误通过本站 REST 错误契约返回。客户端 adapter 只处理调用与状态映射，不复制 MDX 编辑器或后台。
+
+对 Pageel 只暴露 `openDocument`、`saveDraft`、`publishDraft` 三个文档模块接口；状态查询是 publish 的回执查询，不是第二条写入流程。接口除了字段类型还规定：`openDocument` 返回同一次仓库读取的源文与 blob SHA；`saveDraft` 仅确认所提交的编辑修订；`publishDraft` 返回 Git 与部署两个独立状态，不能返回含糊的 `success=true`。单篇客户端保存串行；请求开始捕获源文和编辑修订，回执只确认该修订，期间的新输入仍 dirty。
+
+| 模块及建议位置 | 唯一职责与接口归属 |
+| --- | --- |
+| 集合与路由：`src/config/content-collections.ts`、`src/lib/content-routing.ts` | Blog/Stories 路径、语言、格式和公开 URL 的纯规则；公开路由逐步复用。它不访问 D1/Git |
+| 文档协调：`src/server/admin/cms/document-service.ts` | 实现 `openDocument/saveDraft/publishDraft`，编排鉴权后的数据读取、版本检查、状态转换；不内嵌 SQL、Git HTTP 或 MDX 编辑逻辑 |
+| 草稿存储：`src/server/admin/cms/draft-repository.ts` | D1 条件更新、活动草稿唯一性、操作认领/回执原子落库；只返回持久化结果，不决定公开 URL |
+| 源文处理：`src/server/admin/cms/source-document.ts` | 原文保真、字段级 YAML 更新、发布序列化与校验诊断；复用成熟解析库，不实现富文本内核 |
+| 发布适配：`src/server/admin/cms/publisher.ts` 与 GitHub/开发态具体实现 | 内部 seam 为“读取固定版本、条件创建/更新、按操作 ID 对账”；GitHub 凭证仅在服务端，开发态文件适配在验证前禁用 |
+| HTTP 与客户端：现有 `routes.ts`、`src/lib/admin/cms-document-client.ts`、`packages/pageel-workbench/integration/` | HTTP 负责鉴权/有界输入/错误映射，客户端负责 Pageel 状态映射与操作 ID 持续保存；不重复业务规则 |
+
+### 17.4.1 保存、发布和故障恢复的确定时序
+
+1. **打开**：按固定文件身份读取 Git 源文与同一响应的 blob SHA，再查活动 D1 草稿；有草稿优先提示恢复，同一列表行展示 Git 版本与草稿状态。新建尚无 Git 文件时只从 D1 打开。导入文件先在浏览器解析，首次保存走草稿创建，并执行目标占用检查。
+2. **保存**：将完整源文、UTF-8 长度、摘要和投影一起按 `expectedRevision` 条件写入 D1；返回新 revision。已发布文件首次暂存时创建新活动草稿，保存打开时的 `base_blob_sha`。草稿即使 YAML 尚不完整也可保存，服务端返回诊断但不改 Git。
+3. **发起发布**：先保存尚未回执的编辑输入，固定得到的 revision。服务端读取该 revision，执行严格发布校验并序列化实际 Git 文本，再次检查序列化后的 UTF-8 字节上限；在 D1 写入 `prepared` 操作快照与唯一 `operation_id`。同 ID 同请求返回原操作状态或触发安全对账；同 ID 不同指纹返回 409；同草稿已有活动操作时拒绝新操作。操作创建后冻结目标身份，直到操作确定终态。`GET publications/:operationId` 只读状态，需写入状态的对账由具备 `admin:write` 的重复发布请求触发。
+4. **认领与写 Git**：条件更新 `prepared → in_flight` 后重新查目标路径、blob SHA 和归一化 URL；不符即 `conflict`，保留草稿。写 Git 时带固定基准 SHA，提交消息带 `operation_id` 供对账。创建要求目标不存在；更新要求 blob SHA 匹配。远端 409 进入 `conflict`，确定未写入的错误进入 `failed`；网络超时或 Worker 中断视为 `unknown`，即使 D1 仍记录 `in_flight` 也按未知结果处理。
+5. **对账**：同一 `operation_id` 的请求只查询当前结果；对 `in_flight/unknown` 检查固定目标与该操作的提交标记、文件 blob/摘要及路径提交历史。只有能确定具体提交与 blob 时写 `committed`；确定未发生写入才允许以新操作重试；证据不足保持 `unknown` 并提示人工处理，不对 Git 再发盲写请求。D1 回执更新失败后同样用快照与操作 ID 对账。
+6. **提交后收尾**：`committed` 与 `result_blob_sha/result_commit_sha` 在 D1 落库。若草稿 revision 仍等于发布快照 revision，将该轮标记 `published` 并关闭；若编辑期间已有更高 revision，则保持 `active`，把其 Git 基准更新为本次提交 blob SHA。新文稿的 `base_blob_sha` 此时从空变为非空，身份随即锁定；后续修订仍可再次发布。收尾使用 D1 条件更新/批处理；失败可重复执行，不再次写 Git。部署初始 `unverified` 或有可靠工作流证据时 `pending`，成功构建且确认相应版本上线才转 `verified`。
+
+状态转换须由存储模块集中约束：草稿只允许 `active → published/discarded`；操作只允许 `prepared → in_flight → committed/conflict/failed/unknown`、`unknown → committed/conflict/failed`。`in_flight` 超时只能先变为待对账的未知状态。部署状态仅描述已确认 Git 提交的后续构建，不反向改变 Git 结果或草稿文本。发布提交与部署之间任何失败都保留固定快照和原草稿，前端继续显示线上旧版。
+
+现有 `PostList` 新建初始化仍有上游 `date` 字段与布尔默认 false；`PostWorkflow` 和 `PostDetailView.handleSave` 仍按标题推 slug、直接写仓库。接入时应让这些入口调用上述文档接口，避免“新建向导”和“详情页保存”走两套不同的草稿规则。`cms/session` 的 `writable` 只有对应读写门槛全部验收后才可变为 true。
+
+### 17.5 校验、冲突与恢复
+
+- **草稿保存**：校验身份、集合/格式、大小和路径安全；YAML/frontmatter 或 MDX 尚未写完可保存为工作草稿，并返回诊断。不得把客户端属性检查当作服务端发布校验。
+- **发布**：严格校验 Blog/Stories schema、语言与目标一致、MDX/Stories 语法和项目组件规则、图片引用以及归一化公开 URL 冲突。服务端决定写入 `draft: false`；禁止浏览器通过字段值改变发布意图。Astro 构建仍是最终可渲染门槛，Worker 中的解析不能冒充完整构建。
+- **草稿冲突**：两个窗口携带相同旧 `revision` 保存，后到者得到 409，保留自己的输入并展示已保存版本。不可自动以新 revision 覆盖。
+- **仓库冲突**：发布时重新读取原文及 blob SHA，与草稿 `baseBlobSha` 比较；不一致则 409，并展示仓库新版与草稿。Git 更新仍携带基准 SHA。不得保存时刷新 SHA 后直接覆盖他人的修改。
+- **结果未知**：先查 `operationId`，再核对 Git 路径、内容摘要与提交记录；确认具体 blob/commit 前不重试，也不标记成功。Git 成功、D1 回执更新失败时走相同对账流程。
+- **部署失败**：Git 文件已经变化，线上可能仍是旧版；保留发布快照与 commit SHA，提供修复/重新部署入口，不自动改 `draft:true` 或回滚他人提交。
+
+### 17.6 媒体、预览与部署
+
+文本闭环先落地；图片入口在上传、草稿预览和 Git 发布路径均通过前继续禁用。媒体批次使用已有受保护对象存储与图片校验保存临时字节，D1 只存资源元数据；预览地址受 Access 保护，MDX 中最终只写公开 `/images/blog/...`。发布时把媒体与文章纳入受控 Git 提交，或明确采用“先资源、后文章”的多提交流程及失败恢复；不能把后台私有地址写进正文。Stories 仍禁止图片与组件。第三方图片 credits 继续按仓库规则处理。
+
+编辑器排版预览读取当前内存或 D1 草稿，不等于 Astro 完整 MDX 页面；“查看线上版”始终打开已部署版本。提交 Git 后沿用 `.github/workflows/deploy.yml`；其 `cancel-in-progress` 可能让较早提交被后续部署取代。首版若只提供 Actions 链接，部署状态保持“未核实”；未来自动确认需把成功运行对应的部署 commit 与目标文件 blob/sourceHash 对上，不能仅用 URL HTTP 200 或任意一次 workflow 成功宣称本次内容上线。
+
+### 17.7 本地、线上与实施顺序
+
+线上继续只有现有 Astro / Cloudflare Worker：D1 保存工作草稿，服务端 GitHub 凭证发布到固定部署分支，无 GitHub OAuth 或独立 Node 服务。本地使用现有本地 D1 做草稿；当前 snapshot 仅读。PRD 的“本地服务端写 checkout 文件”需用 `pnpm dev` 所在开发进程中的**仅开发态文件适配**验证：限定项目目录、拒绝符号链接越界、版本比较和原子替换，不得打入生产 Worker。未验证前本地发布能力保持关闭，不以远端 Git 测试分支冒充本地写盘。
+
+| 批次 | 必须完成并验收 |
+| --- | --- |
+| 1. 源文与路由 | 真实 MD/MDX 无编辑往返、字段级 YAML 更新、集合/语言/slug/URL 单一规则、服务端发布校验 |
+| 2. D1 草稿 | 迁移、创建/多次保存/重开、已发布文章二次暂存、修订号 409、列表合并、权限与大小限制 |
+| 3. Git 发布 | 新建与原路径更新、blob SHA 409、操作幂等与超时对账、提交 SHA 回执、测试分支隔离 |
+| 4. 媒体与部署 | 草稿资源预览、失败恢复、指定提交部署核验、公开 URL 与旧版/新版状态区分 |
+| 5. 本地与生产放行 | 开发态文件适配验收；英文/中文 Blog 和 Stories 的新建→多次保存→发布→二次暂存→更新发布完整链路 |
+
+任何批次均不得仅靠启用现有上游 `handleSave` 达成：它目前从标题推文件名、默认 `.md`、重写整段 YAML，且写入回执后直接清除 dirty。现有 `PageelReadAdapter`、CMS 路由和禁用按钮仍保持只读，直到相应批次的服务端和真实文章保真测试通过。
+
+参考：[Cloudflare D1 Workers API](https://developers.cloudflare.com/d1/worker-api/d1-database/)、[D1 限制](https://developers.cloudflare.com/d1/platform/limits/)、[GitHub Contents API](https://docs.github.com/en/rest/repos/contents)。
+
+### 17.8 首批实施记录（2026-10-23）
+
+- 新增集合/URL 纯配置与路由解析；公开 Blog/Stories 详情和列表已复用统一路径函数，构建输出中的既有中英文地址保持不变。
+- 新增基于 `yaml` AST 的源文字段级更新：不修改时原文不变，更新指定属性时保留其他 YAML、注释、顺序与正文。真实 `miles.mdx` 和 Stories 换行样本已通过测试。Pageel 上游编辑态仍需接入该能力并单独验证复杂 MDX 往返。
+- 新增 `cms_drafts`、`cms_publication_attempts` Drizzle schema 和迁移；迁移已在**本地 D1**执行，未应用远端生产库。
+- 新增受保护草稿 `POST/GET /api/v1/admin/cms/drafts` 与 `GET/PUT /api/v1/admin/cms/drafts/:id`。新建草稿检查目标文件，已有文件以同次 Git 读取的源文和 blob SHA 建立基准；保存只写 D1，按 revision 条件更新，冲突返回 409。列表不读取/返回全文。
+- 本阶段 Pageel 的保存/发布按钮和 `cms/session.writable` 保持关闭；发布操作表尚无写入流程。后续接线与发布实现见 17.9、17.10。
+
+### 17.9 编辑台草稿接线（2026-10-23）
+
+- 文章列表合并仓库文件与 D1 活动草稿；同一路径的草稿显示在原文章行，未提交 Git 的新草稿单独显示。已有仓库文章与草稿并存时提示继续草稿或打开当前线上版；打开草稿时再读取完整源文，避免列表传输正文。
+- 新建时明确选择语言、地址标识及 Blog 文件格式；Stories 固定 Markdown。保存入口调用受保护的 D1 接口，已发布文件以打开时的 blob SHA 建立工作草稿，后续保存携带 revision；409 保留当前输入并提示比较版本。
+- 编辑器以保存的完整源文为基线，只写实际修改的 YAML 字段及正文。MDX 与 Stories 使用源码编辑，避免可视化转换损坏组件语法或故事排版。保存期间继续输入不会清除新的未保存状态。真实 `miles.mdx` 的无编辑往返、只改属性及只改正文均有测试。
+- `cms/session.writable` 仍为 false，含义是 Pageel 的通用 Git 写入能力未开放；草稿保存使用独立文档接口。本阶段发布、图片上传和直接 Git 更新仍关闭；专用发布接口的后续实现见 17.10。
+
+### 17.10 服务端 Git 发布首批实现（2026-10-23）
+
+- 新增受 Access `admin:write` 保护的 `POST /api/v1/admin/cms/drafts/:id/publish`，输入固定 `expectedRevision` 与 UUID `operationId`；`GET /api/v1/admin/cms/publications/:operationId` 只读状态。活动草稿读取时附带待完成操作，刷新页面后仍能沿同一操作 ID 对账。
+- 服务端校验 YAML 文章属性、语言、Stories 纯文本规则和公开图片路径；确认图片已在 Git 仓库存在，并扫描仓库文章的语言与归一化 URL 冲突。实际提交文本里的 `draft` 置为 false，并在 D1 固定源文、摘要和目标。Worker 校验不替代 Astro 构建，复杂 MDX 的最终渲染结果以部署构建为准。
+- GitHub Contents API 在固定仓库与分支上按 blob SHA 条件提交，提交消息含操作 ID。网络或响应不明时保留 `unknown`，重试只查提交历史和该提交中的 blob；不二次写 Git。确认提交后记录 blob/commit SHA，草稿无新编辑则关闭，有新编辑则保留活动草稿并更新 Git 基准。
+- 编辑台增加发布与对账入口，区分 Git 已提交、冲突、失败及待对账；浏览器丢失发布回执时沿用同一操作 ID。部署状态仍为 `unverified`，线上链接标为“当前线上版”。本地 snapshot 发布继续禁用；媒体上传和指定提交的部署核验仍待实现。
+
+### 17.11 删除语义与实现核对（2026-10-23）
+
+删除需求追加后，列表同一篇文章可能有 Git 文件和 D1 活动草稿，按钮按两步处理，避免把暂存与线上内容混为一谈：
+
+| 当前状态 | 删除动作 | 回执 |
+| --- | --- | --- |
+| 仅浏览器未保存的新文稿 | 离开编辑台并确认放弃输入 | 不请求 D1 或 Git |
+| 仅 D1 新草稿 | 按 `expectedRevision` 将活动草稿标记 `discarded`，保留审计 | 列表移除；Git 从未创建文件 |
+| Git 文章及 D1 活动草稿 | 先按修订废弃草稿 | Git 与线上文章不受影响；再次删除才处理 Git |
+| 仅 Git 文章 | 固定路径、打开时 blob SHA 与 UUID 操作 ID；服务端条件调用 GitHub Contents DELETE | Git 提交 SHA 与部署状态分开显示 |
+| 删除提交结果未知 | 只用原操作 ID 检索提交并验证该提交中文件不存在 | 不再次发 DELETE；超出可检索范围仍保持未知，需人工核对 |
+
+服务端新增 `cms_deletion_attempts` D1 表与 `POST/GET /api/v1/admin/cms/deletions`，对同一路径只允许一个未完成删除操作。删除前拒绝活动草稿；草稿废弃拒绝待完成发布。删除 Git 文件不清理图片、引用或 D1 历史；Git 提交可从仓库历史恢复。Git 已提交仍不能推断线上 URL 已消失，部署状态保持 `unverified`，须等指定提交的部署证据。开发态 snapshot 没有受验证的文件写入适配器，禁止删除 Git 文件；D1 草稿可废弃。远端需先应用 `0001`、`0002` 迁移并配置服务端 GitHub 凭证，才能开放这条链路。
+
+该轮核对发现的交付缺口包括浏览器级完整 MDX/Stories 编辑往返、媒体上传与部署前预览、指定提交部署核验、本地受控文件写入、真实测试分支及线上部署验收。指定提交部署核验随后按 17.12 节接入，其余缺口仍待完成。Worker 中的 MDX 解析不能替代 Astro 构建；后台提交回执只表明 Git 已更新。发布校验已调整为接受现有 Stories 的中文和带空格标签、可解析日期及既有外部图片，以保持与 Astro schema 和历史内容一致。
+
+### 17.12 固定发布操作的部署核验（2026-10-24）
+
+- 新增 `POST /api/v1/admin/cms/publications/:operationId/verify`，沿用 Access `admin:write` 与同源写请求校验；该操作只读取 GitHub Actions/仓库证据并更新 D1 核验状态，不触发部署或 Git 提交。`GET /api/v1/admin/cms/publications?path=...` 用于重开文章时按受限仓库路径找回最近一次已提交操作；编辑台只在 Git blob SHA 与该操作的结果一致时显示“检查部署”和 Deploy 记录入口。
+- 仅检查固定仓库、主分支和 `.github/workflows/deploy.yml` 的运行记录。只有最新可见的成功 Deploy 运行包含本次发布提交（Git 比较为相同或后继），且该运行提交中的目标文件 blob SHA 等于发布结果 SHA，才记录 `deployment_status=verified`、运行 ID 和完成时间。测试分支、无工作流记录、提交不相关、文件变化或删除均保持 `unverified`；与本次提交直接关联的排队、运行、失败或取消状态单独显示。
+- 单次查询最多核查最近 100 条工作流记录；证据不足或 GitHub 查询失败时不臆测上线状态。此状态说明指定工作流的构建和部署步骤成功且含目标文件版本；没有额外的 Cloudflare 发布版本 API 证明时，不声称浏览器当前缓存、CDN 边缘或其他非该工作流部署通道已同步。远端生产验收和部署后的公开 URL 实测仍待完成。
+
+### 17.13 草稿媒体暂存与受保护预览（2026-10-24）
+
+- 新增 `cms_draft_assets` 和 `0003_yielding_sasquatch.sql`。图片字节使用现有 S3 兼容协议，要求另配 `CMS_DRAFT_STORAGE_BUCKET` 私有桶，且不能复用站点已有图片桶；上线前需核实匿名读取确实关闭。D1 只记录草稿归属、对象 key、SHA-256、MIME、大小、预留公开路径和状态。Blog 活动草稿可上传单张 PNG/JPEG/WebP，复用项目图片结构与尺寸校验；Stories 拒绝图片。
+- `POST/GET /api/v1/admin/cms/drafts/:id/assets` 分别上传与列举，`GET /api/v1/admin/cms/assets/:assetId/preview` 经后台读取权限校验后返回私有图片，禁止缓存。上传返回 `publicUrl` 与 `previewUrl`，但 `status=staged` 表示公开地址尚不可用；正文和封面不能提前保存这个地址并发布。
+- 下一步必须实现固定媒体 Git 提交、超时对账、已存在资源版本校验、草稿引用到资产的匹配，以及失败后重试或清理；再将上传和预览接入 Pageel 的图片处理器。`publicationService` 仍要求图片已在仓库，当前暂存图片不能通过发布校验。远端运行前还需应用 `0003` 迁移并配置已有对象存储凭证。
+
+### 17.14 公开文章图片与编辑台接线（2026-10-24，覆盖 17.13 的待办设计）
+
+- 媒体使用 **私有对象存储 + 同站 Worker 公开路由**，不再要求图片字节进入 Git。`/images/blog/cma_<id>.<ext>` 是文章中的稳定公开 URL；只有 D1 资源状态为 `committed` 时匿名 GET 才返回图片，未发布或未知图片返回 404。公开响应限制图片格式、校验字节哈希并设置 `nosniff`；草稿仍从受保护且不缓存的预览接口读取。
+- 发布校验接受固定 Git 仓库已有图片、当前草稿上传图片、以及其他已发布图片；拒绝引用其他草稿的未发布图片。文章 Git 提交确认后，根据该操作的固定源文标记本草稿引用的图片 `committed`，幂等重试可补做状态转换。公开图片可早于文章部署访问；文章页面是否上线仍由指定 Deploy 工作流核验决定。
+- MDXEditor 上传处理器、源码编辑区插图按钮和封面上传入口使用同一草稿上传 API。新文稿先保存为 D1 草稿，再上传；正文持久化仍由保存草稿按钮负责。后台预览对新媒体改写为受保护预览 URL。Stories 继续禁用图片。
+- 此方案需要远端执行 `0003` 迁移，配置 `CMS_DRAFT_STORAGE_BUCKET` 与现有 S3 凭据，并核实桶匿名读取已关闭。对象生命周期、孤儿资源对账与生产端到端发布验收仍是运维事项；删除文章不会删除可能被其他文章引用的公开图片。第三方图片署名仍按 `src/data/imageCredits.ts` 的代码流程管理。
+- 复杂 MDX 保留源码编辑。后台“预览”只做 Markdown 近似渲染并显示限制提示；组件真实效果以 Astro 构建后的文章页面为准，不将 `marked` 结果视为完整 MDX 预览。

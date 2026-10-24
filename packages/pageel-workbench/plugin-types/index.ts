@@ -37,7 +37,7 @@ export interface EditorProps {
   onChange: (markdown: string) => void;
   /** Current frontmatter key-value pairs (read-only for editor) */
   frontmatter: Readonly<Record<string, unknown>>;
-  /** Restricted git service — image operations only */
+  /** Legacy restricted Git image service; the host draft uploader takes precedence. */
   gitService: EditorGitService;
   /** Path prefix for image uploads */
   imagesPath: string;
@@ -47,6 +47,8 @@ export interface EditorProps {
   readOnly?: boolean;
   /** Callback to open image gallery picker — returns selected image path or null */
   onRequestImage?: () => Promise<string | null>;
+  /** 宿主上传到当前 D1 草稿，返回将来公开的站内路径。 */
+  onUploadImage?: (image: File) => Promise<string>;
   /** Base URL to prepend to relative image paths for display */
   imageBaseUrl?: string;
   /** Markdown set by parent (e.g. after Source tab edit). Plugin MUST sync when version changes. (Review L1) */

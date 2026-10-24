@@ -10,6 +10,7 @@ export interface CmsEntry {
 }
 export interface CmsRepository {
   mode: 'snapshot' | 'github';
+  readVersion(path: string): Promise<{ content: string; blobSha: string }>;
   read(path: string): Promise<string>;
   list(path: string): Promise<CmsEntry[]>;
   sha(path: string): Promise<string | null>;
@@ -20,6 +21,11 @@ export function snapshotRepository(files: Record<string, string>): CmsRepository
   const entries = new Map(Object.entries(files).map(([path, body]) => [path, body]));
   return {
     mode: 'snapshot',
+    async readVersion(path) {
+      const content = entries.get(path);
+      if (content === undefined) throw new NotFoundError();
+      return { content, blobSha: `snapshot:${path}` };
+    },
     async read(path) {
       const content = entries.get(path);
       if (content === undefined) throw new NotFoundError();
@@ -68,16 +74,26 @@ export function githubRepository(env: CloudflareEnv, fetcher: typeof fetch = fet
       throw new AppError('GitHub 读取失败，请检查服务端配置', 502, 'CMS_UPSTREAM_ERROR');
     return response.json() as Promise<Record<string, unknown> | CmsEntry[]>;
   }
+  async function readVersion(path: string) {
+    const data = await request(path);
+    if (
+      Array.isArray(data) ||
+      data.encoding !== 'base64' ||
+      typeof data.content !== 'string' ||
+      typeof data.sha !== 'string'
+    ) {
+      throw new ValidationError('无法读取该文件内容');
+    }
+    const content = new TextDecoder().decode(
+      Uint8Array.from(atob(data.content.replace(/\s/g, '')), (c) => c.charCodeAt(0)),
+    );
+    return { content, blobSha: data.sha };
+  }
   return {
     mode: 'github',
+    readVersion,
     async read(path) {
-      const data = await request(path);
-      if (Array.isArray(data) || data.encoding !== 'base64' || typeof data.content !== 'string') {
-        throw new ValidationError('无法读取该文件内容');
-      }
-      return new TextDecoder().decode(
-        Uint8Array.from(atob(data.content.replace(/\s/g, '')), (c) => c.charCodeAt(0)),
-      );
+      return (await readVersion(path)).content;
     },
     async list(path) {
       const data = await request(path);

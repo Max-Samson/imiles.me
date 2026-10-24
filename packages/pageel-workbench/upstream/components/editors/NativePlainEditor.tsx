@@ -69,7 +69,7 @@ export function NativePlainEditor({
   );
 
   return (
-    <div className={`w-full border border-notion-border rounded-lg overflow-hidden bg-white shadow-sm ${className}`}>
+    <div className={`w-full border border-notion-border rounded-xl overflow-hidden bg-notion-bg shadow-2xs ${className}`}>
       {/* 源码编辑 Toolbar */}
       <div className="flex items-center gap-1.5 p-2 bg-notion-sidebar/40 border-b border-notion-border text-xs font-mono select-none">
         <span className="px-2 py-0.5 bg-notion-bg/80 text-notion-muted rounded border border-notion-border text-[10px] font-semibold tracking-wide">
@@ -135,7 +135,7 @@ export function NativePlainEditor({
         placeholder={placeholder}
         readOnly={readOnly}
         spellCheck={false}
-        className="w-full min-h-[450px] p-5 font-mono text-xs bg-white text-notion-text leading-relaxed focus:outline-none resize-y"
+        className="w-full min-h-[450px] p-5 font-mono text-xs bg-notion-bg text-notion-text leading-relaxed focus:outline-none resize-y selection:bg-notion-select"
       />
     </div>
   );

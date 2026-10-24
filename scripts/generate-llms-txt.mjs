@@ -165,32 +165,20 @@ async function loadStoryEntries() {
 
         const slug = slugFromFilePath(storiesDir, filePath);
         const tags = Array.isArray(frontmatter.tags) ? frontmatter.tags : [];
+        const lang = frontmatter.lang === 'zh' ? 'zh' : 'en';
 
-        return [
-          {
-            kind: 'story',
-            lang: 'en',
-            title: frontmatter.title,
-            description: frontmatter.description,
-            pubDate: frontmatter.pubDate ?? '',
-            tags,
-            url: toLocalizedUrl('stories', slug, 'en'),
-          },
-          {
-            kind: 'story',
-            lang: 'zh',
-            title: frontmatter.title,
-            description: frontmatter.description,
-            pubDate: frontmatter.pubDate ?? '',
-            tags,
-            url: toLocalizedUrl('stories', slug, 'zh'),
-          },
-        ];
+        return {
+          kind: 'story',
+          lang,
+          title: frontmatter.title,
+          description: frontmatter.description,
+          pubDate: frontmatter.pubDate ?? '',
+          tags,
+          url: toLocalizedUrl('stories', slug, lang),
+        };
       }),
     )
-  )
-    .flat()
-    .filter(Boolean);
+  ).filter(Boolean);
 
   entries.sort((a, b) => String(b.pubDate).localeCompare(String(a.pubDate)));
   return entries;

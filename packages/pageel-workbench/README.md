@@ -191,7 +191,7 @@ component-editing/
 
 - `tests/server/component-editing.test.ts`：覆盖正文组件解析、嵌套层级推导、摘要提取、集合插入门禁（Stories 严格禁止）、行内/块级 AST 载荷构建与注册表元数据校验。
 - `tests/server/jsx-attributes.test.ts`：覆盖白名单字面量修改、表达式/spread 保护、安全字符串字段更新与节点注册保留。
-- 全量 59 项服务端测试均在 CI 与本地闭环验证通过（`pnpm test:server`）。
+- 服务端测试覆盖 D1 草稿、发布幂等、未知结果对账和既有后台模块（`pnpm test:server`）。
 
 ### 7. 控制台视觉规范与暗色模式对齐（2026-10-23）
 
@@ -200,7 +200,7 @@ component-editing/
   - 边框与微光：精致微边框 `rgba(255, 255, 255, 0.08)` / `border-notion-border`，半透明悬停高亮 `#1c2232`。
   - 文本层级：主标题 `#f1f5f9`，正文与摘要高对比度清晰渲染，辅助信息 `#94a3b8`，天蓝点缀 `#38bdf8`。
 - **状态徽章与呼吸灯**：
-  - 集合工具栏与编辑台顶部统一使用琥珀色呼吸灯徽章（`仅内存保留 · 保存与发布暂未开放`）。
+  - 集合工具栏与编辑台顶部显示 D1 草稿、未保存修改和发布状态提示。
   - 组件库「当前组件」激活标签配备蓝色呼吸灯（`animate-pulse`），状态实时联动。
 - **分段胶囊控制（Segmented Pill Controls）**：
   - 顶部三栏切换（`文章 ｜ 组件库 ｜ 当前组件`）与编辑器视图（`编辑 ｜ 源码 ｜ 预览`）统一升级为分段胶囊组件。
@@ -214,3 +214,17 @@ component-editing/
 组件配置继续由宿主 `src/config/content-components.ts` 管理，适配组件归并 `integration/components`，不维护独立 component-editing 目录。新增 `insertion.ts` 生成官方 JSX 载荷、`import-content.ts` 校验本地导入；实例识别采用 remark MDX AST。
 
 上游最小补丁：PostList 增加本地导入回调和刷新入口；PostUploadValidationModal 增加不提交仓库的本地校验模式；usePostActions 使用可等待的 File.text，保留失败状态。当前导入只打开编辑台，不启用任何 Git 写入或发布。
+
+### 2026-10-23 D1 草稿保存
+
+文章列表合并仓库文件与活动草稿，打开草稿时读取 D1 完整源文。新建表单要求明确选择语言和 URL 标识；保存时保留未编辑的 YAML 或正文，按 revision 条件写 D1，409 保留当前输入。MDX 与 Stories 使用源码编辑以保证内容往返。
+
+发布操作由服务端固定修订与实际 Git 文本，使用操作 ID 幂等写入 GitHub Contents API；Git 结果未知时只对账，不盲目重复提交。当前线上部署状态保持“未核实”，本地 snapshot 模式仍禁用发布。图片上传尚未开放，发布只能引用仓库中已有的公开图片。
+
+删除分为两个动作：有 D1 活动草稿时先按修订号废弃草稿，Git 文件和线上页面不变；没有活动草稿时按打开时的 blob SHA 删除 Git 文件。Git 删除使用独立操作 ID，回执未知时只对账，列表保留待对账项。提交后仍需等待部署，图片与 D1 审计记录不会自动删除。本地 snapshot 只支持废弃 D1 草稿。远端使用前先应用 `0001` 与 `0002` D1 迁移。
+
+### 2026-10-24 图片与预览状态（覆盖以上原型阶段描述）
+
+编辑台现在通过 `cmsDocumentClient.uploadAsset` 上传 Blog 正文及封面图片。新文稿先保存 D1 草稿；上传成功只得到固定的 `/images/blog/cma_<id>.<ext>` 路径，编辑预览通过受保护地址读取。文章 Git 提交确认后，Worker 才在该固定路径匿名提供图片；图片字节仍在独立私有对象存储，**不提交 Git**。Stories 不显示图片入口。重开已发布文章后仍可引用已经开放的图片。
+
+MDX 和 Stories 继续使用源码编辑，避免可视化序列化破坏现有内容。MDX 的“预览”明确标为 Markdown 近似预览，组件与交互的最终结果要在 Astro 构建部署后检查。部署模式仍是单一 Cloudflare Worker，无独立 Node 服务。媒体链路的服务端合同与运维前提见 `docs/specs/pageel-cms-spec.md` 第 17.14 节。

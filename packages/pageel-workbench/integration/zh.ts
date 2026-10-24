@@ -8,7 +8,7 @@ export const zh: Record<string, string> = {
   'postList.searchPlaceholder': '搜索标题、标签或内容…',
   'postList.viewMode.grid': '卡片视图', 'postList.viewMode.table': '列表视图',
   'postList.updateFile': '替换文件（暂未开放）', 'postList.updateImage': '更换图片（暂未开放）',
-  'postList.createButton': '新建文章（暂未开放）', 'postList.uploadButton': '导入文章（暂未开放）',
+  'postList.createButton': '新建文章', 'postList.uploadButton': '导入文章（暂未开放）',
   'postList.pagination.prev': '上一页', 'postList.pagination.next': '下一页',
   'postList.pagination.pageInfo': '第 {{current}} / {{total}} 页',
   'postList.error.dirNotFound': '内容目录不存在：{{path}}',

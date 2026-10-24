@@ -7,7 +7,7 @@ import { translateEditor } from '../integration/zh';
  * Features:
  * - Immediate onChange — retain edits when switching tabs
  * - B2: CSS isolation — prevent Tailwind reset from affecting editor
- * - Image upload via EditorGitService (restricted API)
+ * - Image upload via host draft API (legacy EditorGitService fallback)
  * - Full toolbar: headings, bold, italic, lists, links, images, code
  */
 
@@ -56,6 +56,7 @@ export function MdxEditorSlot(props: EditorProps = {} as EditorProps) {
     initialValue = '',
     onChange,
     gitService,
+    onUploadImage,
     imageBaseUrl,
     externalMarkdown,
     externalMarkdownVersion,
@@ -68,19 +69,42 @@ export function MdxEditorSlot(props: EditorProps = {} as EditorProps) {
   const internalRef = useRef<MDXEditorMethods>(null);
   const activeRef = editorRef || internalRef;
   const [initialMarkdown] = useState(initialValue || '');
+  const isInitialMountRef = useRef(true);
+  const ignoreNextExternalRef = useRef(false);
+  const lastMarkdownRef = useRef(initialMarkdown);
 
   const safeOnChange = onChange || (() => {});
-  // Report synchronously: upstream debounce can lose the final keystroke on tab switch.
-  
 
-  // Image upload handler via restricted EditorGitService with safe fallback
+  const handleMdxChange = useCallback((markdown: string) => {
+    // 首次挂载时 MDXEditor 会派发初始归一化后的内容，不能误判为用户修改触发离开确认
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      lastMarkdownRef.current = markdown;
+      return;
+    }
+    // 外部源码模式同步切回时，忽略由 setMarkdown 引起的重新派发
+    if (ignoreNextExternalRef.current) {
+      ignoreNextExternalRef.current = false;
+      lastMarkdownRef.current = markdown;
+      return;
+    }
+    // 内容未实质变动时不触发修改状态
+    if (markdown === lastMarkdownRef.current) {
+      return;
+    }
+    lastMarkdownRef.current = markdown;
+    safeOnChange(markdown);
+  }, [safeOnChange]);
+
+  // 本站宿主优先走受保护的草稿上传；上游 Git 接口仅作为独立集成的回退。
   const imageUploadHandler: ImageUploadHandler = useCallback(
     async (image: File) => {
+      if (onUploadImage) return onUploadImage(image);
       if (!gitService || typeof gitService.uploadImage !== 'function') return '';
       const url = await gitService.uploadImage(image);
       return url;
     },
-    [gitService]
+    [gitService, onUploadImage]
   );
 
   // imagePlugin custom: resolve relative paths
@@ -89,6 +113,8 @@ export function MdxEditorSlot(props: EditorProps = {} as EditorProps) {
     // Transform image src for display
     imagePreviewHandler: async (src) => {
       if (src.startsWith('http')) return src;
+      const staged = /^\/images\/blog\/(cma_[a-f0-9]{32})\.(?:png|jpe?g|webp)$/.exec(src);
+      if (staged) return `/api/v1/admin/cms/assets/${staged[1]}/preview`;
       return src.startsWith('/') ? src : `/${src.replace(/^public\//, '')}`;
     },
   }), [imageUploadHandler, imageBaseUrl]);
@@ -96,6 +122,8 @@ export function MdxEditorSlot(props: EditorProps = {} as EditorProps) {
   // L1 fix: sync external markdown when Source tab edits happen
   useEffect(() => {
     if (externalMarkdownVersion && externalMarkdown !== undefined) {
+      ignoreNextExternalRef.current = true;
+      lastMarkdownRef.current = externalMarkdown;
       activeRef.current?.setMarkdown(externalMarkdown);
     }
   }, [externalMarkdownVersion, externalMarkdown, activeRef]);
@@ -188,10 +216,7 @@ export function MdxEditorSlot(props: EditorProps = {} as EditorProps) {
         translation={translateEditor}
         contentEditableClassName="cms-prose"
         markdown={initialMarkdown}
-        onChange={(markdown, initialNormalize) => {
-          // 初次导入的格式归一化不代表用户修改，避免刚打开文章就触发离开确认。
-          if (!initialNormalize) safeOnChange(markdown);
-        }}
+        onChange={handleMdxChange}
         onError={onImportError}
         readOnly={readOnly}
         plugins={memoizedPlugins}

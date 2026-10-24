@@ -4,21 +4,23 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import ArticleLayout from '@/layouts/ArticleLayout.astro';
 import { getCollection, render } from 'astro:content';
 import { calculateReadTime } from '@/lib/readTime';
+import { resolveContentPublicPath } from '@/lib/content-routing';
 
 export async function getStaticPaths() {
-  const stories = await getCollection('stories', ({ data }) => data.draft !== true && data.lang === 'zh');
-  return stories.map((story) => ({
+  const stories = await getCollection('stories', ({ data }) => data.draft !== true);
+  const ids = new Set(stories.filter((story) => story.data.lang === 'en').map((story) => story.id));
+  return stories.filter((story) => story.data.lang === 'zh').map((story) => ({
     params: { slug: story.id },
-    props: { story },
+    props: { story, alternateLocales: ids.has(story.id) ? (['en', 'zh'] as Array<'en' | 'zh'>) : (['zh'] as Array<'en' | 'zh'>) },
   }));
 }
 
-const { story } = Astro.props;
+const { story, alternateLocales } = Astro.props;
 const { Content } = await render(story);
 const readTime = calculateReadTime(story.body || '');
 
 const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://imiles.me';
-const storyUrl = `${siteUrl}/zh/stories/${story.id}`;
+const storyUrl = `${siteUrl}${resolveContentPublicPath('stories', 'zh', story.id)}`;
 ---
 
 <BaseLayout
@@ -26,6 +28,10 @@ const storyUrl = `${siteUrl}/zh/stories/${story.id}`;
   description={story.data.description}
   ogType="article"
   publishedTime={story.data.pubDate}
+  updatedTime={story.data.updatedDate}
+  alternateLocales={alternateLocales}
+  articleSection="Stories"
+  articleTitle={story.data.title}
   tags={story.data.tags}
 >
   <ArticleLayout
