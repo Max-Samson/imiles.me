@@ -10,11 +10,63 @@ import {
   getLocaleFromPathname,
   formatDate,
 } from '@/lib/i18n';
+import { getServerEnv } from '@/server/env';
+import { postRepository } from '@/server/admin/cms/post-repository';
 
 const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
-const stories = await getCollection('stories', ({ data }) => data.draft !== true && data.lang === lang);
-const sortedStories = stories.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+let sortedStories: Array<{
+  id: string;
+  data: {
+    title: string;
+    description?: string | null;
+    pubDate: Date;
+    updatedDate?: Date | null;
+    tags: string[];
+  };
+  body?: string;
+  publicPath?: string;
+}> = [];
+
+try {
+  const env = getServerEnv(Astro.locals);
+  const dbPosts = await postRepository(env).listPublished('stories', lang);
+  if (dbPosts.length > 0) {
+    sortedStories = dbPosts.map((p) => ({
+      id: p.slug,
+      data: {
+        title: p.title,
+        description: p.description,
+        pubDate: new Date(p.pubDate),
+        updatedDate: p.updatedDate ? new Date(p.updatedDate) : null,
+        tags: (() => {
+          try {
+            return JSON.parse(p.tags);
+          } catch {
+            return [];
+          }
+        })(),
+      },
+      body: p.contentRaw,
+      publicPath: p.publicPath,
+    }));
+  }
+} catch {
+  // DB fallback
+}
+
+if (sortedStories.length === 0) {
+  const stories = await getCollection('stories', ({ data }) => data.draft !== true && data.lang === lang);
+  sortedStories = stories
+    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+    .map((s) => ({
+      id: s.id,
+      data: s.data,
+      body: s.body,
+      publicPath: resolveContentPublicPath('stories', lang, s.id),
+    }));
+}
 ---
 
 <BaseLayout title={t('PagestoriesTitle', { site: 'Miles' })} description={t('PageStoriesDescription')}>
@@ -35,7 +87,7 @@ const sortedStories = stories.sort((a, b) => b.data.pubDate.valueOf() - a.data.p
               />
               <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <a
-                  href={resolveContentPublicPath('stories', lang, story.id)}
+                  href={story.publicPath || resolveContentPublicPath('stories', lang, story.id)}
                   class="block min-w-0 flex-1"
                 >
                   <h2 class="text-xl font-semibold text-foreground group-hover:underline">

@@ -1,5 +1,6 @@
 import type { CloudflareEnv } from '../../../env.d';
 import { AppError } from '../../errors';
+import { postRepository } from './post-repository';
 
 export interface DeletionWriter {
   delete(input: {
@@ -92,6 +93,29 @@ export function githubDeletionWriter(
       if (version.status !== 404)
         throw new AppError('删除提交中的文件状态无法确认', 502, 'CMS_RECONCILE_ERROR');
       return found.sha;
+    },
+  };
+}
+
+/** D1 持久化删除适配器：直接将 cms_posts 归档或删除。 */
+export function d1DeletionWriter(env: CloudflareEnv): DeletionWriter {
+  const posts = postRepository(env);
+  return {
+    async delete({ path, expectedBlobSha, operationId }) {
+      const post = await posts.findByTargetPath(path);
+      if (!post) return { kind: 'failed' };
+      if (expectedBlobSha && post.sourceHash !== expectedBlobSha) {
+        return { kind: 'conflict' };
+      }
+      await posts.archive(post.id, 'admin');
+      return { kind: 'committed', commitSha: `d1:del:${operationId}` };
+    },
+    async reconcile({ path, operationId }) {
+      const post = await posts.findByTargetPath(path);
+      if (!post || post.status === 'archived') {
+        return `d1:del:${operationId}`;
+      }
+      return null;
     },
   };
 }

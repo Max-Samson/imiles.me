@@ -1,5 +1,6 @@
 import type { CloudflareEnv } from '../../../env.d';
 import { AppError, NotFoundError, ValidationError } from '../../errors';
+import { postRepository } from './post-repository';
 
 export interface CmsEntry {
   name: string;
@@ -9,11 +10,47 @@ export interface CmsEntry {
   size: number;
 }
 export interface CmsRepository {
-  mode: 'snapshot' | 'github';
+  mode: 'snapshot' | 'github' | 'd1';
   readVersion(path: string): Promise<{ content: string; blobSha: string }>;
   read(path: string): Promise<string>;
   list(path: string): Promise<CmsEntry[]>;
   sha(path: string): Promise<string | null>;
+}
+
+/** D1 持久化存储库：文章直接读取与列举 D1 数据库中的 cms_posts 表。 */
+export function d1Repository(env: CloudflareEnv): CmsRepository {
+  const posts = postRepository(env);
+  return {
+    mode: 'd1',
+    async readVersion(path) {
+      const post = await posts.findByTargetPath(path);
+      if (!post) throw new NotFoundError('文章不存在');
+      return { content: post.source, blobSha: post.sourceHash };
+    },
+    async read(path) {
+      const post = await posts.findByTargetPath(path);
+      if (!post) throw new NotFoundError('文章不存在');
+      return post.source;
+    },
+    async list(path) {
+      const normalizedPath = path.replace(/\/+$/, '');
+      const collection = normalizedPath.startsWith('content/stories') ? 'stories' : 'blog';
+      const all = await posts.listPublished(collection);
+      return all
+        .filter((item) => item.targetPath.startsWith(`${normalizedPath}/`))
+        .map((item) => ({
+          name: item.targetPath.split('/').pop() ?? item.slug,
+          path: item.targetPath,
+          type: 'file' as const,
+          sha: item.sourceHash,
+          size: item.sourceBytes,
+        }));
+    },
+    async sha(path) {
+      const post = await posts.findByTargetPath(path);
+      return post ? post.sourceHash : null;
+    },
+  };
 }
 
 /** Development snapshot only: no disk writer, no production fallback. */

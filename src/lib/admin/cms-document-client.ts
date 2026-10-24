@@ -60,7 +60,7 @@ export interface CmsDraftAsset {
 const endpoint = '/api/v1/admin/cms/drafts';
 
 export interface CmsSessionInfo {
-  mode: 'snapshot' | 'github';
+  mode: 'snapshot' | 'github' | 'd1';
   repo: string;
   branch: string;
   isProductionBranch: boolean;

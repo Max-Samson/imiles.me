@@ -3,6 +3,7 @@ import { check, index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-o
 import { auditTimestamps, primaryKeyColumn } from './common';
 
 export const cmsDraftStatuses = ['active', 'published', 'discarded'] as const;
+export const cmsPostStatuses = ['published', 'archived'] as const;
 export const cmsPublicationStatuses = [
   'prepared',
   'in_flight',
@@ -12,6 +13,48 @@ export const cmsPublicationStatuses = [
   'failed',
 ] as const;
 export const cmsDeletionStatuses = cmsPublicationStatuses;
+
+/** D1 持久化已发布文章，前台直接从该表查询与渲染。 */
+export const cmsPosts = sqliteTable(
+  'cms_posts',
+  {
+    id: primaryKeyColumn('cmp').notNull(),
+    collection: text('collection', { enum: ['blog', 'stories'] }).notNull(),
+    format: text('format', { enum: ['md', 'mdx'] }).notNull(),
+    lang: text('lang', { enum: ['en', 'zh'] }).notNull(),
+    slug: text('slug').notNull(),
+    targetPath: text('target_path').notNull(),
+    publicPath: text('public_path').notNull(),
+    title: text('title').notNull(),
+    description: text('description'),
+    pubDate: integer('pub_date').notNull(),
+    updatedDate: integer('updated_date'),
+    tags: text('tags').notNull(),
+    heroImage: text('hero_image'),
+    shareText: text('share_text'),
+    llms: integer('llms', { mode: 'boolean' }).notNull().default(false),
+    contentRaw: text('content_raw').notNull(),
+    contentHtml: text('content_html').notNull(),
+    source: text('source').notNull(),
+    sourceHash: text('source_hash').notNull(),
+    sourceBytes: integer('source_bytes').notNull(),
+    draftId: text('draft_id'),
+    status: text('status', { enum: cmsPostStatuses }).notNull().default('published'),
+    createdBy: text('created_by').notNull(),
+    updatedBy: text('updated_by').notNull(),
+    ...auditTimestamps(),
+  },
+  (t) => [
+    uniqueIndex('cms_posts_active_target').on(t.targetPath).where(sql`${t.status} = 'published'`),
+    uniqueIndex('cms_posts_active_public').on(t.publicPath).where(sql`${t.status} = 'published'`),
+    index('cms_posts_public_list').on(t.collection, t.lang, t.status, t.pubDate),
+    check('cms_posts_collection', sql`${t.collection} IN ('blog', 'stories')`),
+    check('cms_posts_format', sql`${t.format} IN ('md', 'mdx')`),
+    check('cms_posts_lang', sql`${t.lang} IN ('en', 'zh')`),
+    check('cms_posts_status', sql`${t.status} IN ('published', 'archived')`),
+    check('cms_posts_bytes', sql`${t.sourceBytes} BETWEEN 1 AND 1048576`),
+  ],
+);
 
 /** 草稿图片先存私有对象存储，文章提交确认后才开放公开路径。 */
 export const cmsDraftAssets = sqliteTable(
@@ -178,6 +221,8 @@ export const cmsDeletionAttempts = sqliteTable(
 );
 
 export type CmsDraft = typeof cmsDrafts.$inferSelect;
+export type CmsPost = typeof cmsPosts.$inferSelect;
+export type NewCmsPost = typeof cmsPosts.$inferInsert;
 export type CmsPublicationAttempt = typeof cmsPublicationAttempts.$inferSelect;
 export type CmsDeletionAttempt = typeof cmsDeletionAttempts.$inferSelect;
 export type CmsDraftAsset = typeof cmsDraftAssets.$inferSelect;

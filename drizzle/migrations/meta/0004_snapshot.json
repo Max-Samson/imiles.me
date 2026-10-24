@@ -1,0 +1,1120 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "067f02b9-47cb-42e7-8b0f-0ca9bd2a3cc2",
+  "prevId": "b8bcea7e-290d-4bb4-925d-9db707770869",
+  "tables": {
+    "cms_deletion_attempts": {
+      "name": "cms_deletion_attempts",
+      "columns": {
+        "operation_id": {
+          "name": "operation_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_path": {
+          "name": "target_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "public_path": {
+          "name": "public_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expected_blob_sha": {
+          "name": "expected_blob_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'prepared'"
+        },
+        "result_commit_sha": {
+          "name": "result_commit_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "deployment_status": {
+          "name": "deployment_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'unverified'"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "cms_deletion_attempts_active_path": {
+          "name": "cms_deletion_attempts_active_path",
+          "columns": ["target_path"],
+          "isUnique": true,
+          "where": "\"cms_deletion_attempts\".\"status\" IN ('prepared', 'in_flight', 'unknown')"
+        },
+        "cms_deletion_attempts_reconcile": {
+          "name": "cms_deletion_attempts_reconcile",
+          "columns": ["status", "updated_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "cms_deletion_attempts_status": {
+          "name": "cms_deletion_attempts_status",
+          "value": "\"cms_deletion_attempts\".\"status\" IN ('prepared', 'in_flight', 'unknown', 'committed', 'conflict', 'failed')"
+        },
+        "cms_deletion_attempts_result": {
+          "name": "cms_deletion_attempts_result",
+          "value": "(\"cms_deletion_attempts\".\"status\" = 'committed' AND \"cms_deletion_attempts\".\"result_commit_sha\" IS NOT NULL) OR (\"cms_deletion_attempts\".\"status\" != 'committed' AND \"cms_deletion_attempts\".\"result_commit_sha\" IS NULL)"
+        }
+      }
+    },
+    "cms_draft_assets": {
+      "name": "cms_draft_assets",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "draft_id": {
+          "name": "draft_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "object_key": {
+          "name": "object_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mime": {
+          "name": "mime",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bytes": {
+          "name": "bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "public_path": {
+          "name": "public_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'staged'"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "cms_draft_assets_object_key": {
+          "name": "cms_draft_assets_object_key",
+          "columns": ["object_key"],
+          "isUnique": true
+        },
+        "cms_draft_assets_public_path": {
+          "name": "cms_draft_assets_public_path",
+          "columns": ["public_path"],
+          "isUnique": true
+        },
+        "cms_draft_assets_draft_status": {
+          "name": "cms_draft_assets_draft_status",
+          "columns": ["draft_id", "status"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "cms_draft_assets_draft_id_cms_drafts_id_fk": {
+          "name": "cms_draft_assets_draft_id_cms_drafts_id_fk",
+          "tableFrom": "cms_draft_assets",
+          "tableTo": "cms_drafts",
+          "columnsFrom": ["draft_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "cms_draft_assets_bytes": {
+          "name": "cms_draft_assets_bytes",
+          "value": "\"cms_draft_assets\".\"bytes\" BETWEEN 1 AND 2097152"
+        },
+        "cms_draft_assets_status": {
+          "name": "cms_draft_assets_status",
+          "value": "\"cms_draft_assets\".\"status\" IN ('staged', 'committed')"
+        }
+      }
+    },
+    "cms_drafts": {
+      "name": "cms_drafts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "collection": {
+          "name": "collection",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "format": {
+          "name": "format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lang": {
+          "name": "lang",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_path": {
+          "name": "target_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "public_path": {
+          "name": "public_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_hash": {
+          "name": "source_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_bytes": {
+          "name": "source_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "base_blob_sha": {
+          "name": "base_blob_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'active'"
+        },
+        "title_cache": {
+          "name": "title_cache",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "published_commit_sha": {
+          "name": "published_commit_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "cms_drafts_active_target": {
+          "name": "cms_drafts_active_target",
+          "columns": ["target_path"],
+          "isUnique": true,
+          "where": "\"cms_drafts\".\"status\" = 'active'"
+        },
+        "cms_drafts_active_public": {
+          "name": "cms_drafts_active_public",
+          "columns": ["public_path"],
+          "isUnique": true,
+          "where": "\"cms_drafts\".\"status\" = 'active'"
+        },
+        "cms_drafts_admin_list": {
+          "name": "cms_drafts_admin_list",
+          "columns": ["status", "updated_at", "id"],
+          "isUnique": false
+        },
+        "cms_drafts_path_history": {
+          "name": "cms_drafts_path_history",
+          "columns": ["target_path", "created_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "cms_drafts_collection": {
+          "name": "cms_drafts_collection",
+          "value": "\"cms_drafts\".\"collection\" IN ('blog', 'stories')"
+        },
+        "cms_drafts_format": {
+          "name": "cms_drafts_format",
+          "value": "\"cms_drafts\".\"format\" IN ('md', 'mdx')"
+        },
+        "cms_drafts_story_format": {
+          "name": "cms_drafts_story_format",
+          "value": "\"cms_drafts\".\"collection\" != 'stories' OR \"cms_drafts\".\"format\" = 'md'"
+        },
+        "cms_drafts_lang": {
+          "name": "cms_drafts_lang",
+          "value": "\"cms_drafts\".\"lang\" IN ('en', 'zh')"
+        },
+        "cms_drafts_status": {
+          "name": "cms_drafts_status",
+          "value": "\"cms_drafts\".\"status\" IN ('active', 'published', 'discarded')"
+        },
+        "cms_drafts_revision": {
+          "name": "cms_drafts_revision",
+          "value": "\"cms_drafts\".\"revision\" > 0"
+        },
+        "cms_drafts_source_bytes": {
+          "name": "cms_drafts_source_bytes",
+          "value": "\"cms_drafts\".\"source_bytes\" BETWEEN 1 AND 1048576"
+        },
+        "cms_drafts_closed": {
+          "name": "cms_drafts_closed",
+          "value": "(\"cms_drafts\".\"status\" = 'active' AND \"cms_drafts\".\"closed_at\" IS NULL AND \"cms_drafts\".\"published_commit_sha\" IS NULL) OR (\"cms_drafts\".\"status\" = 'published' AND \"cms_drafts\".\"closed_at\" IS NOT NULL AND \"cms_drafts\".\"published_commit_sha\" IS NOT NULL) OR (\"cms_drafts\".\"status\" = 'discarded' AND \"cms_drafts\".\"closed_at\" IS NOT NULL AND \"cms_drafts\".\"published_commit_sha\" IS NULL)"
+        }
+      }
+    },
+    "cms_posts": {
+      "name": "cms_posts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "collection": {
+          "name": "collection",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "format": {
+          "name": "format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lang": {
+          "name": "lang",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_path": {
+          "name": "target_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "public_path": {
+          "name": "public_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "pub_date": {
+          "name": "pub_date",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_date": {
+          "name": "updated_date",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tags": {
+          "name": "tags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hero_image": {
+          "name": "hero_image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "share_text": {
+          "name": "share_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "llms": {
+          "name": "llms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "content_raw": {
+          "name": "content_raw",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_html": {
+          "name": "content_html",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_hash": {
+          "name": "source_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_bytes": {
+          "name": "source_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "draft_id": {
+          "name": "draft_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'published'"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "cms_posts_active_target": {
+          "name": "cms_posts_active_target",
+          "columns": ["target_path"],
+          "isUnique": true,
+          "where": "\"cms_posts\".\"status\" = 'published'"
+        },
+        "cms_posts_active_public": {
+          "name": "cms_posts_active_public",
+          "columns": ["public_path"],
+          "isUnique": true,
+          "where": "\"cms_posts\".\"status\" = 'published'"
+        },
+        "cms_posts_public_list": {
+          "name": "cms_posts_public_list",
+          "columns": ["collection", "lang", "status", "pub_date"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "cms_posts_collection": {
+          "name": "cms_posts_collection",
+          "value": "\"cms_posts\".\"collection\" IN ('blog', 'stories')"
+        },
+        "cms_posts_format": {
+          "name": "cms_posts_format",
+          "value": "\"cms_posts\".\"format\" IN ('md', 'mdx')"
+        },
+        "cms_posts_lang": {
+          "name": "cms_posts_lang",
+          "value": "\"cms_posts\".\"lang\" IN ('en', 'zh')"
+        },
+        "cms_posts_status": {
+          "name": "cms_posts_status",
+          "value": "\"cms_posts\".\"status\" IN ('published', 'archived')"
+        },
+        "cms_posts_bytes": {
+          "name": "cms_posts_bytes",
+          "value": "\"cms_posts\".\"source_bytes\" BETWEEN 1 AND 1048576"
+        }
+      }
+    },
+    "cms_publication_attempts": {
+      "name": "cms_publication_attempts",
+      "columns": {
+        "operation_id": {
+          "name": "operation_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "draft_id": {
+          "name": "draft_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "draft_revision": {
+          "name": "draft_revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "request_hash": {
+          "name": "request_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_snapshot": {
+          "name": "source_snapshot",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_hash": {
+          "name": "source_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_bytes": {
+          "name": "source_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_path": {
+          "name": "target_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "public_path": {
+          "name": "public_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expected_blob_sha": {
+          "name": "expected_blob_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'prepared'"
+        },
+        "result_blob_sha": {
+          "name": "result_blob_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "result_commit_sha": {
+          "name": "result_commit_sha",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "deployment_status": {
+          "name": "deployment_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'unverified'"
+        },
+        "deployment_ref": {
+          "name": "deployment_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "deployed_at": {
+          "name": "deployed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "cms_publication_attempts_active_draft": {
+          "name": "cms_publication_attempts_active_draft",
+          "columns": ["draft_id"],
+          "isUnique": true,
+          "where": "\"cms_publication_attempts\".\"status\" IN ('prepared', 'in_flight', 'unknown')"
+        },
+        "cms_publication_attempts_draft_history": {
+          "name": "cms_publication_attempts_draft_history",
+          "columns": ["draft_id", "created_at"],
+          "isUnique": false
+        },
+        "cms_publication_attempts_reconcile": {
+          "name": "cms_publication_attempts_reconcile",
+          "columns": ["status", "updated_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "cms_publication_attempts_draft_id_cms_drafts_id_fk": {
+          "name": "cms_publication_attempts_draft_id_cms_drafts_id_fk",
+          "tableFrom": "cms_publication_attempts",
+          "tableTo": "cms_drafts",
+          "columnsFrom": ["draft_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "cms_publication_attempts_revision": {
+          "name": "cms_publication_attempts_revision",
+          "value": "\"cms_publication_attempts\".\"draft_revision\" > 0"
+        },
+        "cms_publication_attempts_bytes": {
+          "name": "cms_publication_attempts_bytes",
+          "value": "\"cms_publication_attempts\".\"source_bytes\" BETWEEN 1 AND 1048576"
+        },
+        "cms_publication_attempts_status": {
+          "name": "cms_publication_attempts_status",
+          "value": "\"cms_publication_attempts\".\"status\" IN ('prepared', 'in_flight', 'unknown', 'committed', 'conflict', 'failed')"
+        },
+        "cms_publication_attempts_deployment": {
+          "name": "cms_publication_attempts_deployment",
+          "value": "\"cms_publication_attempts\".\"deployment_status\" IN ('unverified', 'pending', 'running', 'verified', 'failed', 'cancelled')"
+        },
+        "cms_publication_attempts_snapshot": {
+          "name": "cms_publication_attempts_snapshot",
+          "value": "\"cms_publication_attempts\".\"source_snapshot\" IS NOT NULL OR \"cms_publication_attempts\".\"status\" IN ('committed', 'conflict', 'failed')"
+        },
+        "cms_publication_attempts_result": {
+          "name": "cms_publication_attempts_result",
+          "value": "(\"cms_publication_attempts\".\"status\" = 'committed' AND \"cms_publication_attempts\".\"result_blob_sha\" IS NOT NULL AND \"cms_publication_attempts\".\"result_commit_sha\" IS NOT NULL) OR (\"cms_publication_attempts\".\"status\" != 'committed' AND \"cms_publication_attempts\".\"result_blob_sha\" IS NULL AND \"cms_publication_attempts\".\"result_commit_sha\" IS NULL)"
+        }
+      }
+    },
+    "friend_links": {
+      "name": "friend_links",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "submitted_url": {
+          "name": "submitted_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "canonical_url": {
+          "name": "canonical_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "contact_email": {
+          "name": "contact_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "screenshot_key": {
+          "name": "screenshot_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "screenshot_mime": {
+          "name": "screenshot_mime",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "screenshot_bytes": {
+          "name": "screenshot_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "screenshot_sha256": {
+          "name": "screenshot_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "submission_key_hash": {
+          "name": "submission_key_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "submission_payload_hash": {
+          "name": "submission_payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "reviewed_by": {
+          "name": "reviewed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reviewed_at": {
+          "name": "reviewed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "friend_links_submission_key": {
+          "name": "friend_links_submission_key",
+          "columns": ["submission_key_hash"],
+          "isUnique": true
+        },
+        "friend_links_published_url": {
+          "name": "friend_links_published_url",
+          "columns": ["canonical_url"],
+          "isUnique": true,
+          "where": "\"friend_links\".\"status\" IN ('active', 'hidden')"
+        },
+        "friend_links_screenshot_key": {
+          "name": "friend_links_screenshot_key",
+          "columns": ["screenshot_key"],
+          "isUnique": true
+        },
+        "friend_links_admin_list": {
+          "name": "friend_links_admin_list",
+          "columns": ["status", "created_at", "id"],
+          "isUnique": false
+        },
+        "friend_links_public_list": {
+          "name": "friend_links_public_list",
+          "columns": ["status", "published_at", "id"],
+          "isUnique": false
+        },
+        "friend_links_url_history": {
+          "name": "friend_links_url_history",
+          "columns": ["canonical_url", "status"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "friend_links_status": {
+          "name": "friend_links_status",
+          "value": "\"friend_links\".\"status\" IN ('pending', 'active', 'rejected', 'hidden')"
+        },
+        "friend_links_version": {
+          "name": "friend_links_version",
+          "value": "\"friend_links\".\"version\" > 0"
+        },
+        "friend_links_name": {
+          "name": "friend_links_name",
+          "value": "\"friend_links\".\"name\" IS NULL OR length(\"friend_links\".\"name\") BETWEEN 1 AND 50"
+        },
+        "friend_links_description": {
+          "name": "friend_links_description",
+          "value": "length(\"friend_links\".\"description\") BETWEEN 1 AND 200"
+        },
+        "friend_links_email": {
+          "name": "friend_links_email",
+          "value": "\"friend_links\".\"contact_email\" IS NULL OR length(\"friend_links\".\"contact_email\") BETWEEN 3 AND 254"
+        },
+        "friend_links_review": {
+          "name": "friend_links_review",
+          "value": "(\"friend_links\".\"status\" = 'pending' AND \"friend_links\".\"reviewed_by\" IS NULL AND \"friend_links\".\"reviewed_at\" IS NULL AND \"friend_links\".\"updated_by\" IS NULL) OR (\"friend_links\".\"status\" != 'pending' AND \"friend_links\".\"reviewed_by\" IS NOT NULL AND \"friend_links\".\"reviewed_at\" IS NOT NULL AND \"friend_links\".\"updated_by\" IS NOT NULL)"
+        },
+        "friend_links_publication": {
+          "name": "friend_links_publication",
+          "value": "(\"friend_links\".\"status\" IN ('pending', 'rejected') AND \"friend_links\".\"published_at\" IS NULL) OR (\"friend_links\".\"status\" IN ('active', 'hidden') AND \"friend_links\".\"published_at\" IS NOT NULL)"
+        },
+        "friend_links_image": {
+          "name": "friend_links_image",
+          "value": "(\"friend_links\".\"screenshot_key\" IS NULL AND \"friend_links\".\"screenshot_mime\" IS NULL AND \"friend_links\".\"screenshot_bytes\" IS NULL AND \"friend_links\".\"screenshot_sha256\" IS NULL) OR (\"friend_links\".\"screenshot_key\" IS NOT NULL AND \"friend_links\".\"screenshot_mime\" IS NOT NULL AND \"friend_links\".\"screenshot_mime\" IN ('image/png', 'image/jpeg', 'image/webp') AND \"friend_links\".\"screenshot_bytes\" IS NOT NULL AND \"friend_links\".\"screenshot_bytes\" BETWEEN 1 AND 2097152 AND \"friend_links\".\"screenshot_sha256\" IS NOT NULL AND length(\"friend_links\".\"screenshot_sha256\") = 64)"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

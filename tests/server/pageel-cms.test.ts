@@ -165,7 +165,7 @@ type SessionResponse = {
   };
 };
 
-test('cmsSessionRoute reports snapshot mode when token is absent in local development', async () => {
+test('cmsSessionRoute reports d1 mode and admin write capability in local development', async () => {
   const req = new Request('http://localhost:4321/api/v1/admin/cms/session');
   const res = await cmsSessionRoute({
     request: req,
@@ -183,59 +183,11 @@ test('cmsSessionRoute reports snapshot mode when token is absent in local develo
   const json = (await res.json()) as SessionResponse;
   assert.equal(json.success, true);
   const data = json.data;
-  assert.equal(data.branch, 'local');
-  assert.equal(data.repo, 'local/content-snapshot');
-  assert.equal(data.isProductionBranch, false);
+  assert.equal(data.mode, 'd1');
+  assert.equal(data.branch, 'main');
+  assert.equal(data.repo, 'cloudflare/d1');
+  assert.equal(data.isProductionBranch, true);
   assert.equal(data.isTestBranch, false);
-  assert.equal(data.writable, false);
-});
-
-test('cmsSessionRoute reports dev-content and production branch isolation accurately', async () => {
-  const req = new Request('http://localhost:4321/api/v1/admin/cms/session');
-  const testEnv = {
-    ENVIRONMENT: 'development',
-    SITE_URL: 'http://localhost:4321',
-    CMS_GITHUB_REPO: 'Max-Samson/imiles.me',
-    CMS_GITHUB_BRANCH: 'dev-content',
-    CMS_GITHUB_TOKEN: 'ghp_test_token',
-    ADMIN_EMAILS: 'admin@example.com',
-  };
-  const testRes = await cmsSessionRoute({
-    request: req,
-    params: {},
-    locals: { runtime: { env: testEnv } },
-  } as unknown as Parameters<typeof cmsSessionRoute>[0]);
-  const testJson = (await testRes.json()) as SessionResponse;
-  assert.equal(testJson.success, true);
-  const testData = testJson.data;
-  assert.equal(testData.mode, 'github');
-  assert.equal(testData.branch, 'dev-content');
-  assert.equal(testData.repo, 'Max-Samson/imiles.me');
-  assert.equal(testData.isProductionBranch, false);
-  assert.equal(testData.isTestBranch, true);
-  assert.equal(testData.isConfigured, true);
-
-  // 本地开发且未显式指定分支时，安全默认回退到 dev-content 而非 master
-  const defaultRes = await cmsSessionRoute({
-    request: req,
-    params: {},
-    locals: { runtime: { env: { ...testEnv, CMS_GITHUB_BRANCH: undefined } } },
-  } as unknown as Parameters<typeof cmsSessionRoute>[0]);
-  const defaultJson = (await defaultRes.json()) as SessionResponse;
-  assert.equal(defaultJson.data.branch, 'dev-content');
-  assert.equal(defaultJson.data.isProductionBranch, false);
-
-  const prodRes = await cmsSessionRoute({
-    request: req,
-    params: {},
-    locals: { runtime: { env: { ...testEnv, CMS_GITHUB_BRANCH: 'master' } } },
-  } as unknown as Parameters<typeof cmsSessionRoute>[0]);
-  const prodJson = (await prodRes.json()) as SessionResponse;
-  assert.equal(prodJson.success, true);
-  const prodData = prodJson.data;
-  assert.equal(prodData.mode, 'github');
-  assert.equal(prodData.branch, 'master');
-  assert.equal(prodData.isProductionBranch, true);
-  assert.equal(prodData.isTestBranch, false);
-  assert.equal(prodData.isConfigured, true);
+  assert.equal(data.isConfigured, true);
+  assert.equal(data.writable, true);
 });

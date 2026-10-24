@@ -1,65 +1,122 @@
 ---
-export const prerender = true;
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import ArticleLayout from '@/layouts/ArticleLayout.astro';
 import { getCollection, render } from 'astro:content';
 import { calculateReadTime } from '@/lib/readTime';
 import { resolveContentPublicPath } from '@/lib/content-routing';
+import { getServerEnv } from '@/server/env';
+import { postRepository } from '@/server/admin/cms/post-repository';
+import { extractHeadingsFromHtml } from '@/server/admin/cms/markdown';
 import CodeBlockEnhancer from '@/components/article/CodeBlockEnhancer';
 import HeadingLinkEnhancer from '@/components/article/HeadingLinkEnhancer';
 import MobileTOC from '@/components/article/MobileTOC';
 
-export async function getStaticPaths() {
+const pathname = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const env = getServerEnv(Astro.locals);
+const postRepo = postRepository(env);
+
+// 1. 优先从 D1 数据库查询已发布文章
+const d1Post = await postRepo.findByPath(pathname);
+
+let postData: {
+  title: string;
+  description: string;
+  pubDate: Date;
+  updatedDate?: Date;
+  heroImage?: string;
+  tags: string[];
+  shareText?: string;
+  body: string;
+  contentHtml?: string;
+};
+let tocHeadings: Array<{ depth: number; slug: string; text: string }> = [];
+let ContentComponent: any = null;
+let alternateLocales: Array<'en' | 'zh'> = ['en'];
+
+if (d1Post) {
+  postData = {
+    title: d1Post.title,
+    description: d1Post.description ?? '',
+    pubDate: new Date(d1Post.pubDate),
+    updatedDate: d1Post.updatedDate ? new Date(d1Post.updatedDate) : undefined,
+    heroImage: d1Post.heroImage ?? undefined,
+    tags: (() => {
+      try {
+        return JSON.parse(d1Post.tags);
+      } catch {
+        return [];
+      }
+    })(),
+    shareText: d1Post.shareText ?? undefined,
+    body: d1Post.contentRaw,
+    contentHtml: d1Post.contentHtml,
+  };
+  tocHeadings = extractHeadingsFromHtml(d1Post.contentHtml);
+} else {
+  // 2. 回退查 Astro Content Collections
   const posts = await getCollection('blog', ({ data }) => data.draft !== true);
-  const ids = new Set(posts.filter((post) => post.data.lang === 'zh').map((post) => post.id.replace(/-zh$/, '')));
-  return posts.filter((post) => post.data.lang === 'en').map((post) => ({
-    params: { slug: post.id },
-    props: { post, alternateLocales: ids.has(post.id) ? (['en', 'zh'] as Array<'en' | 'zh'>) : (['en'] as Array<'en' | 'zh'>) },
-  }));
+  const matched = posts.find((p) => resolveContentPublicPath('blog', 'en', p.id) === pathname);
+  if (!matched) {
+    return new Response(null, { status: 404, statusText: 'Not Found' });
+  }
+  const rendered = await render(matched);
+  ContentComponent = rendered.Content;
+  tocHeadings = rendered.headings.filter((h) => h.depth >= 2 && h.depth <= 3);
+  postData = {
+    title: matched.data.title,
+    description: matched.data.description,
+    pubDate: matched.data.pubDate,
+    updatedDate: matched.data.updatedDate,
+    heroImage: matched.data.heroImage,
+    tags: matched.data.tags,
+    shareText: matched.data.shareText,
+    body: matched.body ?? '',
+  };
 }
 
-const { post, alternateLocales } = Astro.props;
-const { Content, headings } = await render(post);
-const readTime = calculateReadTime(post.body || '');
-
+const readTime = calculateReadTime(postData.body);
 const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://imiles.me';
-const postUrl = `${siteUrl}${resolveContentPublicPath('blog', 'en', post.id)}`;
-
-const tocHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
+const postUrl = `${siteUrl}${pathname}`;
 const showTOC = tocHeadings.length >= 3;
+const slug = pathname.slice('/blog/'.length);
+
+Astro.response.headers.set(
+  'Cache-Control',
+  'public, max-age=60, s-maxage=3600, stale-while-revalidate=86400',
+);
 ---
 
 <BaseLayout
-  title={`${post.data.title} | Miles`}
-  description={post.data.description}
+  title={`${postData.title} | Miles`}
+  description={postData.description}
   ogType="article"
-  publishedTime={post.data.pubDate}
-  updatedTime={post.data.updatedDate}
-  ogImage={post.data.heroImage}
+  publishedTime={postData.pubDate}
+  updatedTime={postData.updatedDate}
+  ogImage={postData.heroImage}
   alternateLocales={alternateLocales}
-  tags={post.data.tags}
+  tags={postData.tags}
   articleSection="Blog"
-  articleTitle={post.data.title}
+  articleTitle={postData.title}
   loadKatex
 >
   <ArticleLayout
-    title={post.data.title}
-    pubDate={post.data.pubDate}
-    updatedDate={post.data.updatedDate}
+    title={postData.title}
+    pubDate={postData.pubDate}
+    updatedDate={postData.updatedDate}
     readTime={readTime.text}
-    tags={post.data.tags}
+    tags={postData.tags}
     shareUrl={postUrl}
-    shareText={post.data.shareText}
-    body={post.body ?? ''}
+    shareText={postData.shareText}
+    body={postData.body}
     frontmatter={{
-      title: post.data.title,
-      description: post.data.description,
-      pubDate: post.data.pubDate.toISOString().split('T')[0],
-      updatedDate: post.data.updatedDate?.toISOString().split('T')[0],
-      heroImage: post.data.heroImage,
-      tags: post.data.tags,
+      title: postData.title,
+      description: postData.description,
+      pubDate: postData.pubDate.toISOString().split('T')[0],
+      updatedDate: postData.updatedDate?.toISOString().split('T')[0],
+      heroImage: postData.heroImage,
+      tags: postData.tags,
     }}
-    slug={post.id}
+    slug={slug}
   >
     {showTOC && (
       <div slot="before-content">
@@ -67,7 +124,11 @@ const showTOC = tocHeadings.length >= 3;
       </div>
     )}
 
-    <Content />
+    {postData.contentHtml ? (
+      <div set:html={postData.contentHtml} />
+    ) : (
+      ContentComponent && <ContentComponent />
+    )}
 
     <Fragment slot="enhancers">
       <CodeBlockEnhancer client:idle />

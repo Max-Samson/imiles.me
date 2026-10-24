@@ -270,7 +270,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   const [publishMessage, setPublishMessage] = useState('');
   const [publishing, setPublishing] = useState(false);
   const [checkingDeployment, setCheckingDeployment] = useState(false);
-  const [publishMode, setPublishMode] = useState<'loading' | 'snapshot' | 'github'>('loading');
+  const [publishMode, setPublishMode] = useState<'loading' | 'snapshot' | 'github' | 'd1'>('loading');
   const [sessionInfo, setSessionInfo] = useState<CmsSessionInfo | null>(null);
   const [showPublishConfirmModal, setShowPublishConfirmModal] = useState(false);
   const [publication, setPublication] = useState<CmsPublicationResult | null>(post.publication ?? null);
@@ -558,7 +558,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
   const executePublish = useCallback(async () => {
       setShowPublishConfirmModal(false);
-      if (publishing || publishMode !== 'github') return;
+      if (publishing || (publishMode !== 'github' && publishMode !== 'd1')) return;
       setPublishing(true);
       setPublishMessage('');
       try {
@@ -580,7 +580,9 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
               if (draftRef.current?.revision === result.draftRevision) draftRef.current = undefined;
               if (editSerialRef.current === submittedSerial) setIsDirty(false);
               const branchText = sessionInfo?.branch ? `【${sessionInfo.branch}】` : '';
-              if (sessionInfo?.isTestBranch) {
+              if (sessionInfo?.mode === 'd1' || publishMode === 'd1') {
+                  setPublishMessage('文章已成功发布至 D1 数据库！前台页面即时同步生效。');
+              } else if (sessionInfo?.isTestBranch) {
                   setPublishMessage(`已安全提交至本地调试分支 ${branchText}；内容已隔离，不会触发线上生产部署。`);
               } else {
                   setPublishMessage(`Git 提交成功 ${branchText}；线上部署尚未核实。点击“检查部署”可核验上线状态。`);
@@ -600,7 +602,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   }, [publishing, publishMode, publication, isDirty, handleSave, onUpdate, sessionInfo]);
 
   const handlePublishClick = useCallback(() => {
-      if (publishing || publishMode !== 'github') return;
+      if (publishing || (publishMode !== 'github' && publishMode !== 'd1')) return;
       const pending = Boolean(operationRef.current) && (!publication || ['prepared', 'in_flight', 'unknown'].includes(publication.status));
       if (pending) {
           void executePublish();
@@ -1370,7 +1372,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   variant="blue"
                   size="sm"
                   disabled={
-                    publishMode !== 'github' ||
+                    (publishMode !== 'github' && publishMode !== 'd1') ||
                     publishing ||
                     isSaving ||
                     (publication?.status === 'committed' && !isDirty && !draftRef.current)
@@ -1562,7 +1564,12 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                         <GitBranch className="size-3.5 text-notion-muted" />
                         <span>发布目标环境</span>
                       </span>
-                      {publishMode === 'snapshot' ? (
+                      {publishMode === 'd1' || sessionInfo?.mode === 'd1' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          <ShieldCheck className="size-3 text-emerald-500" />
+                          D1 数据库模式
+                        </span>
+                      ) : publishMode === 'snapshot' ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20">
                           本地快照只读
                         </span>
@@ -1580,19 +1587,23 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     </div>
                     <div className="space-y-1.5 text-[11px] text-notion-muted">
                       <div className="flex justify-between items-center">
-                        <span>目标仓库：</span>
-                        <span className="font-mono text-notion-text font-medium truncate max-w-[150px]" title={sessionInfo?.repo || '本地快照'}>
-                          {sessionInfo?.repo || (publishMode === 'snapshot' ? '本地快照' : '未配置')}
+                        <span>存储后端：</span>
+                        <span className="font-mono text-notion-text font-medium truncate max-w-[150px]" title={sessionInfo?.repo || 'D1'}>
+                          {publishMode === 'd1' || sessionInfo?.mode === 'd1' ? 'Cloudflare D1' : sessionInfo?.repo || (publishMode === 'snapshot' ? '本地快照' : '未配置')}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span>目标分支：</span>
+                        <span>存储状态：</span>
                         <span className="font-mono font-semibold text-notion-text">
-                          {sessionInfo?.branch || 'local'}
+                          {publishMode === 'd1' || sessionInfo?.mode === 'd1' ? '即时同步' : sessionInfo?.branch || 'local'}
                         </span>
                       </div>
                     </div>
-                    {publishMode === 'snapshot' ? (
+                    {publishMode === 'd1' || sessionInfo?.mode === 'd1' ? (
+                      <p className="text-[11px] text-notion-muted leading-relaxed">
+                        当前运行在 D1 数据库模式，文章发布直接写入数据库并即时同步前台，无需等待 Git 提交与远程构建。
+                      </p>
+                    ) : publishMode === 'snapshot' ? (
                       <p className="text-[11px] text-notion-muted leading-relaxed">
                         本地开发模式下未配置 GitHub 凭据，编辑只写入 D1 草稿，无法提交到远程仓库，绝不污染线上。
                       </p>

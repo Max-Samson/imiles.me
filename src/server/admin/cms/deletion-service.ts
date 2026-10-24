@@ -3,7 +3,7 @@ import { resolveExistingContentTarget } from '../../../lib/content-routing';
 import { parseSourceDocument } from '../../../lib/content-source';
 import { AppError, ConflictError, NotFoundError, ValidationError } from '../../errors';
 import { deletionRepository } from './deletion-repository';
-import { type DeletionWriter, githubDeletionWriter } from './deletion-writer';
+import { type DeletionWriter, d1DeletionWriter, githubDeletionWriter } from './deletion-writer';
 import { draftRepository } from './draft-repository';
 import type { CmsRepository } from './repository';
 
@@ -17,6 +17,7 @@ export function deletionService(
   const drafts = draftRepository(env);
   const writer = () => {
     if (injectedWriter) return injectedWriter;
+    if (content.mode === 'd1') return d1DeletionWriter(env);
     if (content.mode !== 'github')
       throw new AppError('本地仓库文件删除尚未开放', 503, 'CMS_LOCAL_DELETE_UNAVAILABLE');
     return githubDeletionWriter(env);

@@ -1,5 +1,5 @@
 import { z } from 'astro/zod';
-import { getRuntimeConfig } from '../../config';
+import type { CloudflareEnv } from '../../../env.d';
 import { ValidationError } from '../../errors';
 import { defineRestRoute } from '../../rest';
 import { readBoundedBytes } from '../../rest/body';
@@ -13,29 +13,11 @@ import { documentService } from './document-service';
 import { contentPath, requireReadAction } from './policy';
 import { publicationRepository } from './publication-repository';
 import { publicationService } from './publication-service';
-import { githubRepository, snapshotRepository } from './repository';
+import { d1Repository } from './repository';
 import { readCmsOperation } from './service';
 
-// Bundled server-only development fixtures. Never served to anonymous requests.
-const isDev = Boolean(import.meta.env?.DEV);
-const sourceFiles =
-  isDev && typeof import.meta.glob === 'function'
-    ? import.meta.glob<string>('/content/{blog,stories}/**/*.{md,mdx}', {
-        query: '?raw',
-        import: 'default',
-        eager: true,
-      })
-    : {};
-const files = Object.fromEntries(
-  Object.entries(sourceFiles).map(([path, body]) => [path.slice(1), body]),
-);
-
-function isSnapshotMode(env: Parameters<typeof githubRepository>[0]): boolean {
-  return getRuntimeConfig(env).services.adminAuth === 'local-development' && !env.CMS_GITHUB_TOKEN;
-}
-
-function contentRepository(env: Parameters<typeof githubRepository>[0]) {
-  return isSnapshotMode(env) ? snapshotRepository(files) : githubRepository(env);
+function contentRepository(env: CloudflareEnv) {
+  return d1Repository(env);
 }
 
 const createDraftInput = z.object({
@@ -95,20 +77,18 @@ export const cmsRepositoryRoute = defineRestRoute({
     const action = requireReadAction(input.action);
     const params = input.params ?? {};
     if (!params || typeof params !== 'object' || Array.isArray(params)) throw new ValidationError();
-    const isSnapshot = isSnapshotMode(env);
     const repo = contentRepository(env);
     if (action === 'getRepoDetails') {
-      const name = isSnapshot ? 'local/content-snapshot' : (env.CMS_GITHUB_REPO ?? '');
       return jsonSuccess({
         id: 0,
-        name: name.split('/')[1],
-        full_name: name,
+        name: 'd1',
+        full_name: 'cloudflare/d1',
         private: true,
-        html_url: isSnapshot ? '/admin' : `https://github.com/${name}`,
-        description: 'Pageel compatibility prototype',
+        html_url: '/admin',
+        description: 'D1 Native Content Store',
         pushed_at: '',
-        default_branch: env.CMS_GITHUB_BRANCH ?? 'snapshot',
-        owner: { login: name.split('/')[0] },
+        default_branch: 'main',
+        owner: { login: 'cloudflare' },
         permissions: { admin: false, push: false, pull: true },
       });
     }
@@ -300,26 +280,17 @@ export const cmsGitRoute = cmsRepositoryRoute;
 export const cmsSessionRoute = defineRestRoute({
   GET: async ({ env }, route) => {
     const session = await getAdminAccess(route.request, env);
-    const isSnapshot = isSnapshotMode(env);
-    const isLocalDev = getRuntimeConfig(env).services.adminAuth === 'local-development';
-    const defaultBranch = isLocalDev ? 'dev-content' : 'master';
-    const branch = isSnapshot ? 'local' : (env.CMS_GITHUB_BRANCH ?? defaultBranch);
-    const repo = isSnapshot ? 'local/content-snapshot' : (env.CMS_GITHUB_REPO ?? '');
-    const isProductionBranch = !isSnapshot && (branch === 'master' || branch === 'main');
-    const isLocalBranch = !isSnapshot && !isProductionBranch;
-    const isConfigured =
-      !isSnapshot && Boolean(env.CMS_GITHUB_TOKEN && env.CMS_GITHUB_REPO && branch);
-    const writable = isConfigured && session.capabilities.includes('admin:write');
+    const writable = session.capabilities.includes('admin:write');
 
     return jsonSuccess({
       session,
-      mode: isSnapshot ? 'snapshot' : 'github',
-      repo,
-      branch,
-      isProductionBranch,
-      isTestBranch: isLocalBranch,
-      isLocalBranch,
-      isConfigured,
+      mode: 'd1',
+      repo: 'cloudflare/d1',
+      branch: 'main',
+      isProductionBranch: true,
+      isTestBranch: false,
+      isLocalBranch: false,
+      isConfigured: true,
       writable,
     });
   },

@@ -8,7 +8,7 @@ import { verifyGitHubPublicationDeployment } from './deployment-verifier';
 import { draftRepository } from './draft-repository';
 import { publicationRepository } from './publication-repository';
 import { preparePublication } from './publication-validation';
-import { githubPublicationWriter, type PublicationWriter } from './publisher';
+import { d1PublicationWriter, githubPublicationWriter, type PublicationWriter } from './publisher';
 import type { CmsRepository } from './repository';
 
 async function assertPublicPathAvailable(
@@ -68,6 +68,7 @@ export function publicationService(
   const operations = publicationRepository(env);
   const writer = () => {
     if (injectedWriter) return injectedWriter;
+    if (content.mode === 'd1') return d1PublicationWriter(env);
     if (content.mode !== 'github')
       throw new AppError('本地发布文件适配尚未开放', 503, 'CMS_LOCAL_PUBLISH_UNAVAILABLE');
     return githubPublicationWriter(env);
@@ -169,6 +170,15 @@ export function publicationService(
       const attempt = await operations.get(operationId);
       if (attempt.status !== 'committed' || !attempt.resultBlobSha || !attempt.resultCommitSha)
         throw new ConflictError('Git 提交尚未确认，无法核验部署');
+      if (content.mode === 'd1' || attempt.resultCommitSha.startsWith('d1:')) {
+        return publicResult(
+          await operations.recordDeployment(operationId, {
+            status: 'verified',
+            ref: 'd1-instant',
+            deployedAt: attempt.completedAt ?? Date.now(),
+          }),
+        );
+      }
       if (content.mode !== 'github')
         throw new AppError('本地 snapshot 不支持部署核验', 503, 'CMS_LOCAL_DEPLOYMENT_UNAVAILABLE');
       const evidence = await verifyGitHubPublicationDeployment(env, {

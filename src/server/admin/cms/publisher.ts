@@ -1,5 +1,9 @@
 import type { CloudflareEnv } from '../../../env.d';
+import { resolveExistingContentTarget } from '../../../lib/content-routing';
+import { parseSourceDocument } from '../../../lib/content-source';
 import { AppError } from '../../errors';
+import { renderMarkdownToHtml } from './markdown';
+import { postRepository } from './post-repository';
 
 export type PublishWriteResult =
   | { kind: 'committed'; blobSha: string; commitSha: string }
@@ -153,6 +157,72 @@ export function githubPublicationWriter(
       if (file.sha !== expected)
         throw new AppError('发布提交内容与固定快照不一致', 502, 'CMS_RECONCILE_ERROR');
       return { blobSha: expected, commitSha: found.sha };
+    },
+  };
+}
+
+/** D1 持久化发布适配器：直接将文章原子写入 D1 数据库的 cms_posts 表。 */
+export function d1PublicationWriter(env: CloudflareEnv): PublicationWriter {
+  const posts = postRepository(env);
+  return {
+    async write({ path, source, expectedBlobSha }) {
+      const parsed = parseSourceDocument(source);
+      const collection = path.startsWith('content/stories/') ? 'stories' : 'blog';
+      const lang = parsed.fields.lang === 'zh' ? 'zh' : 'en';
+      const target = resolveExistingContentTarget(collection, lang, path);
+      const sourceBytes = new TextEncoder().encode(source).length;
+      const sourceHash = await gitBlobSha(source);
+
+      const existing = await posts.findByTargetPath(path);
+      if (expectedBlobSha && existing && existing.sourceHash !== expectedBlobSha) {
+        return { kind: 'conflict', errorCode: 'BLOB_SHA_MISMATCH' };
+      }
+
+      const contentHtml = renderMarkdownToHtml(parsed.body);
+      const post = await posts.upsert({
+        collection,
+        format: path.endsWith('.mdx') ? 'mdx' : 'md',
+        lang,
+        slug: target.slug,
+        targetPath: path,
+        publicPath: target.publicPath,
+        title: typeof parsed.fields.title === 'string' ? parsed.fields.title : target.slug,
+        description:
+          typeof parsed.fields.description === 'string' ? parsed.fields.description : null,
+        pubDate: parsed.fields.pubDate
+          ? new Date(String(parsed.fields.pubDate)).getTime()
+          : Date.now(),
+        updatedDate: parsed.fields.updatedDate
+          ? new Date(String(parsed.fields.updatedDate)).getTime()
+          : null,
+        tags: JSON.stringify(Array.isArray(parsed.fields.tags) ? parsed.fields.tags : []),
+        heroImage: typeof parsed.fields.heroImage === 'string' ? parsed.fields.heroImage : null,
+        shareText: typeof parsed.fields.shareText === 'string' ? parsed.fields.shareText : null,
+        llms: Boolean(parsed.fields.llms),
+        contentRaw: parsed.body,
+        contentHtml,
+        source,
+        sourceHash,
+        sourceBytes,
+        draftId: null,
+        status: 'published',
+        createdBy: 'admin',
+        updatedBy: 'admin',
+      });
+
+      return {
+        kind: 'committed',
+        blobSha: sourceHash,
+        commitSha: `d1:${post.id}`,
+      };
+    },
+    async reconcile({ path }) {
+      const post = await posts.findByTargetPath(path);
+      if (!post) return null;
+      return {
+        blobSha: post.sourceHash,
+        commitSha: `d1:${post.id}`,
+      };
     },
   };
 }
