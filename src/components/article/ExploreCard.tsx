@@ -1,5 +1,6 @@
 'use client';
-import { IconChevronDown, IconCompass } from '@tabler/icons-react';
+import IconChevronDown from '@tabler/icons-react/dist/esm/icons/IconChevronDown.mjs';
+import IconCompass from '@tabler/icons-react/dist/esm/icons/IconCompass.mjs';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { enhanceCodeBlocks } from '@/lib/enhanceCodeBlocks';

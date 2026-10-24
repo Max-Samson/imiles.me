@@ -1,5 +1,6 @@
 'use client';
-import { IconCheck, IconCopy } from '@tabler/icons-react';
+import IconCheck from '@tabler/icons-react/dist/esm/icons/IconCheck.mjs';
+import IconCopy from '@tabler/icons-react/dist/esm/icons/IconCopy.mjs';
 import { MotionConfig, motion } from 'motion/react';
 import { useState } from 'react';
 import { mdxToMarkdown, type PostFrontmatter } from '@/lib/mdxToMarkdown';

@@ -1,5 +1,6 @@
-import { and, desc, eq, or } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
 import type { CloudflareEnv } from '../../../env.d';
+import { contentReadRepository } from '../../content/read-repository';
 import { createDrizzleClient, schema } from '../../db';
 import type { CmsPost, NewCmsPost } from '../../db/schema/cms';
 import { NotFoundError } from '../../errors';
@@ -7,46 +8,7 @@ import { NotFoundError } from '../../errors';
 export function postRepository(env: CloudflareEnv) {
   const db = createDrizzleClient(env);
   return {
-    async listPublished(collection?: 'blog' | 'stories', lang?: 'en' | 'zh') {
-      const conditions = [eq(schema.cmsPosts.status, 'published')];
-      if (collection) conditions.push(eq(schema.cmsPosts.collection, collection));
-      if (lang) conditions.push(eq(schema.cmsPosts.lang, lang));
-
-      return db.query.cmsPosts.findMany({
-        where: and(...conditions),
-        orderBy: [desc(schema.cmsPosts.pubDate), desc(schema.cmsPosts.updatedAt)],
-      });
-    },
-
-    async findByPath(
-      publicPath: string,
-      options?: { includeArchived?: boolean },
-    ): Promise<CmsPost | null> {
-      const normalizedPath =
-        publicPath.endsWith('/') && publicPath.length > 1 ? publicPath.slice(0, -1) : publicPath;
-      const conditions = [eq(schema.cmsPosts.publicPath, normalizedPath)];
-      if (!options?.includeArchived) {
-        conditions.push(eq(schema.cmsPosts.status, 'published'));
-      }
-      const post = await db.query.cmsPosts.findFirst({
-        where: and(...conditions),
-      });
-      return post ?? null;
-    },
-
-    async findByTargetPath(
-      targetPath: string,
-      options?: { includeArchived?: boolean },
-    ): Promise<CmsPost | null> {
-      const conditions = [eq(schema.cmsPosts.targetPath, targetPath)];
-      if (!options?.includeArchived) {
-        conditions.push(eq(schema.cmsPosts.status, 'published'));
-      }
-      const post = await db.query.cmsPosts.findFirst({
-        where: and(...conditions),
-      });
-      return post ?? null;
-    },
+    ...contentReadRepository(env),
 
     async findById(id: string): Promise<CmsPost> {
       const post = await db.query.cmsPosts.findFirst({

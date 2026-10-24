@@ -57,7 +57,7 @@ Additional scripts:
 - `pnpm generate-icons` regenerates PWA icons.
 - `pnpm generate:llms` regenerates LLM-facing text output.
 - `pnpm perf:budget` runs the homepage performance budget script.
-- `pnpm deploy` builds and deploys to Cloudflare Workers.
+- `pnpm run deploy` builds and deploys to Cloudflare Workers.
 
 When changing code, prefer targeted checks first, such as `pnpm exec biome check <file>`, then run broader checks or `pnpm build` when the change affects routing, content collections, Astro pages, or build-time behavior.
 

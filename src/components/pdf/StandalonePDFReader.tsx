@@ -1,9 +1,7 @@
-import {
-  IconAlertTriangle,
-  IconArrowLeft,
-  IconFileTypePdf,
-  IconRefresh,
-} from '@tabler/icons-react';
+import IconAlertTriangle from '@tabler/icons-react/dist/esm/icons/IconAlertTriangle.mjs';
+import IconArrowLeft from '@tabler/icons-react/dist/esm/icons/IconArrowLeft.mjs';
+import IconFileTypePdf from '@tabler/icons-react/dist/esm/icons/IconFileTypePdf.mjs';
+import IconRefresh from '@tabler/icons-react/dist/esm/icons/IconRefresh.mjs';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { usePDFDocument } from '@/hooks/usePDFDocument';

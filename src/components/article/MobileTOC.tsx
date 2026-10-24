@@ -1,5 +1,6 @@
 'use client';
-import { IconChevronDown, IconList } from '@tabler/icons-react';
+import IconChevronDown from '@tabler/icons-react/dist/esm/icons/IconChevronDown.mjs';
+import IconList from '@tabler/icons-react/dist/esm/icons/IconList.mjs';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 

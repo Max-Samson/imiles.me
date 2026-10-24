@@ -1,4 +1,4 @@
-import { IconInfoCircle } from '@tabler/icons-react';
+import IconInfoCircle from '@tabler/icons-react/dist/esm/icons/IconInfoCircle.mjs';
 
 interface AsideProps {
   children: React.ReactNode;

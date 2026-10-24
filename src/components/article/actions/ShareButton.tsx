@@ -1,5 +1,9 @@
 'use client';
-import { IconBrandLinkedin, IconBrandX, IconCheck, IconLink, IconShare } from '@tabler/icons-react';
+import IconBrandLinkedin from '@tabler/icons-react/dist/esm/icons/IconBrandLinkedin.mjs';
+import IconBrandX from '@tabler/icons-react/dist/esm/icons/IconBrandX.mjs';
+import IconCheck from '@tabler/icons-react/dist/esm/icons/IconCheck.mjs';
+import IconLink from '@tabler/icons-react/dist/esm/icons/IconLink.mjs';
+import IconShare from '@tabler/icons-react/dist/esm/icons/IconShare.mjs';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { author } from '@/data/author';

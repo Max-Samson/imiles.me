@@ -16,13 +16,13 @@
   "scripts": {
     "dev": "astro dev",
     "generate:llms": "node scripts/generate-llms-txt.mjs",
-    "build": "node scripts/generate-llms-txt.mjs && astro build && node scripts/prepare-wrangler-assets.mjs",
+    "build": "node scripts/build.mjs",
     "perf:budget": "node scripts/check-homepage-performance.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
     "lint": "biome check .",
-    "deploy": "pnpm build && wrangler deploy",
+    "deploy": "pnpm build && pnpm release:cf",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply BLOG-DB --local",
     "db:migrate:remote": "wrangler d1 migrations apply BLOG-DB --remote",
@@ -31,10 +31,14 @@
     "format:check": "biome format .",
     "generate-icons": "node scripts/generate-icons.mjs",
     "prepare": "husky",
-    "test:server": "node --import tsx --test tests/server/*.test.ts",
+    "test:server": "node --import tsx --test --test-concurrency=2 tests/server/*.test.ts",
     "check:server": "tsc -p tsconfig.server.json --noEmit",
     "cf:types": "node scripts/generate-bindings.mjs",
-    "db:check": "drizzle-kit check"
+    "db:check": "drizzle-kit check",
+    "release:cf": "node scripts/release.mjs",
+    "release:plan": "node scripts/release.mjs --plan",
+    "test:release": "node --test tests/release/*.test.mjs",
+    "test:boundaries": "node --import tsx --test tests/build/*.test.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.13",

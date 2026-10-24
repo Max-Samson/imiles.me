@@ -11,6 +11,7 @@ import { publicationService } from '../../src/server/admin/cms/publication-servi
 import type { PublicationWriter } from '../../src/server/admin/cms/publisher';
 import { d1PublicationWriter, githubPublicationWriter } from '../../src/server/admin/cms/publisher';
 import { snapshotRepository } from '../../src/server/admin/cms/repository';
+import { contentReadRepository } from '../../src/server/content/read-repository';
 import type { WorkerBindings } from '../../src/worker-configuration';
 
 let platform: PlatformProxy<WorkerBindings>;
@@ -440,4 +441,32 @@ test('D1 删除与归档语义正确对账，未曾存在的文章不误报成�
     operationId: delOp,
   });
   assert.equal(confirmed, `d1:del:${delOp}`);
+});
+
+test('公开只读仓库保持发布列表、路径和归档过滤语义，不暴露写方法', async () => {
+  const result = await d1PublicationWriter(platform.env).write({
+    path: 'content/blog/read-boundary.md',
+    source: source.replace('draft: true', 'draft: false'),
+    expectedBlobSha: null,
+    operationId: crypto.randomUUID(),
+    actorId: 'user:read-boundary',
+  });
+  assert.equal(result.kind, 'committed');
+  const reads = contentReadRepository(platform.env);
+  const post = await reads.findByPath('/zh/blog/read-boundary/');
+  assert.ok(post);
+  assert.equal((await reads.findByTargetPath('content/blog/read-boundary.md'))?.id, post.id);
+  assert.ok((await reads.listPublished('blog', 'zh')).some((row) => row.id === post.id));
+  assert.equal(
+    (await reads.listPublished('stories', 'zh')).some((row) => row.id === post.id),
+    false,
+  );
+  assert.equal('upsert' in reads || 'delete' in reads || 'archive' in reads, false);
+  await postRepository(platform.env).archive(post.id, 'user:archive');
+  assert.equal(await reads.findByPath('/zh/blog/read-boundary'), null);
+  assert.equal(await reads.findByTargetPath('content/blog/read-boundary.md'), null);
+  assert.equal(
+    (await reads.findByPath('/zh/blog/read-boundary', { includeArchived: true }))?.id,
+    post.id,
+  );
 });

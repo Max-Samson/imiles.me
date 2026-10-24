@@ -5,11 +5,11 @@ import { getCollection, render } from 'astro:content';
 import { calculateReadTime } from '@/lib/readTime';
 import { resolveContentPublicPath } from '@/lib/content-routing';
 import { getServerEnv } from '@/server/env';
-import { postRepository } from '@/server/admin/cms/post-repository';
+import { contentReadRepository } from '@/server/content/read-repository';
 
 const pathname = Astro.url.pathname.replace(/\/+$/, '') || '/';
 const env = getServerEnv(Astro.locals);
-const postRepo = postRepository(env);
+const postRepo = contentReadRepository(env);
 
 const d1Post = await postRepo.findByPath(pathname);
 

@@ -1,4 +1,6 @@
-import { IconDownload, IconExternalLink, IconFileTypePdf } from '@tabler/icons-react';
+import IconDownload from '@tabler/icons-react/dist/esm/icons/IconDownload.mjs';
+import IconExternalLink from '@tabler/icons-react/dist/esm/icons/IconExternalLink.mjs';
+import IconFileTypePdf from '@tabler/icons-react/dist/esm/icons/IconFileTypePdf.mjs';
 import type React from 'react';
 import { cn } from '@/lib/utils';
 

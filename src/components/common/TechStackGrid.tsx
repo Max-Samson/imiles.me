@@ -1,27 +1,25 @@
 'use client';
 
-import {
-  SiDocker,
-  SiEsbuild,
-  SiGithubactions,
-  SiGo,
-  SiGooglechrome,
-  SiKeras,
-  SiNodedotjs,
-  SiOpencv,
-  SiPostgresql,
-  SiPython,
-  SiPytorch,
-  SiReact,
-  SiRust,
-  SiSqlite,
-  SiSvg,
-  SiTailwindcss,
-  SiTypescript,
-  SiVite,
-  SiVuedotjs,
-  SiWails,
-} from '@icons-pack/react-simple-icons';
+import SiDocker from '@icons-pack/react-simple-icons/icons/SiDocker.mjs';
+import SiEsbuild from '@icons-pack/react-simple-icons/icons/SiEsbuild.mjs';
+import SiGithubactions from '@icons-pack/react-simple-icons/icons/SiGithubactions.mjs';
+import SiGo from '@icons-pack/react-simple-icons/icons/SiGo.mjs';
+import SiGooglechrome from '@icons-pack/react-simple-icons/icons/SiGooglechrome.mjs';
+import SiKeras from '@icons-pack/react-simple-icons/icons/SiKeras.mjs';
+import SiNodedotjs from '@icons-pack/react-simple-icons/icons/SiNodedotjs.mjs';
+import SiOpencv from '@icons-pack/react-simple-icons/icons/SiOpencv.mjs';
+import SiPostgresql from '@icons-pack/react-simple-icons/icons/SiPostgresql.mjs';
+import SiPython from '@icons-pack/react-simple-icons/icons/SiPython.mjs';
+import SiPytorch from '@icons-pack/react-simple-icons/icons/SiPytorch.mjs';
+import SiReact from '@icons-pack/react-simple-icons/icons/SiReact.mjs';
+import SiRust from '@icons-pack/react-simple-icons/icons/SiRust.mjs';
+import SiSqlite from '@icons-pack/react-simple-icons/icons/SiSqlite.mjs';
+import SiSvg from '@icons-pack/react-simple-icons/icons/SiSvg.mjs';
+import SiTailwindcss from '@icons-pack/react-simple-icons/icons/SiTailwindcss.mjs';
+import SiTypescript from '@icons-pack/react-simple-icons/icons/SiTypescript.mjs';
+import SiVite from '@icons-pack/react-simple-icons/icons/SiVite.mjs';
+import SiVuedotjs from '@icons-pack/react-simple-icons/icons/SiVuedotjs.mjs';
+import SiWails from '@icons-pack/react-simple-icons/icons/SiWails.mjs';
 import { BarChart3 } from 'lucide-react';
 import { motion, useInView } from 'motion/react';
 import { useRef } from 'react';

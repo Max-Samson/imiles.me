@@ -11,7 +11,7 @@ import {
   formatDate,
 } from '@/lib/i18n';
 import { getServerEnv } from '@/server/env';
-import { postRepository } from '@/server/admin/cms/post-repository';
+import { contentReadRepository } from '@/server/content/read-repository';
 
 const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
@@ -49,7 +49,7 @@ try {
 
 try {
   const env = getServerEnv(Astro.locals);
-  const dbStories = await postRepository(env).listPublished('stories', lang);
+  const dbStories = await contentReadRepository(env).listPublished('stories', lang);
   for (const p of dbStories) {
     storiesMap.set(p.publicPath, {
       id: p.slug,

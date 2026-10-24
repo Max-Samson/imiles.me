@@ -1,3 +1,4 @@
+import { buildBoundaries } from './scripts/build-boundaries.mjs';
 // @ts-check
 import { appConfig } from './src/config/app';
 import { defineConfig } from 'astro/config';
@@ -26,7 +27,7 @@ export default defineConfig({
     rehypePlugins: [rehypeKatex, rehypeSlug],
   },
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss(), buildBoundaries()],
     resolve: {
       dedupe: ['react', 'react-dom'],
       alias: {

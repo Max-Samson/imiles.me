@@ -1,7 +1,12 @@
 'use client';
 
-import { SiArxiv, SiBehance, SiGithub, SiX } from '@icons-pack/react-simple-icons';
-import { IconBrandLinkedin, IconMail, IconRss } from '@tabler/icons-react';
+import SiArxiv from '@icons-pack/react-simple-icons/icons/SiArxiv.mjs';
+import SiBehance from '@icons-pack/react-simple-icons/icons/SiBehance.mjs';
+import SiGithub from '@icons-pack/react-simple-icons/icons/SiGithub.mjs';
+import SiX from '@icons-pack/react-simple-icons/icons/SiX.mjs';
+import IconBrandLinkedin from '@tabler/icons-react/dist/esm/icons/IconBrandLinkedin.mjs';
+import IconMail from '@tabler/icons-react/dist/esm/icons/IconMail.mjs';
+import IconRss from '@tabler/icons-react/dist/esm/icons/IconRss.mjs';
 import { type SocialLink, socialLinks } from '@/data/socialLinks';
 
 const iconMap: Record<SocialLink['icon'], React.ReactNode> = {

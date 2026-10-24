@@ -1,13 +1,11 @@
-import {
-  IconArrowRight,
-  IconChevronDown,
-  IconChevronRight,
-  IconChevronUp,
-  IconListTree,
-  IconPhoto,
-  IconSearch,
-  IconX,
-} from '@tabler/icons-react';
+import IconArrowRight from '@tabler/icons-react/dist/esm/icons/IconArrowRight.mjs';
+import IconChevronDown from '@tabler/icons-react/dist/esm/icons/IconChevronDown.mjs';
+import IconChevronRight from '@tabler/icons-react/dist/esm/icons/IconChevronRight.mjs';
+import IconChevronUp from '@tabler/icons-react/dist/esm/icons/IconChevronUp.mjs';
+import IconListTree from '@tabler/icons-react/dist/esm/icons/IconListTree.mjs';
+import IconPhoto from '@tabler/icons-react/dist/esm/icons/IconPhoto.mjs';
+import IconSearch from '@tabler/icons-react/dist/esm/icons/IconSearch.mjs';
+import IconX from '@tabler/icons-react/dist/esm/icons/IconX.mjs';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';

@@ -1,4 +1,5 @@
-import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
+import IconChevronLeft from '@tabler/icons-react/dist/esm/icons/IconChevronLeft.mjs';
+import IconChevronRight from '@tabler/icons-react/dist/esm/icons/IconChevronRight.mjs';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type React from 'react';
 import { useEffect, useRef } from 'react';

@@ -1,13 +1,11 @@
-import {
-  IconChevronLeft,
-  IconChevronRight,
-  IconDownload,
-  IconFile,
-  IconFileTypePdf,
-  IconLayoutRows,
-  IconZoomIn,
-  IconZoomOut,
-} from '@tabler/icons-react';
+import IconChevronLeft from '@tabler/icons-react/dist/esm/icons/IconChevronLeft.mjs';
+import IconChevronRight from '@tabler/icons-react/dist/esm/icons/IconChevronRight.mjs';
+import IconDownload from '@tabler/icons-react/dist/esm/icons/IconDownload.mjs';
+import IconFile from '@tabler/icons-react/dist/esm/icons/IconFile.mjs';
+import IconFileTypePdf from '@tabler/icons-react/dist/esm/icons/IconFileTypePdf.mjs';
+import IconLayoutRows from '@tabler/icons-react/dist/esm/icons/IconLayoutRows.mjs';
+import IconZoomIn from '@tabler/icons-react/dist/esm/icons/IconZoomIn.mjs';
+import IconZoomOut from '@tabler/icons-react/dist/esm/icons/IconZoomOut.mjs';
 import type React from 'react';
 
 export interface PDFToolbarProps {

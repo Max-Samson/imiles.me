@@ -2,101 +2,113 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, master]
+  push:
+    branches: [main, master]
+  workflow_dispatch:
   workflow_call:
 
+# CI 不需要生产权限，不执行远程 D1 或 Worker 部署。
+permissions:
+  contents: read
+
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  # 只取消过期验证；生产迁移不能复用这个取消规则。
   cancel-in-progress: true
 
+env:
+  CI: 'true'
+  NODE_OPTIONS: --max-old-space-size=4096
+
 jobs:
-  lint:
-    name: Lint
+  quality:
+    name: Lint 与发布规则测试
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
         with:
           version: 11.13.1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: pnpm
-
-      - name: Install dependencies
+      - name: 按锁文件安装依赖，不允许 CI 自动更新版本
         run: pnpm install --frozen-lockfile
+      - name: 检查代码与格式
+        run: |
+          pnpm lint
+          pnpm format:check
+      - name: 检查发布规则（全部使用模拟 runner，不访问生产）
+        run: pnpm test:release
+      - name: 检查构建边界与图标单文件入口
+        run: pnpm test:boundaries
 
-      - name: Run Biome lint
-        run: pnpm lint
-
-      - name: Check formatting
-        run: pnpm format:check
-
-  typecheck:
-    name: Type Check
+  server:
+    name: 类型与本地服务端回归
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
         with:
           version: 11.13.1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run Astro check
+      - run: pnpm install --frozen-lockfile
+      - name: Astro 全项目类型检查
         run: pnpm check
+      - name: 服务端独立类型检查
+        run: pnpm check:server
+      - name: Drizzle 元数据一致性（不等于执行远程迁移）
+        run: pnpm db:check
+      - name: 服务端测试（仅本地临时 D1/KV，限制并发避免仿真器内存争抢）
+        run: pnpm test:server
 
   build:
-    name: Build
+    name: 生产构建与 SSR 边界检查
+    needs: [quality, server]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
         with:
           version: 11.13.1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build site
+      - run: pnpm install --frozen-lockfile
+      - name: 构建一次；构建脚本不执行远程数据库操作
         run: pnpm build
-
-      - name: Verify build output
+      - name: 检查 Worker、静态资源排除项与提交摘要
         run: |
-          if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
-            echo "Error: Build output directory is empty or missing"
-            exit 1
-          fi
-          echo "Build output verified successfully"
-          ls -la dist/
-
-      - name: Upload build artifact
+          test -s dist/_worker.js/index.js
+          grep -qx '_worker.js' dist/.assetsignore
+          test -s .astro/release-build.json
+          test -s .astro/build-server-audit.json
+          test -s .astro/build-client-audit.json
+      - name: 保存产物供排查（不上传任何环境或认证文件）
         uses: actions/upload-artifact@v7
         with:
-          name: dist
-          path: dist/
+          name: build-${{ github.sha }}
+          path: |
+            dist/
+            .astro/release-build.json
+            .astro/build-server-audit.json
+            .astro/build-client-audit.json
+          # 只打包上述受控目录，保留 .assetsignore 及审计文件。
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 7
