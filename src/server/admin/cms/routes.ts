@@ -17,23 +17,25 @@ import { githubRepository, snapshotRepository } from './repository';
 import { readCmsOperation } from './service';
 
 // Bundled server-only development fixtures. Never served to anonymous requests.
-const sourceFiles = import.meta.env.DEV
-  ? import.meta.glob<string>('/content/{blog,stories}/**/*.{md,mdx}', {
-      query: '?raw',
-      import: 'default',
-      eager: true,
-    })
-  : {};
+const isDev = Boolean(import.meta.env?.DEV);
+const sourceFiles =
+  isDev && typeof import.meta.glob === 'function'
+    ? import.meta.glob<string>('/content/{blog,stories}/**/*.{md,mdx}', {
+        query: '?raw',
+        import: 'default',
+        eager: true,
+      })
+    : {};
 const files = Object.fromEntries(
   Object.entries(sourceFiles).map(([path, body]) => [path.slice(1), body]),
 );
 
+function isSnapshotMode(env: Parameters<typeof githubRepository>[0]): boolean {
+  return getRuntimeConfig(env).services.adminAuth === 'local-development' && !env.CMS_GITHUB_TOKEN;
+}
+
 function contentRepository(env: Parameters<typeof githubRepository>[0]) {
-  const isSnapshot =
-    import.meta.env.DEV &&
-    getRuntimeConfig(env).services.adminAuth === 'local-development' &&
-    !env.CMS_GITHUB_TOKEN;
-  return isSnapshot ? snapshotRepository(files) : githubRepository(env);
+  return isSnapshotMode(env) ? snapshotRepository(files) : githubRepository(env);
 }
 
 const createDraftInput = z.object({
@@ -93,10 +95,7 @@ export const cmsRepositoryRoute = defineRestRoute({
     const action = requireReadAction(input.action);
     const params = input.params ?? {};
     if (!params || typeof params !== 'object' || Array.isArray(params)) throw new ValidationError();
-    const isSnapshot =
-      import.meta.env.DEV &&
-      getRuntimeConfig(env).services.adminAuth === 'local-development' &&
-      !env.CMS_GITHUB_TOKEN;
+    const isSnapshot = isSnapshotMode(env);
     const repo = contentRepository(env);
     if (action === 'getRepoDetails') {
       const name = isSnapshot ? 'local/content-snapshot' : (env.CMS_GITHUB_REPO ?? '');
@@ -231,11 +230,17 @@ export const cmsPublicationDetailRoute = defineRestRoute({
   },
 });
 
-/** 重开文章后按固定文件身份恢复最近一次已提交的部署核验入口。 */
+/** 重开文章后按固定文件身份恢复最近一次已提交的部署核验入口，或查询未完成对账的发布操作。 */
 export const cmsPublicationListRoute = defineRestRoute({
   GET: async ({ env }, route) => {
     await authorizeAdmin(route.request, env, 'admin:read');
-    const path = contentPath(new URL(route.request.url).searchParams.get('path'));
+    const url = new URL(route.request.url);
+    if (url.searchParams.get('pending') === 'true') {
+      return jsonSuccess(
+        await publicationService(env, contentRepository(env)).pendingPublications(),
+      );
+    }
+    const path = contentPath(url.searchParams.get('path'));
     return jsonSuccess(
       await publicationService(env, contentRepository(env)).latestCommittedForPath(path),
     );
@@ -293,15 +298,29 @@ export const cmsDeletionDetailRoute = defineRestRoute({
 export const cmsGitRoute = cmsRepositoryRoute;
 
 export const cmsSessionRoute = defineRestRoute({
-  GET: async ({ env }, route) =>
-    jsonSuccess({
-      session: await getAdminAccess(route.request, env),
-      mode:
-        import.meta.env.DEV &&
-        getRuntimeConfig(env).services.adminAuth === 'local-development' &&
-        !env.CMS_GITHUB_TOKEN
-          ? 'snapshot'
-          : 'github',
-      writable: false,
-    }),
+  GET: async ({ env }, route) => {
+    const session = await getAdminAccess(route.request, env);
+    const isSnapshot = isSnapshotMode(env);
+    const isLocalDev = getRuntimeConfig(env).services.adminAuth === 'local-development';
+    const defaultBranch = isLocalDev ? 'dev-content' : 'master';
+    const branch = isSnapshot ? 'local' : (env.CMS_GITHUB_BRANCH ?? defaultBranch);
+    const repo = isSnapshot ? 'local/content-snapshot' : (env.CMS_GITHUB_REPO ?? '');
+    const isProductionBranch = !isSnapshot && (branch === 'master' || branch === 'main');
+    const isLocalBranch = !isSnapshot && !isProductionBranch;
+    const isConfigured =
+      !isSnapshot && Boolean(env.CMS_GITHUB_TOKEN && env.CMS_GITHUB_REPO && branch);
+    const writable = isConfigured && session.capabilities.includes('admin:write');
+
+    return jsonSuccess({
+      session,
+      mode: isSnapshot ? 'snapshot' : 'github',
+      repo,
+      branch,
+      isProductionBranch,
+      isTestBranch: isLocalBranch,
+      isLocalBranch,
+      isConfigured,
+      writable,
+    });
+  },
 });

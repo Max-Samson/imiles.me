@@ -27,7 +27,7 @@ export const cmsConfig = {
           : []),
       ],
     },
-    tableColumns: ['lang', 'draft', 'pubDate'],
+    tableColumns: ['lang', 'pubDate'],
   })),
   settings: {
     projectType: 'astro',

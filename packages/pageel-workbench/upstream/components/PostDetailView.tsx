@@ -3,13 +3,13 @@ import { ComponentInspector, useComponentInspector } from '../../integration/com
 import { useWorkbench } from '../../integration/context';
 import { composeDraftSource } from '../../integration/draft-source';
 import { resolveImportedDraftTarget, suggestedImportSlug } from '../../integration/import-content';
-import { cmsDocumentClient, type CmsDraftSummary, type CmsPublicationResult } from '../../../../src/lib/admin/cms-document-client';
+import { cmsDocumentClient, type CmsDraftSummary, type CmsPublicationResult, type CmsSessionInfo } from '../../../../src/lib/admin/cms-document-client';
 import { AdminApiError } from '../../../../src/lib/admin/api-error';
 import { resolveNewContentTarget } from '../../../../src/lib/content-routing';
 import { parseSourceDocument } from '../../../../src/lib/content-source';
 import { fieldLabel } from '../../integration/labels';
 import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
-import { ArrowLeft, SlidersHorizontal, Save, Info, Send, Globe, Copy, Check, ExternalLink } from 'lucide-react';
+import { ArrowLeft, SlidersHorizontal, Save, Info, Send, Globe, Copy, Check, ExternalLink, GitBranch, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { marked } from 'marked';
@@ -271,6 +271,8 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   const [publishing, setPublishing] = useState(false);
   const [checkingDeployment, setCheckingDeployment] = useState(false);
   const [publishMode, setPublishMode] = useState<'loading' | 'snapshot' | 'github'>('loading');
+  const [sessionInfo, setSessionInfo] = useState<CmsSessionInfo | null>(null);
+  const [showPublishConfirmModal, setShowPublishConfirmModal] = useState(false);
   const [publication, setPublication] = useState<CmsPublicationResult | null>(post.publication ?? null);
   const [lastCommit, setLastCommit] = useState<CmsPublicationResult | null>(post.publication?.status === 'committed' ? post.publication : null);
   const operationRef = useRef<{ id: string; revision: number } | null>(post.publication ? { id: post.publication.operationId, revision: post.publication.draftRevision } : null);
@@ -283,8 +285,25 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   const { onDirtyChange, confirmLeave, registerSaveDraft } = useWorkbench();
   useEffect(() => {
     let active = true;
-    cmsDocumentClient.session().then(value => { if (active) setPublishMode(value.mode); })
-      .catch(() => { if (active) setPublishMode('snapshot'); });
+    cmsDocumentClient.session().then(value => {
+      if (active) {
+        setPublishMode(value.mode);
+        setSessionInfo(value);
+      }
+    }).catch(() => {
+      if (active) {
+        setPublishMode('snapshot');
+        setSessionInfo({
+          mode: 'snapshot',
+          repo: 'local/content-snapshot',
+          branch: 'local',
+          isProductionBranch: false,
+          isTestBranch: false,
+          isConfigured: false,
+          writable: false,
+        });
+      }
+    });
     return () => { active = false; };
   }, []);
   useEffect(() => {
@@ -537,7 +556,8 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
     return Boolean(draft) && editSerialRef.current === editSerial;
   }), [handleSave, registerSaveDraft]);
 
-  const handlePublish = useCallback(async () => {
+  const executePublish = useCallback(async () => {
+      setShowPublishConfirmModal(false);
       if (publishing || publishMode !== 'github') return;
       setPublishing(true);
       setPublishMessage('');
@@ -558,7 +578,14 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
               setLastCommit(result);
               publishedBaseRef.current = result.resultBlobSha;
               if (draftRef.current?.revision === result.draftRevision) draftRef.current = undefined;
-              setPublishMessage('Git 已提交；线上部署尚未核实。');
+              if (editSerialRef.current === submittedSerial) setIsDirty(false);
+              const branchText = sessionInfo?.branch ? `【${sessionInfo.branch}】` : '';
+              if (sessionInfo?.isTestBranch) {
+                  setPublishMessage(`已安全提交至本地调试分支 ${branchText}；内容已隔离，不会触发线上生产部署。`);
+              } else {
+                  setPublishMessage(`Git 提交成功 ${branchText}；线上部署尚未核实。点击“检查部署”可核验上线状态。`);
+              }
+              onUpdate();
           }
           else if (result.status === 'conflict') setPublishMessage('仓库版本或目标地址冲突；草稿已保留，请比较后处理。');
           else if (result.status === 'failed') setPublishMessage('发布失败；草稿仍在 D1，可修复后重新发起。');
@@ -570,7 +597,23 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       } finally {
           setPublishing(false);
       }
-  }, [publishing, publishMode, publication, isDirty, handleSave]);
+  }, [publishing, publishMode, publication, isDirty, handleSave, onUpdate, sessionInfo]);
+
+  const handlePublishClick = useCallback(() => {
+      if (publishing || publishMode !== 'github') return;
+      const pending = Boolean(operationRef.current) && (!publication || ['prepared', 'in_flight', 'unknown'].includes(publication.status));
+      if (pending) {
+          void executePublish();
+          return;
+      }
+      if (publicationIssues.length > 0) {
+          setPropertiesOpen(true);
+          componentInspector.setMode('article');
+          setPublishMessage(`发布前请先修正文章属性：${publicationIssues.map(i => i.message).join('；')}`);
+          return;
+      }
+      setShowPublishConfirmModal(true);
+  }, [publishing, publishMode, publication, publicationIssues, componentInspector, executePublish]);
 
   const handleVerifyDeployment = useCallback(async () => {
       if (!lastCommit || checkingDeployment) return;
@@ -1326,13 +1369,34 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   type="button"
                   variant="blue"
                   size="sm"
-                  disabled={publishMode !== 'github' || publishing || isSaving || publication?.status === 'committed'}
-                  onClick={() => void handlePublish()}
+                  disabled={
+                    publishMode !== 'github' ||
+                    publishing ||
+                    isSaving ||
+                    (publication?.status === 'committed' && !isDirty && !draftRef.current)
+                  }
+                  onClick={() => void handlePublishClick()}
                   icon={<Send className="w-3.5 h-3.5 shrink-0" />}
-                  title={publishMode === 'snapshot' ? '本地发布适配尚未开放' : '保存当前输入并发布固定草稿修订'}
+                  title={
+                    publishMode === 'snapshot'
+                      ? '本地开发快照模式：未配置远程 GitHub Token，无法直接发布'
+                      : publication && ['prepared', 'in_flight', 'unknown'].includes(publication.status)
+                      ? '使用当前操作 ID 对账 Git 提交状态'
+                      : publishedBaseRef.current || post.sha
+                      ? '保存当前修改并更新已发布文章'
+                      : '保存当前输入并发布为新文章'
+                  }
                   className="gap-1.5 h-8 text-xs font-medium whitespace-nowrap shrink-0"
                 >
-                  <span>{publishing ? '发布中…' : publication && ['prepared', 'in_flight', 'unknown'].includes(publication.status) ? '对账' : '发布'}</span>
+                  <span>
+                    {publishing
+                      ? '发布中…'
+                      : publication && ['prepared', 'in_flight', 'unknown'].includes(publication.status)
+                      ? '对账'
+                      : publishedBaseRef.current || post.sha
+                      ? '更新发布'
+                      : '发布'}
+                  </span>
                 </LiquidGlassButton>
             </div>
         </div>
@@ -1474,6 +1538,84 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                         <CheckIcon className="w-3.5 h-3.5 shrink-0" />
                         <span>文章属性检查通过；发布还会由服务端检查正文、图片及仓库版本。</span>
                       </p>
+                    )}
+                    {publishMode === 'snapshot' && !publicationIssues.length && (
+                      <div className="rounded-lg border border-blue-500/20 bg-blue-500/[0.04] p-2.5 text-xs space-y-1 text-notion-muted">
+                        <p className="font-semibold text-notion-text flex items-center gap-1">
+                          <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                          <span>为什么“发布”按钮是灰色的？</span>
+                        </p>
+                        <p className="leading-relaxed text-[11px]">
+                          当前运行在<strong>本地开发环境（快照模式）</strong>，尚未在 <code className="text-notion-text">.env</code> 中配置 GitHub 提交凭据（<code className="text-notion-text">CMS_GITHUB_TOKEN</code>）。
+                        </p>
+                        <p className="leading-relaxed text-[11px]">
+                          你可以点击<strong>“保存草稿”</strong>将修改写入本地 D1 数据库；如需推送到 GitHub 真实发布，请配置环境变量后重启开发服务。
+                        </p>
+                      </div>
+                    )}
+                  </section>
+
+                  {/* 发布目标与隔离环境指示卡片 */}
+                  <section aria-label="发布目标环境" className="rounded-xl border border-notion-border bg-notion-sidebar/40 p-3.5 text-xs space-y-2.5 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-notion-text flex items-center gap-1.5">
+                        <GitBranch className="size-3.5 text-notion-muted" />
+                        <span>发布目标环境</span>
+                      </span>
+                      {publishMode === 'snapshot' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20">
+                          本地快照只读
+                        </span>
+                      ) : sessionInfo?.isTestBranch ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          <ShieldCheck className="size-3 text-emerald-500" />
+                          本地调试分支
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                          <AlertTriangle className="size-3 text-rose-500" />
+                          生产主分支
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-1.5 text-[11px] text-notion-muted">
+                      <div className="flex justify-between items-center">
+                        <span>目标仓库：</span>
+                        <span className="font-mono text-notion-text font-medium truncate max-w-[150px]" title={sessionInfo?.repo || '本地快照'}>
+                          {sessionInfo?.repo || (publishMode === 'snapshot' ? '本地快照' : '未配置')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>目标分支：</span>
+                        <span className="font-mono font-semibold text-notion-text">
+                          {sessionInfo?.branch || 'local'}
+                        </span>
+                      </div>
+                    </div>
+                    {publishMode === 'snapshot' ? (
+                      <p className="text-[11px] text-notion-muted leading-relaxed">
+                        本地开发模式下未配置 GitHub 凭据，编辑只写入 D1 草稿，无法提交到远程仓库，绝不污染线上。
+                      </p>
+                    ) : sessionInfo?.isTestBranch ? (
+                      <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed space-y-0.5">
+                        <p className="font-semibold flex items-center gap-1">
+                          <ShieldCheck className="size-3 shrink-0" />
+                          <span>本地调试隔离保护已生效</span>
+                        </p>
+                        <p>
+                          向此分支发布仅向 <code className="font-mono">{sessionInfo.branch}</code> 提交 Commit，GitHub Actions 部署工作流不会触发，本地调试内容与线上生产完全隔离。
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg bg-rose-500/10 border border-rose-500/20 p-2 text-[11px] text-rose-700 dark:text-rose-300 leading-relaxed space-y-0.5">
+                        <p className="font-semibold flex items-center gap-1">
+                          <AlertTriangle className="size-3 shrink-0" />
+                          <span>生产分支警告</span>
+                        </p>
+                        <p>
+                          当前配置为生产主分支。发布将直接推送到线上仓库并触发自动部署！若在本地调试，请在 <code className="font-mono">.env</code> 中配置 <code className="font-mono">CMS_GITHUB_BRANCH="cms-test"</code>。
+                        </p>
+                      </div>
                     )}
                   </section>
                   {/* 封面图片 Section */}
@@ -1697,6 +1839,101 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
             </div>
       </div>
+
+      {/* 发布目标与分支确认弹窗（防线上混淆） */}
+      {showPublishConfirmModal && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-lg rounded-2xl border border-notion-border bg-notion-bg p-6 shadow-2xl space-y-4">
+            <div className="flex items-start gap-3">
+              {sessionInfo?.isProductionBranch ? (
+                <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
+                  <AlertTriangle className="size-6" />
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                  <ShieldCheck className="size-6" />
+                </div>
+              )}
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-notion-text">
+                  {sessionInfo?.isProductionBranch ? '⚠️ 生产环境发布确认' : '🌿 提交到本地调试分支确认'}
+                </h3>
+                <p className="text-xs text-notion-muted">
+                  {sessionInfo?.isProductionBranch
+                    ? '您当前配置为生产主分支。发布后将直接向远程主库提交，并触发线上网站自动构建上线。'
+                    : `您当前配置为本地调试分支（${sessionInfo?.branch || 'dev-content'}）。提交仅推送到调试分支，不会触发生产构建部署，与线上生产完全隔离。`}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-notion-border bg-notion-sidebar/40 p-3.5 space-y-2 text-xs">
+              <div className="flex justify-between items-center text-notion-muted">
+                <span>目标仓库：</span>
+                <span className="font-mono text-notion-text font-medium">{sessionInfo?.repo || '未知仓库'}</span>
+              </div>
+              <div className="flex justify-between items-center text-notion-muted">
+                <span>目标分支：</span>
+                <span className="font-mono font-semibold text-notion-text">
+                  {sessionInfo?.branch || 'snapshot'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-notion-muted">
+                <span>隔离状态：</span>
+                {sessionInfo?.isProductionBranch ? (
+                  <span className="text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5">
+                    <span className="size-1.5 rounded-full bg-rose-500 animate-pulse" />
+                    生产主分支（将触发全站部署上线）
+                  </span>
+                ) : (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
+                    <span className="size-1.5 rounded-full bg-emerald-500" />
+                    本地调试分支（已隔离 · 不会触发上线）
+                  </span>
+                )}
+              </div>
+              <div className="flex justify-between items-center text-notion-muted">
+                <span>目标文件：</span>
+                <span className="font-mono text-notion-text truncate max-w-[240px]" title={draftRef.current?.targetPath ?? post.path}>
+                  {draftRef.current?.targetPath ?? post.path}
+                </span>
+              </div>
+            </div>
+
+            {sessionInfo?.isProductionBranch && (
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed space-y-1">
+                <p className="font-semibold flex items-center gap-1">
+                  <Info className="size-3.5 shrink-0" />
+                  <span>本地开发调试提示</span>
+                </p>
+                <p>
+                  如果仅用于本地开发调试，请在项目根目录的 <code className="bg-amber-500/20 px-1 py-0.5 rounded font-mono">.env</code> 中配置 <code className="bg-amber-500/20 px-1 py-0.5 rounded font-mono">CMS_GITHUB_BRANCH="dev-content"</code>，避免调试内容混入线上生产环境。
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowPublishConfirmModal(false)}
+                className="px-3.5 py-1.5 rounded-lg border border-notion-border text-xs font-medium text-notion-muted hover:text-notion-text hover:bg-notion-sidebar transition-colors cursor-pointer"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => void executePublish()}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold text-white shadow-sm transition-colors cursor-pointer ${
+                  sessionInfo?.isProductionBranch
+                    ? 'bg-rose-600 hover:bg-rose-700'
+                    : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
+              >
+                {sessionInfo?.isProductionBranch ? '确认发布并上线' : `确认提交到 ${sessionInfo?.branch || 'dev-content'} 分支`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

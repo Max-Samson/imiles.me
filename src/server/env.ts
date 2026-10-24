@@ -6,19 +6,23 @@ import { InternalServerError } from './errors';
 export function getServerEnv(locals: Partial<App.Locals>): CloudflareEnv {
   const runtimeEnv = locals.runtime?.env;
   const processEnv = typeof process !== 'undefined' ? process.env : {};
+  /** 从 runtime 或 process.env 中读取标量值，优先使用 runtime 绑定，缺省回退到 process.env */
+  const scalar = (key: keyof CloudflareEnv): string | undefined => {
+    const fromRuntime = runtimeEnv ? (runtimeEnv[key] as string | undefined) : undefined;
+    if (fromRuntime !== undefined && fromRuntime !== '') return fromRuntime;
+    const fromProcess = processEnv[key] as string | undefined;
+    if (fromProcess !== undefined && fromProcess !== '') return fromProcess;
+    return undefined;
+  };
+
   const environment =
-    runtimeEnv?.ENVIRONMENT ??
-    (processEnv.NODE_ENV === 'production' ? 'production' : 'development');
+    scalar('ENVIRONMENT') ?? (processEnv.NODE_ENV === 'production' ? 'production' : 'development');
   const siteUrl = getSiteUrl({
-    SITE_URL: runtimeEnv ? runtimeEnv.SITE_URL : processEnv.SITE_URL,
+    SITE_URL: scalar('SITE_URL'),
   }).origin;
   if (!['development', 'staging', 'production'].includes(environment)) {
     throw new InternalServerError('ENVIRONMENT 配置无效');
   }
-
-  /** 从 runtime 或 process.env 中读取标量值的辅助函数 */
-  const scalar = (key: keyof CloudflareEnv): string | undefined =>
-    runtimeEnv ? (runtimeEnv[key] as string | undefined) : (processEnv[key] as string | undefined);
 
   return {
     DB: runtimeEnv?.DB,

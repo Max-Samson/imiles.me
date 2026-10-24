@@ -28,6 +28,7 @@ pnpm-debug.log*
 .claude/
 .vscode/
 .env.*
+!.env.example
 .dev.vars
 .dev.vars.*
 
