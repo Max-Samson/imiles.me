@@ -1,5 +1,5 @@
 import React from 'react';
-import { IGitService, AppSettings } from '../types';
+import { type IGitService, type AppSettings } from '../types';
 import { useI18n } from '../i18n/I18nContext';
 import { RepoFileTree } from './RepoFileTree';
 import { AstroIcon } from './icons/AstroIcon';

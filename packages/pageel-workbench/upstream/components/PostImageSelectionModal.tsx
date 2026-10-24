@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { IGitService, GithubContent } from '../types';
+import { type IGitService, type GithubContent } from '../types';
 import { useI18n } from '../i18n/I18nContext';
 import { CloseIcon } from './icons/CloseIcon';
 import { UploadIcon } from './icons/UploadIcon';

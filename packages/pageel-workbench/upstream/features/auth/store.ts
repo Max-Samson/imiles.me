@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import { GithubUser, GithubRepo, IGitService, ServiceType } from '../../types';
+import { type GithubUser, type GithubRepo, type IGitService, type ServiceType } from '../../types';
 
 interface AuthState {
   user: GithubUser | null;

@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { ViewType } from '../types';
+import { type ViewType } from '../types';
 
 const VALID_VIEWS: ViewType[] = ['dashboard', 'workflows', 'images', 'template', 'backup', 'settings'];
 

@@ -61,7 +61,7 @@
   },
   "files": {
     "includes": [
-      "scripts/{build,build-artifact,build-boundaries,d1-release,release,release-paths}.mjs",
+      "scripts/{build,build-artifact,build-boundaries,d1-release,d1-schema,release,release-paths}.mjs",
       "tests/{release,build}/**/*.mjs",
       "**/*.ts",
       "**/*.tsx",

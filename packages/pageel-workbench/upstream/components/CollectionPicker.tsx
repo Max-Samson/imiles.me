@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useCollectionStore, Collection } from '../features/collections';
+import { useCollectionStore, type Collection } from '../features/collections';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { PlusIcon } from './icons/PlusIcon';
 import { FolderIcon } from './icons/FolderIcon';

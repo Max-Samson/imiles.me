@@ -10,19 +10,19 @@ import { CollectionToolbar } from '../../integration/components/CollectionToolba
 
 import React, { useState, useEffect } from "react";
 import {
-  GithubUser,
-  GithubRepo,
-  IGitService,
-  ServiceType,
+  type GithubUser,
+  type GithubRepo,
+  type IGitService,
+  type ServiceType,
 } from "../types";
 import {
   useNavigation,
-  ViewType,
+  type ViewType,
   useAppStore,
   useSettingsStore,
   useCollectionStore,
   saveCollectionsToPageelrc,
-  Collection,
+  type Collection,
   withSyncLock,
 } from "../features";
 import { useDashboardInit } from "../hooks/useDashboardInit";
@@ -245,112 +245,18 @@ const Dashboard: React.FC<DashboardProps> = ({
     return titles[activeView] || "";
   };
 
-  const renderContent = () => {
-    switch ('dashboard') {
-      case "dashboard":
-        return (
-          <PostList
-            key={activeCollection?.id}
-            gitService={gitService}
-            repo={currentRepo}
-            onPostUpdate={fetchStats}
-            onAction={handleAction}
-            onEditingChange={setIsEditingPost}
-          />
-        );
-      case "workflows":
-        return (
-          <CreatePostWrapper
-            gitService={gitService}
-            repo={currentRepo}
-            settings={settings}
-            postsPath={effectivePostsPath}
-            imagesPath={effectiveImagesPath}
-            collectionId={activeCollection?.id}
-            onComplete={() => setView("dashboard")}
-            onAction={handleAction}
-          />
-        );
-      case "images":
-        return (
-          <ImageList
-            gitService={gitService}
-            repo={currentRepo}
-            path={effectiveImagesPath}
-            imageFileTypes={settings.imageFileTypes}
-            domainUrl={settings.domainUrl}
-            projectType={settings.projectType}
-            repoStats={repoStats}
-            imageCompressionEnabled={settings.imageCompressionEnabled}
-            maxImageSize={settings.maxImageSize}
-            imageResizeMaxWidth={settings.imageResizeMaxWidth}
-            commitTemplate={settings.newImageCommit}
-            onAction={handleAction}
-          />
-        );
-      case "template":
-        return (
-          <TemplateGenerator
-            gitService={gitService}
-            repo={currentRepo}
-            postsPath={effectivePostsPath}
-            collectionId={activeCollection?.id}
-            onTemplateSaved={async () => {
-              const latestWorkspace = useCollectionStore.getState().workspace;
-              if (latestWorkspace) {
-                await withSyncLock(
-                  () => saveCollectionsToPageelrc(gitService, latestWorkspace),
-                  "Saving template...",
-                );
-              }
-            }}
-          />
-        );
-      case "backup":
-        return (
-          <BackupManager
-            gitService={gitService}
-            repo={currentRepo}
-            postsPath={effectivePostsPath}
-            imagesPath={effectiveImagesPath}
-          />
-        );
-      // @para-doc [#csa-plugins-view-route]
-      case "plugins":
-        return (
-          <PluginsView
-            gitService={gitService}
-            repo={currentRepo}
-            pluginConfig={pluginConfig}
-            setPluginConfig={setPluginConfig}
-          />
-        );
-      case "settings":
-        return (
-            <SettingsView
-              settings={settings}
-              onSettingsChange={handleSettingsChange}
-              onSave={handleSaveSettings}
-              isSaving={isSaving}
-              saveSuccess={saveSuccess}
-              user={user}
-              repo={currentRepo}
-              onLogout={onLogout}
-              onDeleteConfig={handleDeleteConfig}
-              onExport={handleExportSettings}
-              onImportClick={handleImportClick}
-              fileInputRef={importFileInputRef}
-              onFileImport={handleFileImport}
-              importStatus={importExportStatus}
-              onOpenPicker={(type) => setIsPickerOpen(type)}
-              pluginConfig={pluginConfig}
-              setPluginConfig={setPluginConfig}
-            />
-        );
-      default:
-        return null;
-    }
-  };
+  // 宿主仅开放文章列表；原 switch('dashboard') 的其他分支永远不可达。
+  // 直接表达既有行为，避免为通过类型检查意外重新开放上游管理页面。
+  const renderContent = () => (
+    <PostList
+      key={activeCollection?.id}
+      gitService={gitService}
+      repo={currentRepo}
+      onPostUpdate={fetchStats}
+      onAction={handleAction}
+      onEditingChange={setIsEditingPost}
+    />
+  );
 
   const lastUpdated = currentRepo.pushed_at
     ? new Date(currentRepo.pushed_at).toLocaleString(

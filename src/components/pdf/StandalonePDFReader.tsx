@@ -256,6 +256,7 @@ export const StandalonePDFReader: React.FC<StandalonePDFReaderProps> = ({
             setSidebarOpen(true);
           }}
           onClose={() => setSidebarOpen(false)}
+          onSelectPage={handlePageChange}
           onSearch={performSearch}
           onNextMatch={nextMatch}
           onPrevMatch={prevMatch}

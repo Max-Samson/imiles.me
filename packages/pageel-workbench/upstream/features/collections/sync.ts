@@ -4,8 +4,8 @@
  * Functions to sync collections with .pageelrc.json on the Git repo.
  */
 
-import { IGitService } from '../../types';
-import { Collection, Workspace, WorkspaceSettings, createCollection } from './types';
+import { type IGitService } from '../../types';
+import { type Collection, type Workspace, type WorkspaceSettings, createCollection } from './types';
 
 /**
  * Structure of .pageelrc.json v2 with collections support

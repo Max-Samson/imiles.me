@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IGitService, RepoTreeInfo } from '../types';
+import { type IGitService, type RepoTreeInfo } from '../types';
 import { FolderIcon } from './icons/FolderIcon';
 import { FileIcon } from './icons/FileIcon';
 import { SpinnerIcon } from './icons/SpinnerIcon';

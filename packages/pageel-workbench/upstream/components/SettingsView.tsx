@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { GithubUser, GithubRepo, AppSettings } from '../types';
+import { type GithubUser, type GithubRepo, type AppSettings } from '../types';
 import type { PluginConfig } from '../plugins';
 import { useI18n } from '../i18n/I18nContext';
 import { LanguageSwitcher } from './LanguageSwitcher';

@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { createCollection, useCollectionStore, Collection } from '../features/collections';
+import { createCollection, useCollectionStore, type Collection } from '../features/collections';
 import { CloseIcon } from './icons/CloseIcon';
 import { FolderIcon } from './icons/FolderIcon';
 import { useI18n } from '../i18n/I18nContext';

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import PostWorkflow from './PostWorkflow';
-import { IGitService, GithubRepo } from '../types';
+import { type IGitService, type GithubRepo } from '../types';
 import { useI18n } from '../i18n/I18nContext';
 import { ArrowUturnLeftIcon } from './icons/ArrowUturnLeftIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';

@@ -71,6 +71,7 @@ export const PDFPageCanvas: React.FC<PDFPageCanvasProps> = ({
         }
 
         const renderContext = {
+          canvas,
           canvasContext: ctx,
           viewport,
         };

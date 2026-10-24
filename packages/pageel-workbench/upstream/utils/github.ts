@@ -1,5 +1,5 @@
 
-import { GithubRepo } from '../types';
+import { type GithubRepo } from '../types';
 
 /**
  * Generates a Raw GitHub URL for a given path.

@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { Filter, RotateCcw } from 'lucide-react';
-import { CollectionTemplate, TemplateField } from '../features/collections';
+import { type CollectionTemplate, type TemplateField } from '../features/collections';
 import { useI18n } from '../i18n/I18nContext';
 
 interface PostData {

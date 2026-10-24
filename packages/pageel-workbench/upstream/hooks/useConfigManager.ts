@@ -11,16 +11,16 @@
 
 import React, { useRef, useState } from 'react';
 import {
-  GithubRepo,
-  IGitService,
-  AppSettings,
+  type GithubRepo,
+  type IGitService,
+  type AppSettings,
 } from '../types';
 import {
   SETTINGS_SCHEMA,
   useSettingsStore,
   useCollectionStore,
   saveCollectionsToPageelrc,
-  Collection,
+  type Collection,
   withSyncLock,
 } from '../features';
 import { useI18n } from '../i18n/I18nContext';

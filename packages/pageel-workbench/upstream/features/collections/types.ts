@@ -5,7 +5,7 @@
  * A Workspace contains multiple Collections, each with independent paths.
  */
 
-import { ProjectType } from '../../types';
+import { type ProjectType } from '../../types';
 
 /**
  * A Collection represents a content type within a workspace.

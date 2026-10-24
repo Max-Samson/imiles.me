@@ -31,6 +31,8 @@ export interface CmsPublicationResult {
   deploymentStatus: 'unverified' | 'pending' | 'running' | 'verified' | 'failed' | 'cancelled';
   deploymentRef: string | null;
   deployedAt: number | null;
+  /** 服务端发布记录中的稳定错误码；无错误时为 null。 */
+  errorCode: string | null;
   resultBlobSha: string | null;
   resultCommitSha: string | null;
 }

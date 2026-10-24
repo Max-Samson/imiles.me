@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { GithubUser, ServiceType } from '../types';
+import { type GithubUser, type ServiceType } from '../types';
 import { useI18n } from '../i18n/I18nContext';
 import { AstroIcon } from './icons/AstroIcon';
 import { GithubIcon } from './icons/GithubIcon';
@@ -12,7 +12,7 @@ import { ExclamationTriangleIcon } from './icons/ExclamationTriangleIcon';
 import { SyncStatusBadge } from './SyncStatusBadge';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { CollectionPicker } from './CollectionPicker';
-import { Collection } from '../features/collections';
+import { type Collection } from '../features/collections';
 
 interface SidebarProps {
     activeView: string;

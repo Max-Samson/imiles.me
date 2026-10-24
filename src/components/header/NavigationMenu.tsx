@@ -72,13 +72,13 @@ export default function NavigationMenuDemo({ lang, pathname }: Props) {
     navItems.find((item) => isNavItemActive(resolvedPathname, item.matchPath)) ?? navItems[0];
 
   const handleMouseEnter = () => {
-    clearTimeout(collapseTimerRef.current);
+    if (collapseTimerRef.current !== null) clearTimeout(collapseTimerRef.current);
     collapseTimerRef.current = null;
     setIsExpanded(true);
   };
 
   const handleMouseLeave = () => {
-    clearTimeout(collapseTimerRef.current);
+    if (collapseTimerRef.current !== null) clearTimeout(collapseTimerRef.current);
     collapseTimerRef.current = setTimeout(() => {
       setIsExpanded(false);
       setHoveredHref(null);
@@ -87,7 +87,7 @@ export default function NavigationMenuDemo({ lang, pathname }: Props) {
 
   useEffect(() => {
     return () => {
-      clearTimeout(collapseTimerRef.current);
+      if (collapseTimerRef.current !== null) clearTimeout(collapseTimerRef.current);
     };
   }, []);
 

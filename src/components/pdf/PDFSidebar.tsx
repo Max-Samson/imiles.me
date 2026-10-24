@@ -408,6 +408,7 @@ const ThumbnailItem: React.FC<{
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
         await page.render({
+          canvas,
           canvasContext: ctx,
           viewport,
         }).promise;

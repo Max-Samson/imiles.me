@@ -125,7 +125,7 @@ test('未批准不能执行，批准绑定环境、提交、文件和 SQL 摘要
   assert.notEqual(changed.approval, prepared.approval);
   assert.deepEqual(await service.apply(prepared, prepared.approval), { applied: true });
   assert.equal(calls.filter(([, args]) => args.includes('apply')).length, 1);
-  assert.ok(calls.every(([, args]) => args.includes('BLOG-DB') && args.includes('wrangler.toml')));
+  assert.ok(calls.every(([, args]) => args.includes('DB') && args.includes('wrangler.toml')));
 });
 
 test('批准后清单、SQL 或生产状态变化均阻止写入', async () => {

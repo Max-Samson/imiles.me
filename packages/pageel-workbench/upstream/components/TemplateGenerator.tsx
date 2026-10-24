@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { GithubRepo, IGitService, GithubContent } from '../types';
+import { type GithubRepo, type IGitService, type GithubContent } from '../types';
 import { parseMarkdown, inferFrontmatterType } from '../utils/parsing';
 import { UploadIcon } from './icons/UploadIcon';
 import { InfoIcon } from './icons/InfoIcon';
@@ -11,7 +11,7 @@ import { ArrowUturnLeftIcon } from './icons/ArrowUturnLeftIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { SpinnerIcon } from './icons/SpinnerIcon';
 import { DocumentIcon } from './icons/DocumentIcon';
-import { useCollectionStore, CollectionTemplate, TemplateField } from '../features/collections';
+import { useCollectionStore, type CollectionTemplate, type TemplateField } from '../features/collections';
 
 interface TemplateGeneratorProps {
     gitService: IGitService;

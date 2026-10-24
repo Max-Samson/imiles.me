@@ -45,6 +45,11 @@ export function RegisteredJsxEditor(props: JsxEditorProps) {
 
   // 注册真实节点与更新回调；节点变更只更新登记，真正卸载时才清除选择。
   useEffect(() => {
+    // 匿名 MDX 片段不属于组件属性面板的登记范围。
+    if (!mdastNode.name) {
+      inspector.unregisterNode(id);
+      return;
+    }
     inspector.registerNode(id, {
       id,
       name: mdastNode.name,
@@ -52,7 +57,7 @@ export function RegisteredJsxEditor(props: JsxEditorProps) {
       domElement: domRef.current,
       updateAttributes,
     });
-  }, [id, mdastNode, updateAttributes, inspector.registerNode]);
+  }, [id, mdastNode, updateAttributes, inspector.registerNode, inspector.unregisterNode]);
   useEffect(() => () => inspector.unregisterNode(id), [id, inspector.unregisterNode]);
 
   // MDXEditor 可能提供新的节点对象；按属性值变化同步，避免选择面板触发循环更新。

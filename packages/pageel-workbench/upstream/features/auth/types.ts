@@ -6,7 +6,7 @@
  * - Pro: DatabaseAuthProvider (Database + OAuth + Roles)
  */
 
-import { GithubUser, GithubRepo, IGitService, ServiceType } from '../../types';
+import { type GithubUser, type GithubRepo, type IGitService, type ServiceType } from '../../types';
 
 // Type aliases for auth context
 export type UserInfo = GithubUser;

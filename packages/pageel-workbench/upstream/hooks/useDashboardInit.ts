@@ -11,9 +11,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  GithubRepo,
-  IGitService,
-  AppSettings,
+  type GithubRepo,
+  type IGitService,
+  type AppSettings,
 } from '../types';
 import type { PluginConfig } from '../plugins';
 import {
@@ -24,7 +24,7 @@ import {
   useCollectionStore,
   loadCollectionsFromPageelrc,
   withSyncLock,
-  Collection,
+  type Collection,
 } from '../features';
 
 interface UseDashboardInitParams {

@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import { ViewType } from '../navigation/types';
+import { type ViewType } from '../navigation/types';
 
 const VALID_VIEWS: ViewType[] = ['dashboard', 'workflows', 'images', 'template', 'backup', 'settings'];
 

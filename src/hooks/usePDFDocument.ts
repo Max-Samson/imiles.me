@@ -76,7 +76,7 @@ export function usePDFDocument(url: string | null) {
         cMapUrl: '/vendor/pdfjs/cmaps/',
         cMapPacked: true,
         standardFontDataUrl: '/vendor/pdfjs/standard_fonts/',
-        isEvalSupported: false,
+        // PDF.js 6 已移除此选项；不向新 API 传递旧版参数。
       });
 
       loadingTaskRef.current = task;
@@ -118,7 +118,7 @@ export function usePDFDocument(url: string | null) {
             for (const item of items) {
               let targetPage: number | null = null;
               if (item.dest) {
-                let dest = item.dest;
+                let dest: unknown = item.dest;
                 if (typeof dest === 'string') {
                   dest = await pdfDoc.getDestination(dest);
                 }

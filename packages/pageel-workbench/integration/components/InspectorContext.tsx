@@ -117,6 +117,9 @@ export function ComponentEditingProvider({ children }: { children: ReactNode }) 
       mdastNode: JsxEditorProps['mdastNode'],
       applyAttributes: (values: Record<string, string>) => void,
     ) => {
+      // MDX 片段没有组件名，不登记为可配置组件，避免伪造字符串名称。
+      if (!mdastNode.name) return;
+      const name = mdastNode.name;
       setSelectedId(id);
       setSelectedInstanceId(id);
 
@@ -131,7 +134,7 @@ export function ComponentEditingProvider({ children }: { children: ReactNode }) 
       const config = findComponent(mdastNode.name);
       setSelectedComponent(previous => previous?.id === id && JSON.stringify(previous.rawNode?.attributes) === JSON.stringify(mdastNode.attributes) ? previous : {
         id,
-        name: mdastNode.name,
+        name,
         summary: attributes.title || attributes.href || attributes.headingId || config?.label || '',
         instanceContext: `${config?.label || mdastNode.name} · 参数配置`,
         attributes,

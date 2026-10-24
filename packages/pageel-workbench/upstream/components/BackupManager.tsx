@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import JSZip from 'jszip';
-import { GithubRepo, GithubContent, IGitService } from '../types';
+import { type GithubRepo, type GithubContent, type IGitService } from '../types';
 import { SpinnerIcon } from './icons/SpinnerIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { DocumentIcon } from './icons/DocumentIcon';

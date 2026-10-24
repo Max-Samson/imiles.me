@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useCollectionStore } from '../features/collections/store';
-import { CollectionTemplate } from '../features/collections/types';
-import { IGitService, GithubRepo } from '../types';
+import { type CollectionTemplate } from '../features/collections/types';
+import { type IGitService, type GithubRepo } from '../types';
 import { compressImage } from '../utils/image';
 import { parseMarkdown, updateFrontmatter, slugify, extractImageUrls, escapeRegExp } from '../utils/parsing';
 import { useI18n } from '../i18n/I18nContext';

@@ -444,7 +444,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       setSaveMessage('');
       setSaveError(false);
       const editSerial = editSerialRef.current;
-      const submittedFields = { ...editableFrontmatter, ...(post.imported ? { lang: importLang } : {}) };
+      const submittedFields: Record<string, unknown> = { ...editableFrontmatter, ...(post.imported ? { lang: importLang } : {}) };
       try {
           let currentBody = editableBody;
           if (activeTab === 'edit' && hasWysiwygPlugin && editorRef.current) {

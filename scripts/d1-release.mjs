@@ -1,12 +1,14 @@
 import { createHash } from 'node:crypto';
 import { lstat, readFile } from 'node:fs/promises';
 import { stripVTControlCharacters } from 'node:util';
+import { parseSchemaReadiness, schemaReadinessQuery } from './d1-schema.mjs';
 import { migrationDirectory, migrationNamePattern } from './release-paths.mjs';
 
 // 当前只有生产环境。未配置的测试环境必须报错，绝不能默认使用生产库。
 export const productionD1 = Object.freeze({
   environment: 'production',
   databaseName: 'BLOG-DB',
+  databaseBinding: 'DB',
   configPath: 'wrangler.toml',
 });
 
@@ -127,7 +129,7 @@ export class D1ReleaseService {
       'd1',
       'migrations',
       'list',
-      this.config.databaseName,
+      this.config.databaseBinding,
       '--remote',
       '--config',
       this.config.configPath,
@@ -135,7 +137,35 @@ export class D1ReleaseService {
     return parsePendingMigrationNames(output);
   }
 
-  async prepare(changes, revision) {
+  async inspectSchema(requirements) {
+    const output = await this.run('pnpm', [
+      'exec',
+      'wrangler',
+      'd1',
+      'execute',
+      this.config.databaseBinding,
+      '--remote',
+      '--config',
+      this.config.configPath,
+      '--json',
+      '--command',
+      schemaReadinessQuery(requirements),
+    ]);
+    return parseSchemaReadiness(output, requirements);
+  }
+
+  async assertReady(requirements) {
+    const result = await this.inspectSchema(requirements);
+    if (!result.ready) {
+      throw new D1ReleaseError(
+        'D1_SCHEMA_NOT_READY',
+        `数据库结构未就绪：${result.missing.join(', ')}。请核验历史迁移；使用 --reconcile-d1 生成补齐计划，不要修改历史 SQL。`,
+      );
+    }
+    return result;
+  }
+
+  async prepare(changes, revision, options = {}) {
     if (
       typeof changes?.migrationChanged !== 'boolean' ||
       !Array.isArray(changes.added) ||
@@ -144,16 +174,22 @@ export class D1ReleaseService {
     ) {
       throw new D1ReleaseError('D1_CHANGES_INVALID', '无法确定 SQL 变更范围');
     }
-    if (!changes.migrationChanged) return { skipped: true, reason: 'no-migration-changes' };
+    if (!changes.migrationChanged && !options.reconcileD1)
+      return { skipped: true, reason: 'no-migration-changes' };
     if (!/^[a-f0-9]{40}$/.test(revision?.base) || !/^[a-f0-9]{40}$/.test(revision?.head)) {
       throw new D1ReleaseError('D1_REVISION_INVALID', '迁移必须绑定完整发布提交');
     }
     const pending = await this.listPending();
     if (!pending.length) return { skipped: true, reason: 'already-applied' };
-    if (pending.some((file) => !changes.added.includes(file))) {
+    const allowed = options.reconcileD1 ? options.knownMigrations : changes.added;
+    if (
+      !Array.isArray(allowed) ||
+      allowed.some((file) => !migrationNamePattern.test(file)) ||
+      pending.some((file) => !allowed.includes(file))
+    ) {
       throw new D1ReleaseError(
         'D1_PENDING_UNEXPECTED',
-        '存在本次 SQL 变更范围以外的待应用迁移，需要人工核验',
+        '存在本次 SQL 范围外或未知迁移；历史漏迁移请先核验，再显式使用 --reconcile-d1 生成批准计划',
       );
     }
     const entries = await Promise.all(
@@ -173,6 +209,10 @@ export class D1ReleaseService {
       ...this.config,
       base: revision.base,
       head: revision.head,
+      // 历史补齐必须显式选择；批准同时绑定整套结构要求和目标绑定配置。
+      reconcileD1: options.reconcileD1 === true,
+      schemaSha256: options.schemaSha256,
+      configSha256: options.configSha256,
       migrations: entries.map(({ file, sql }) => ({
         file,
         sha256: createHash('sha256').update(sql).digest('hex'),
@@ -207,7 +247,7 @@ export class D1ReleaseService {
       'd1',
       'migrations',
       'apply',
-      this.config.databaseName,
+      this.config.databaseBinding,
       '--remote',
       '--config',
       this.config.configPath,

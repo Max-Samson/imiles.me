@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Collection, Workspace, WorkspaceSettings, createCollection } from './types';
+import { type Collection, type Workspace, type WorkspaceSettings, createCollection } from './types';
 import { DEFAULT_SETTINGS } from '../settings/types';
 
 interface CollectionState {

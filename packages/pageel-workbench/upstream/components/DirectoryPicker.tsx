@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { GithubRepo, GithubContent, IGitService } from '../types';
+import { type GithubRepo, type GithubContent, type IGitService } from '../types';
 import { SpinnerIcon } from './icons/SpinnerIcon';
 import { FolderIcon } from './icons/FolderIcon';
 import { FileIcon } from './icons/FileIcon';

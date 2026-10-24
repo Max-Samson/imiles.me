@@ -228,3 +228,12 @@ component-editing/
 编辑台现在通过 `cmsDocumentClient.uploadAsset` 上传 Blog 正文及封面图片。新文稿先保存 D1 草稿；上传成功只得到固定的 `/images/blog/cma_<id>.<ext>` 路径，编辑预览通过受保护地址读取。文章 Git 提交确认后，Worker 才在该固定路径匿名提供图片；图片字节仍在独立私有对象存储，**不提交 Git**。Stories 不显示图片入口。重开已发布文章后仍可引用已经开放的图片。
 
 MDX 和 Stories 继续使用源码编辑，避免可视化序列化破坏现有内容。MDX 的“预览”明确标为 Markdown 近似预览，组件与交互的最终结果要在 Astro 构建部署后检查。部署模式仍是单一 Cloudflare Worker，无独立 Node 服务。媒体链路的服务端合同与运维前提见 `docs/specs/pageel-cms-spec.md` 第 17.14 节。
+
+
+## CI 类型修复（2026-10-25，上海时间）
+
+- 上游命名类型使用 `import type`，与宿主 `verbatimModuleSyntax` 一致；不关闭严格检查。
+- 匿名 MDX 片段不登记为具名可配置组件，不用空字符串或类型断言伪造组件名。
+- Dashboard 保持宿主已有的“仅文章列表”行为，移除常量 switch 中不可达的分支，未重新开放上游设置/插件入口。
+- 草稿字段快照保留通用键类型，发布错误码契约与服务端公开结果一致。
+- 完整工作台仍参与根项目 Astro 检查；`public/vendor` 是复制的第三方静态代码，不是此源码目录。

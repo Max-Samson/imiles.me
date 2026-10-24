@@ -6,7 +6,7 @@
  * - Pro: DatabaseSettingsProvider (Database per user/org)
  */
 
-import { AppSettings } from '../../types';
+import { type AppSettings } from '../../types';
 
 /**
  * Settings Provider Interface

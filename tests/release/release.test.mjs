@@ -13,6 +13,14 @@ import {
 
 const base = 'a'.repeat(40);
 const head = 'b'.repeat(40);
+const requirements = {
+  migrations: ['0004_old.sql', '0005_test.sql'],
+  tables: [
+    { name: 'cms_posts', columns: [{ name: 'id', type: 'text', notNull: true }], indexes: [] },
+  ],
+  schemaSha256: 'schema-hash',
+  configSha256: 'config-hash',
+};
 function fixture({
   diff = '',
   dirty = '',
@@ -21,15 +29,21 @@ function fixture({
   sql = false,
   failApply = false,
   productionChanged = false,
+  schemaMissing = false,
+  schemaStillMissing = false,
+  historical = false,
+  schemaDrift = false,
 } = {}) {
   const calls = [];
   let deployed = false;
   let applied = false;
   let statusCalls = 0;
+  let schemaQueries = 0;
   const initial = { id: 'deployment-a', versions: [{ version_id: 'version-a', percentage: 100 }] };
   const final = { id: 'deployment-b', versions: [{ version_id: 'version-b', percentage: 100 }] };
   const deps = {
     log() {},
+    loadRequirements: async () => requirements,
     artifactHash: async () => hash,
     readSql: async () => 'CREATE TABLE x(id integer);',
     read: async (path) =>
@@ -50,6 +64,27 @@ function fixture({
         if (args[0] === 'rev-parse') return head;
       }
       if (args.includes('d1')) {
+        if (args.includes('execute')) schemaQueries++;
+        if (args.includes('execute'))
+          return JSON.stringify([
+            {
+              success: true,
+              results:
+                (schemaMissing && !applied) ||
+                schemaStillMissing ||
+                (schemaDrift && schemaQueries > 1)
+                  ? []
+                  : [
+                      {
+                        kind: 'column',
+                        table_name: 'cms_posts',
+                        object_name: 'id',
+                        data_type: 'text',
+                        not_null: 1,
+                      },
+                    ],
+            },
+          ]);
         if (args.includes('apply')) {
           if (failApply) throw new Error('未知远程结果');
           applied = true;
@@ -57,7 +92,7 @@ function fixture({
         }
         return applied || !sql
           ? '✅ No migrations to apply!'
-          : 'Migrations to be applied:\n│ Name │\n│ 0005_test.sql │';
+          : `Migrations to be applied:\n│ Name │\n│ ${historical ? '0004_old.sql' : '0005_test.sql'} │`;
       }
       if (args.includes('status')) {
         statusCalls++;
@@ -102,10 +137,14 @@ test('参数、生产灰度状态、缺失/冲突提交基线均严格校验', (
   );
 });
 
-test('无 SQL 变更正常部署同一份产物，完全不访问 D1，也不重复 build', async () => {
+test('无 SQL 变更只读校验结构，不 list/apply，也不重复 build', async () => {
   const { deps, calls } = fixture();
   assert.equal((await release(deps, {})).deployed, true);
-  assert.equal(calls.filter(([, args]) => args.includes('d1')).length, 0);
+  assert.equal(
+    calls.filter(([, args]) => args.includes('d1') && !args.includes('execute')).length,
+    0,
+  );
+  assert.equal(calls.filter(([, args]) => args.includes('execute')).length, 2);
   assert.equal(calls.filter(([, args]) => args.includes('build')).length, 0);
   assert.equal(calls.filter(([, args]) => args.includes('deploy')).length, 1);
   assert.ok(calls.some(([, args]) => args.includes(`git-${head}`)));
@@ -175,4 +214,107 @@ test('并发生产部署变化时停止，不覆盖其他任务的新版本', as
     f.calls.some(([, args]) => args.includes('deploy')),
     false,
   );
+});
+
+test('历史漏迁移即使没有 SQL diff 也阻止普通发布，显式计划和批准才能补齐', async () => {
+  const options = { sql: true, historical: true, schemaMissing: true };
+  const ordinary = fixture(options);
+  await assert.rejects(release(ordinary.deps, {}), /数据库结构未就绪/);
+  assert.equal(
+    ordinary.calls.some(
+      ([, args]) =>
+        args.includes('apply') || args.includes('deploy') || args.includes('migrations'),
+    ),
+    false,
+  );
+  const planning = fixture(options);
+  const plan = await release(planning.deps, { planOnly: true, reconcileD1: true });
+  assert.equal(plan.schema.ready, false);
+  assert.equal(plan.prepared.plan.reconcileD1, true);
+  assert.equal(plan.prepared.plan.configSha256, requirements.configSha256);
+  assert.equal(plan.prepared.plan.schemaSha256, requirements.schemaSha256);
+  assert.equal(
+    planning.calls.some(([, args]) => args.includes('apply') || args.includes('deploy')),
+    false,
+  );
+  const unapproved = fixture(options);
+  await assert.rejects(release(unapproved.deps, { reconcileD1: true }), {
+    code: 'D1_CONFIRMATION_REQUIRED',
+  });
+  const approved = fixture(options);
+  assert.equal(
+    (await release(approved.deps, { reconcileD1: true, approve: plan.prepared.approval })).deployed,
+    true,
+  );
+  const apply = approved.calls.findIndex(([, args]) => args.includes('apply'));
+  const deploy = approved.calls.findIndex(([, args]) => args.includes('deploy'));
+  assert.ok(apply > 0 && deploy > apply);
+});
+
+test('迁移记录显示无 pending 但结构缺失，或者 apply 后结构仍缺失，一律不部署', async () => {
+  for (const options of [
+    { schemaMissing: true },
+    { sql: true, historical: true, schemaMissing: true, schemaStillMissing: true },
+  ]) {
+    const f = fixture(options);
+    let approval;
+    if (options.sql)
+      approval = (await release(fixture(options).deps, { planOnly: true, reconcileD1: true }))
+        .prepared.approval;
+    await assert.rejects(release(f.deps, { reconcileD1: true, approve: approval }), {
+      code: 'D1_SCHEMA_NOT_READY',
+    });
+    assert.equal(
+      f.calls.some(([, args]) => args.includes('deploy')),
+      false,
+    );
+  }
+});
+
+test('结构查询失败不能被当作无迁移跳过，旧批准不能跨补齐模式复用', async () => {
+  const f = fixture();
+  const run = f.deps.run;
+  f.deps.run = (command, args) =>
+    args.includes('execute') ? Promise.reject(new Error('schema network')) : run(command, args);
+  await assert.rejects(release(f.deps, {}), /schema network/);
+  assert.equal(
+    f.calls.some(([, args]) => args.includes('deploy')),
+    false,
+  );
+  const options = { sql: true, diff: 'A\0drizzle/migrations/0005_test.sql\0' };
+  const normal = await release(fixture(options).deps, { planOnly: true });
+  await assert.rejects(
+    release(fixture(options).deps, { reconcileD1: true, approve: normal.prepared.approval }),
+    { code: 'D1_CONFIRMATION_REQUIRED' },
+  );
+  assert.deepEqual(parseReleaseArguments(['--reconcile-d1', '--plan']), {
+    planOnly: true,
+    reconcileD1: true,
+  });
+  assert.throws(() => parseReleaseArguments(['--reconcile-d1', '--reconcile-d1']));
+});
+
+test('只读预检后数据库被改坏，最终结构复核阻止无 SQL 发布', async () => {
+  const f = fixture({ schemaDrift: true });
+  await assert.rejects(release(f.deps, {}), { code: 'D1_SCHEMA_NOT_READY' });
+  assert.equal(
+    f.calls.some(([, args]) => args.includes('deploy') || args.includes('apply')),
+    false,
+  );
+});
+
+test('批准不能复用于结构要求或 Wrangler 配置变化后的计划', async () => {
+  const options = { sql: true, diff: 'A\0drizzle/migrations/0005_test.sql\0' };
+  const approved = (await release(fixture(options).deps, { planOnly: true })).prepared.approval;
+  for (const key of ['schemaSha256', 'configSha256']) {
+    const f = fixture(options);
+    f.deps.loadRequirements = async () => ({ ...requirements, [key]: 'changed' });
+    await assert.rejects(release(f.deps, { approve: approved }), {
+      code: 'D1_CONFIRMATION_REQUIRED',
+    });
+    assert.equal(
+      f.calls.some(([, args]) => args.includes('apply') || args.includes('deploy')),
+      false,
+    );
+  }
 });

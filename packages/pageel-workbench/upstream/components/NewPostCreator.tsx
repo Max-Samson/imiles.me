@@ -5,7 +5,7 @@
 
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { GithubRepo, IGitService } from '../types';
+import { type GithubRepo, type IGitService } from '../types';
 import { slugify, parseMarkdown, updateFrontmatter, escapeRegExp } from '../utils/parsing';
 import { compressImage } from '../utils/image';
 import { UploadIcon } from './icons/UploadIcon';

@@ -1,7 +1,7 @@
 import { inspectImportedContent } from '../../integration/import-content';
 
 import React, { useState, useEffect } from 'react';
-import { GithubRepo, IGitService } from '../types';
+import { type GithubRepo, type IGitService } from '../types';
 import { parseMarkdown, extractImageUrls } from '../utils/parsing';
 import { useI18n } from '../i18n/I18nContext';
 import { useCollectionStore } from '../features/collections/store';

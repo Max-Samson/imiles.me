@@ -70,7 +70,16 @@ export default function AdminApp({
     if (typeof window !== 'undefined') {
       return parseAdminPath(window.location.pathname);
     }
-    return { section: initialSection, friendLinkId: initialFriendLinkId };
+    // 无浏览器环境也提供完整路由；详情 ID 与客户端路径保持相同编码规则。
+    const basePath = findNavItemByKey(initialSection)?.href ?? '/admin';
+    return {
+      section: initialSection,
+      friendLinkId: initialFriendLinkId,
+      path:
+        initialSection === 'friend-links' && initialFriendLinkId
+          ? `${basePath}/${encodeURIComponent(initialFriendLinkId)}`
+          : basePath,
+    };
   });
 
   // 会话状态管理：初始化时若已有缓存则立即就绪，避免骨架屏瞬间闪烁
