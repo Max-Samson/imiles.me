@@ -36,7 +36,7 @@ export function getServerEnv(locals: Partial<App.Locals>): CloudflareEnv {
     TURNSTILE_SECRET_KEY: scalar('TURNSTILE_SECRET_KEY'),
     TURNSTILE_SITE_KEY: scalar('TURNSTILE_SITE_KEY'),
     SUBMISSION_HMAC_SECRET: scalar('SUBMISSION_HMAC_SECRET'),
-    ENVIRONMENT: environment,
+    ENVIRONMENT: environment as 'development' | 'staging' | 'production',
     SITE_URL: siteUrl,
     APP_SECRET: scalar('APP_SECRET'),
     SUPABASE_S3_ENDPOINT: scalar('SUPABASE_S3_ENDPOINT'),

@@ -328,3 +328,25 @@ test('GitHub 条件写入使用固定分支和 blob SHA，操作 ID 可按提交
     commitSha: 'commit-sha',
   });
 });
+
+test('GitHub 写入失败时捕获详细状态码和错误原因并持久化到 D1', async () => {
+  const fetcher: typeof fetch = async () =>
+    Response.json({ message: 'Resource not accessible by personal access token' }, { status: 403 });
+  const writer = githubPublicationWriter(
+    {
+      ...platform.env,
+      CMS_GITHUB_REPO: 'owner/repo',
+      CMS_GITHUB_BRANCH: 'main',
+      CMS_GITHUB_TOKEN: 'test-token',
+    },
+    fetcher,
+  );
+  const written = await writer.write({
+    path: 'content/blog/fail.md',
+    source: '---\ntitle: t\n---\nbody',
+    expectedBlobSha: null,
+    operationId: crypto.randomUUID(),
+  });
+  assert.equal(written.kind, 'failed');
+  assert.equal(written.errorCode, 'GITHUB_403: Resource not accessible by personal access token');
+});

@@ -82,14 +82,17 @@ export function publicationRepository(env: CloudflareEnv) {
     async finish(
       operationId: string,
       status: 'committed' | 'conflict' | 'failed' | 'unknown',
-      result?: { blobSha: string; commitSha: string },
+      result?: { blobSha?: string; commitSha?: string; errorCode?: string | null },
     ): Promise<CmsPublicationAttempt> {
       // 条件终结允许 unknown 经可信对账转为确定结果；重复回执不覆盖已确定的状态。
       const [updated] = await db
         .update(attempts)
         .set({
           status,
-          ...(result ? { resultBlobSha: result.blobSha, resultCommitSha: result.commitSha } : {}),
+          ...(result?.blobSha && result?.commitSha
+            ? { resultBlobSha: result.blobSha, resultCommitSha: result.commitSha }
+            : {}),
+          ...(result?.errorCode !== undefined ? { errorCode: result.errorCode } : {}),
           ...(status === 'unknown' ? {} : { completedAt: Date.now() }),
           updatedAt: Date.now(),
         })

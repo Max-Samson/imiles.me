@@ -170,10 +170,9 @@ test('getServerEnv properly falls back from runtimeEnv to process.env for scalar
         env: {
           ENVIRONMENT: 'development',
           SITE_URL: 'http://localhost:4321',
-        } as unknown as WorkerBindings,
-        ctx: {} as unknown as ExecutionContext,
+        },
       },
-    });
+    } as unknown as Parameters<typeof getServerEnv>[0]);
     assert.equal(env.CMS_GITHUB_TOKEN, 'test-token-from-process');
   } finally {
     if (previousToken === undefined) delete process.env.CMS_GITHUB_TOKEN;

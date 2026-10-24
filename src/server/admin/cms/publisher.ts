@@ -3,7 +3,7 @@ import { AppError } from '../../errors';
 
 export type PublishWriteResult =
   | { kind: 'committed'; blobSha: string; commitSha: string }
-  | { kind: 'conflict' | 'failed' | 'unknown' };
+  | { kind: 'conflict' | 'failed' | 'unknown'; errorCode?: string };
 
 export interface PublicationWriter {
   write(input: {
@@ -78,10 +78,36 @@ export function githubPublicationWriter(
         // 请求可能已经被 GitHub 执行；仅对账，不自动再次提交。
         return { kind: 'unknown' };
       }
-      if (response.status === 409 || response.status === 422) return { kind: 'conflict' };
-      if (response.status === 401 || response.status === 403 || response.status === 404)
-        return { kind: 'failed' };
-      if (!response.ok) return { kind: 'unknown' };
+      if (response.status === 409 || response.status === 422) {
+        let msg = '';
+        try {
+          const body = (await response.json()) as { message?: string };
+          if (body?.message) msg = `: ${body.message}`;
+        } catch {
+          // ignore
+        }
+        return { kind: 'conflict', errorCode: `GITHUB_${response.status}_CONFLICT${msg}` };
+      }
+      if (response.status === 401 || response.status === 403 || response.status === 404) {
+        let msg = '';
+        try {
+          const body = (await response.json()) as { message?: string };
+          if (body?.message) msg = `: ${body.message}`;
+        } catch {
+          // ignore
+        }
+        return { kind: 'failed', errorCode: `GITHUB_${response.status}${msg}` };
+      }
+      if (!response.ok) {
+        let msg = '';
+        try {
+          const body = (await response.json()) as { message?: string };
+          if (body?.message) msg = `: ${body.message}`;
+        } catch {
+          // ignore
+        }
+        return { kind: 'unknown', errorCode: `GITHUB_${response.status}${msg}` };
+      }
       try {
         const data = (await response.json()) as {
           content?: { sha?: unknown };

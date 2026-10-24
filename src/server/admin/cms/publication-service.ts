@@ -129,11 +129,14 @@ export function publicationService(
       attempt = await operations.finish(
         operationId,
         error instanceof ConflictError ? 'conflict' : 'failed',
+        { errorCode: error instanceof Error ? error.message : 'PATH_ASSERTION_FAILED' },
       );
       return publicResult(attempt);
     }
     if (currentSha !== attempt.expectedBlobSha) {
-      attempt = await operations.finish(operationId, 'conflict');
+      attempt = await operations.finish(operationId, 'conflict', {
+        errorCode: 'BLOB_SHA_MISMATCH',
+      });
       return publicResult(attempt);
     }
     const result = await publisher.write({
@@ -145,7 +148,7 @@ export function publicationService(
     attempt = await operations.finish(
       operationId,
       result.kind,
-      result.kind === 'committed' ? result : undefined,
+      result.kind === 'committed' ? result : { errorCode: result.errorCode },
     );
     if (attempt.status === 'committed') await settleCommitted(attempt);
     return publicResult(attempt);

@@ -587,9 +587,9 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
               }
               onUpdate();
           }
-          else if (result.status === 'conflict') setPublishMessage('仓库版本或目标地址冲突；草稿已保留，请比较后处理。');
-          else if (result.status === 'failed') setPublishMessage('发布失败；草稿仍在 D1，可修复后重新发起。');
-          else setPublishMessage('提交结果待对账；请使用同一操作 ID 再次查询，勿创建新发布。');
+          else if (result.status === 'conflict') setPublishMessage(`仓库版本或目标地址冲突${result.errorCode ? `（${result.errorCode}）` : ''}；草稿已保留，请比较后处理。`);
+          else if (result.status === 'failed') setPublishMessage(`发布失败${result.errorCode ? `（${result.errorCode}）` : ''}；草稿仍在 D1，可修复后重新发起。`);
+          else setPublishMessage(`提交结果待对账${result.errorCode ? `（${result.errorCode}）` : ''}；请使用同一操作 ID 再次查询，勿创建新发布。`);
       } catch (error) {
           const details = error instanceof AdminApiError && Array.isArray(error.details)
               ? `：${error.details.filter(item => typeof item === 'string').join('；')}` : '';
