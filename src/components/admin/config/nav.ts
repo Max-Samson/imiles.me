@@ -22,9 +22,9 @@ export const adminNavigation: AdminNavItem[] = [
     href: '/admin/edit',
     icon: FilePenLine,
     enabled: true,
-    description: 'Pageel 文章编辑兼容性验证，修改仅保存在内存，暂不支持保存与发布',
+    description: '全功能文章创作与发布工作台，支持 D1 原生存储、双轨渲染与即时发布',
     category: 'business',
-    badge: '验证中',
+    badge: 'D1 原生',
     requiredCapability: 'admin:read',
   },
   {

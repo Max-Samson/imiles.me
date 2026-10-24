@@ -42,7 +42,7 @@ export class PageelReadAdapter implements IGitService {
     return this.call<RepoInfo>('getRepoDetails');
   }
   private blocked(): never {
-    throw new Error('当前为兼容性验证：修改只在编辑区中，不会保存或发布。');
+    throw new Error('写操作必须通过专用 CMS 草稿与发布通道进行，禁止直写底层仓库。');
   }
   async createFileFromString(): Promise<never> {
     return this.blocked();

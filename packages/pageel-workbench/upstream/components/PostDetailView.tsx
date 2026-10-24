@@ -1391,7 +1391,11 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   icon={<Send className="w-3.5 h-3.5 shrink-0" />}
                   title={
                     publishMode === 'snapshot'
-                      ? '本地开发快照模式：未配置远程 GitHub Token，无法直接发布'
+                      ? '只读快照模式：当前未配置发布通道，无法直接发布'
+                      : isD1Mode
+                      ? publishedBaseRef.current || post.sha
+                        ? '保存当前修改并即时更新全站文章'
+                        : '保存当前输入并即时发布至全站'
                       : publication && ['prepared', 'in_flight', 'unknown'].includes(publication.status)
                       ? '使用当前操作 ID 对账 Git 提交状态'
                       : publishedBaseRef.current || post.sha

@@ -149,8 +149,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <div className="flex items-center justify-between">
                         <SyncStatusBadge isSynced={isSynced} />
                         {/* Last Updated - Small text on right */}
-                        <span className="text-[10px] text-notion-muted whitespace-nowrap" title={`Last updated: ${lastUpdated === '...' ? '只读来源' : lastUpdated}`}>
-                            {lastUpdated === '...' ? '只读来源' : lastUpdated}
+                        <span className="text-[10px] text-notion-muted whitespace-nowrap" title={`Last updated: ${lastUpdated === '...' ? '已连接' : lastUpdated}`}>
+                            {lastUpdated === '...' ? '已连接' : lastUpdated}
                         </span>
                     </div>
 
@@ -162,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                         <div className="bg-white border border-notion-border rounded-sm p-1.5 flex flex-col items-center">
                             <span className="text-[10px] text-notion-muted uppercase tracking-wide">图片</span>
-                            <span className="text-sm font-semibold text-notion-text">未接入</span>
+                            <span className="text-sm font-semibold text-notion-text">{repoStats.imageCount ?? '已启用'}</span>
                         </div>
                     </div>
                 </div>

@@ -13,9 +13,9 @@ export const SyncStatusBadge: React.FC<SyncStatusBadgeProps> = ({ isSynced }) =>
 
     if (isSynced) {
         return (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200">
-                <CheckCircleIcon className="w-4 h-4 mr-1.5" />
-                仅内存编辑
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                <CheckCircleIcon className="w-4 h-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
+                存储已就绪
             </span>
         );
     }

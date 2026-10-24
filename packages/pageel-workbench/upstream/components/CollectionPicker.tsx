@@ -113,7 +113,7 @@ export const CollectionPicker: React.FC<CollectionPickerProps> = ({
                 {/* Action buttons on hover */}
                 <div className="absolute right-2 flex opacity-0 group-hover:opacity-100 gap-1 bg-inherit transition-opacity">
                   {onEditCollection && (
-                    <button disabled title="验证阶段暂不支持修改集合"
+                    <button disabled title="固定集合不支持修改"
                       onClick={(e) => handleEdit(e, collection)}
                       className="p-1 text-notion-muted hover:text-notion-text hover:bg-notion-sidebar rounded-sm"
                     >
@@ -123,7 +123,7 @@ export const CollectionPicker: React.FC<CollectionPickerProps> = ({
                   <button disabled
                     onClick={(e) => handleDelete(e, collection)}
                     className="p-1 text-notion-muted hover:text-red-500 hover:bg-red-50 rounded-sm"
-                    title="验证阶段暂不支持删除集合"
+                    title="固定集合不支持删除"
                   >
                     <TrashIcon className="w-3.5 h-3.5" />
                   </button>
@@ -135,8 +135,8 @@ export const CollectionPicker: React.FC<CollectionPickerProps> = ({
           {/* Divider */}
           <div className="border-t border-notion-border my-1" />
           
-          {/* 新建集合（暂未开放） Button */}
-          <button disabled title="验证阶段暂不支持新建集合"
+          {/* 新建集合按钮 */}
+          <button disabled title="固定集合配置不支持新建"
             onClick={() => {
               setIsOpen(false);
               onNewCollection();
