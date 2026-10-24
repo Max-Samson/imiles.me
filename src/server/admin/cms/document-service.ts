@@ -62,11 +62,11 @@ export function documentService(env: CloudflareEnv, repository: () => CmsReposit
       let baseBlobSha: string | null = null;
       const content = repository();
       if (input.path) {
-        // 已有文章必须使用编辑器打开时拿到的同一版 SHA，不能刷新 SHA 后覆盖他人改动。
-        if (!input.baseBlobSha) throw new ValidationError('编辑已有文章必须提供打开时的 blob SHA');
+        // 已有文章优先以打开时的 blob SHA 校验并发；若未提供则采用库中当前版本作为基线
         const version = await content.readVersion(target.path);
-        if (version.blobSha !== input.baseBlobSha)
+        if (input.baseBlobSha && version.blobSha !== input.baseBlobSha) {
           throw new ConflictError('仓库文章已更新，请先比较版本');
+        }
         baseBlobSha = version.blobSha;
       } else if (await content.sha(target.path)) {
         // 新文稿只能创建空路径；仓库已有文件时不能悄悄转成更新。

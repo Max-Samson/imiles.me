@@ -5,7 +5,7 @@ import { composeDraftSource } from '../../integration/draft-source';
 import { resolveImportedDraftTarget, suggestedImportSlug } from '../../integration/import-content';
 import { cmsDocumentClient, type CmsDraftSummary, type CmsPublicationResult, type CmsSessionInfo } from '../../../../src/lib/admin/cms-document-client';
 import { AdminApiError } from '../../../../src/lib/admin/api-error';
-import { resolveNewContentTarget } from '../../../../src/lib/content-routing';
+import { resolveNewContentTarget, resolveExistingContentTarget } from '../../../../src/lib/content-routing';
 import { parseSourceDocument } from '../../../../src/lib/content-source';
 import { fieldLabel } from '../../integration/labels';
 import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
@@ -245,7 +245,12 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   const handleTabChange = (newTab: 'edit' | 'code' | 'preview') => {
       if (activeTab === 'edit' && newTab !== 'edit') {
           const latestMd = editorRef.current?.getMarkdown();
-          if (latestMd !== undefined) setEditableBody(latestMd);
+          if (latestMd !== undefined) {
+              setEditableBody(latestMd);
+              if (latestMd !== savedBodyRef.current) {
+                  setIsDirty(true);
+              }
+          }
       }
       if (activeTab !== 'edit' && newTab === 'edit') {
           setExternalMarkdownVersion(v => v + 1);
@@ -418,9 +423,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       editSerialRef.current += 1;
       setPublication(previous => previous?.status === 'committed' ? null : previous);
       setEditableBody(markdown);
-      if (markdown !== savedBodyRef.current) {
-          setIsDirty(true);
-      }
+      setIsDirty(true);
   }, []);
 
   const handleAddMissingField = (key: string) => {
@@ -435,8 +438,8 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       setMissingFields(prev => prev.filter(k => k !== key));
   };
 
-  const handleSave = useCallback(async () => {
-      if (isSaving || (!isDirty && (draftRef.current || publishedBaseRef.current || (!post.newTarget && !post.imported)))) return;
+  const handleSave = useCallback(async (): Promise<CmsDraftSummary | undefined> => {
+      if (isSaving || (Boolean(draftRef.current) && !isDirty)) return;
       setIsSaving(true);
       setSaveMessage('');
       setSaveError(false);
@@ -473,7 +476,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
               draft = await cmsDocumentClient.save(draft.id, draft.revision, source);
           } else {
               const collection = post.newTarget?.collection ?? (post.path.startsWith('content/stories/') ? 'stories' : 'blog');
-              const lang = post.newTarget?.lang ?? (post.imported ? importLang : submittedFields.lang === 'zh' || post.name.endsWith('-zh.mdx') ? 'zh' : 'en');
+              const lang = post.newTarget?.lang ?? (post.imported ? importLang : submittedFields.lang === 'zh' || post.name.endsWith('-zh.mdx') || post.name.endsWith('-zh.md') || post.path.includes('/zh/') ? 'zh' : 'en');
               const name = post.name.replace(/\.mdx?$/, '');
               const slug = post.newTarget?.slug ?? (post.imported ? importSlug : collection === 'blog' && lang === 'zh' ? name.replace(/-zh$/, '') : name);
               if (post.imported && !slug.trim()) {
@@ -483,12 +486,18 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   throw new Error('请在右侧文章属性中填写保存地址标识，例如 google-seo-guide');
               }
               const format = post.newTarget?.format ?? (post.path.endsWith('.mdx') ? 'mdx' : 'md');
+              const isExisting = !post.newTarget && !post.imported && Boolean(post.path);
               const target = post.imported
                   ? resolveImportedDraftTarget(collection, lang, post.name, slug)
+                  : isExisting
+                  ? resolveExistingContentTarget(collection, lang, post.path)
                   : resolveNewContentTarget({ collection, lang, slug, format });
               draft = await cmsDocumentClient.create({
-                  collection, lang, slug: target.slug, format: target.format,
-                  ...(publishedBaseRef.current ? { path: post.path, baseBlobSha: publishedBaseRef.current } : {}),
+                  collection,
+                  lang,
+                  slug: target.slug,
+                  format: target.format,
+                  ...(isExisting ? { path: post.path, baseBlobSha: publishedBaseRef.current || post.sha || undefined } : {}),
                   source,
               });
           }
@@ -1360,7 +1369,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   type="button"
                   variant="default"
                   size="sm"
-                  disabled={isSaving || publishing || (!isDirty && (!!draftRef.current || !!publishedBaseRef.current || (!post.newTarget && !post.imported)))}
+                  disabled={isSaving || publishing || (Boolean(draftRef.current) && !isDirty)}
                   icon={<Save className="w-3.5 h-3.5 shrink-0" />}
                   onClick={() => void handleSave()}
                   title="保存到 D1 工作草稿"
@@ -1538,9 +1547,13 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                         {publicationIssues.map(issue => <li key={issue.field}>{issue.message}</li>)}
                       </ul>
                     ) : (
-                      <p className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                      <p className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5">
                         <CheckIcon className="w-3.5 h-3.5 shrink-0" />
-                        <span>文章属性检查通过；发布还会由服务端检查正文、图片及仓库版本。</span>
+                        <span>
+                          {isD1Mode
+                            ? '文章属性检查通过；发布将由服务端校验正文有效性与关联图片。'
+                            : '文章属性检查通过；发布还会由服务端检查正文、图片及仓库版本。'}
+                        </span>
                       </p>
                     )}
                     {publishMode === 'snapshot' && !publicationIssues.length && (
@@ -1566,9 +1579,9 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                         <GitBranch className="size-3.5 text-notion-muted" />
                         <span>发布目标环境</span>
                       </span>
-                      {publishMode === 'd1' || sessionInfo?.mode === 'd1' ? (
+                      {isD1Mode ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                          <ShieldCheck className="size-3 text-emerald-500" />
+                          <Database className="size-3 text-emerald-500" />
                           D1 数据库模式
                         </span>
                       ) : publishMode === 'snapshot' ? (
@@ -1590,21 +1603,27 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     <div className="space-y-1.5 text-[11px] text-notion-muted">
                       <div className="flex justify-between items-center">
                         <span>存储后端：</span>
-                        <span className="font-mono text-notion-text font-medium truncate max-w-[150px]" title={sessionInfo?.repo || 'D1'}>
-                          {publishMode === 'd1' || sessionInfo?.mode === 'd1' ? 'Cloudflare D1' : sessionInfo?.repo || (publishMode === 'snapshot' ? '本地快照' : '未配置')}
+                        <span className="font-mono text-notion-text font-medium truncate max-w-[150px]" title={isD1Mode ? 'Cloudflare D1 生产数据库' : sessionInfo?.repo || 'D1'}>
+                          {isD1Mode ? 'Cloudflare D1' : sessionInfo?.repo || (publishMode === 'snapshot' ? '本地快照' : '未配置')}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span>存储状态：</span>
                         <span className="font-mono font-semibold text-notion-text">
-                          {publishMode === 'd1' || sessionInfo?.mode === 'd1' ? '即时同步' : sessionInfo?.branch || 'local'}
+                          {isD1Mode ? '即时同步 · 毫秒生效' : sessionInfo?.branch || 'local'}
                         </span>
                       </div>
                     </div>
-                    {publishMode === 'd1' || sessionInfo?.mode === 'd1' ? (
-                      <p className="text-[11px] text-notion-muted leading-relaxed">
-                        当前运行在 D1 数据库模式，文章发布直接写入数据库并即时同步前台，无需等待 Git 提交与远程构建。
-                      </p>
+                    {isD1Mode ? (
+                      <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed space-y-0.5">
+                        <p className="font-semibold flex items-center gap-1">
+                          <ShieldCheck className="size-3 shrink-0" />
+                          <span>D1 原生存储运行正常</span>
+                        </p>
+                        <p>
+                          文章发布直接写入生产数据库并即时同步全站前台，无需等待 Git 提交与远程构建。
+                        </p>
+                      </div>
                     ) : publishMode === 'snapshot' ? (
                       <p className="text-[11px] text-notion-muted leading-relaxed">
                         本地开发模式下未配置 GitHub 凭据，编辑只写入 D1 草稿，无法提交到远程仓库，绝不污染线上。
@@ -1858,7 +1877,11 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-lg rounded-2xl border border-notion-border bg-notion-bg p-6 shadow-2xl space-y-4">
             <div className="flex items-start gap-3">
-              {sessionInfo?.isProductionBranch ? (
+              {isD1Mode ? (
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                  <Globe className="size-6" />
+                </div>
+              ) : sessionInfo?.isProductionBranch ? (
                 <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
                   <AlertTriangle className="size-6" />
                 </div>
@@ -1869,10 +1892,16 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
               )}
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-notion-text">
-                  {sessionInfo?.isProductionBranch ? '⚠️ 生产环境发布确认' : '🌿 提交到本地调试分支确认'}
+                  {isD1Mode
+                    ? '🚀 文章发布上线确认'
+                    : sessionInfo?.isProductionBranch
+                    ? '⚠️ 生产环境发布确认'
+                    : '🌿 提交到本地调试分支确认'}
                 </h3>
-                <p className="text-xs text-notion-muted">
-                  {sessionInfo?.isProductionBranch
+                <p className="text-xs text-notion-muted leading-relaxed">
+                  {isD1Mode
+                    ? '发布后文章将直接写入 Cloudflare D1 生产数据库，并即时同步全站前台，读者可直接访问阅读。'
+                    : sessionInfo?.isProductionBranch
                     ? '您当前配置为生产主分支。发布后将直接向远程主库提交，并触发线上网站自动构建上线。'
                     : `您当前配置为本地调试分支（${sessionInfo?.branch || 'dev-content'}）。提交仅推送到调试分支，不会触发生产构建部署，与线上生产完全隔离。`}
                 </p>
@@ -1881,18 +1910,25 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
             <div className="rounded-xl border border-notion-border bg-notion-sidebar/40 p-3.5 space-y-2 text-xs">
               <div className="flex justify-between items-center text-notion-muted">
-                <span>目标仓库：</span>
-                <span className="font-mono text-notion-text font-medium">{sessionInfo?.repo || '未知仓库'}</span>
-              </div>
-              <div className="flex justify-between items-center text-notion-muted">
-                <span>目标分支：</span>
-                <span className="font-mono font-semibold text-notion-text">
-                  {sessionInfo?.branch || 'snapshot'}
+                <span>{isD1Mode ? '存储后端：' : '目标仓库：'}</span>
+                <span className="font-mono text-notion-text font-medium">
+                  {isD1Mode ? 'Cloudflare D1 (生产数据库)' : sessionInfo?.repo || '未知仓库'}
                 </span>
               </div>
               <div className="flex justify-between items-center text-notion-muted">
-                <span>隔离状态：</span>
-                {sessionInfo?.isProductionBranch ? (
+                <span>{isD1Mode ? '发布模式：' : '目标分支：'}</span>
+                <span className="font-mono font-semibold text-notion-text">
+                  {isD1Mode ? '即时发布 · 毫秒级全站生效' : sessionInfo?.branch || 'snapshot'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-notion-muted">
+                <span>{isD1Mode ? '同步状态：' : '隔离状态：'}</span>
+                {isD1Mode ? (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
+                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    已连接数据库 · 即时全站生效
+                  </span>
+                ) : sessionInfo?.isProductionBranch ? (
                   <span className="text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5">
                     <span className="size-1.5 rounded-full bg-rose-500 animate-pulse" />
                     生产主分支（将触发全站部署上线）
@@ -1912,7 +1948,17 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
               </div>
             </div>
 
-            {sessionInfo?.isProductionBranch && (
+            {isD1Mode ? (
+              <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3 text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed space-y-1">
+                <p className="font-semibold flex items-center gap-1">
+                  <Info className="size-3.5 shrink-0" />
+                  <span>发布提示</span>
+                </p>
+                <p>
+                  发布后文章将立即在前台博客/故事列表及详情页上线；后续如需更新或下线，可随时在后台继续编辑保存或撤回。
+                </p>
+              </div>
+            ) : sessionInfo?.isProductionBranch ? (
               <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed space-y-1">
                 <p className="font-semibold flex items-center gap-1">
                   <Info className="size-3.5 shrink-0" />
@@ -1922,7 +1968,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   如果仅用于本地开发调试，请在项目根目录的 <code className="bg-amber-500/20 px-1 py-0.5 rounded font-mono">.env</code> 中配置 <code className="bg-amber-500/20 px-1 py-0.5 rounded font-mono">CMS_GITHUB_BRANCH="dev-content"</code>，避免调试内容混入线上生产环境。
                 </p>
               </div>
-            )}
+            ) : null}
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
               <button
@@ -1936,12 +1982,18 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                 type="button"
                 onClick={() => void executePublish()}
                 className={`px-4 py-1.5 rounded-lg text-xs font-semibold text-white shadow-sm transition-colors cursor-pointer ${
-                  sessionInfo?.isProductionBranch
+                  isD1Mode
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : sessionInfo?.isProductionBranch
                     ? 'bg-rose-600 hover:bg-rose-700'
                     : 'bg-emerald-600 hover:bg-emerald-700'
                 }`}
               >
-                {sessionInfo?.isProductionBranch ? '确认发布并上线' : `确认提交到 ${sessionInfo?.branch || 'dev-content'} 分支`}
+                {isD1Mode
+                  ? '确认发布并上线'
+                  : sessionInfo?.isProductionBranch
+                  ? '确认发布并上线'
+                  : `确认提交到 ${sessionInfo?.branch || 'dev-content'} 分支`}
               </button>
             </div>
           </div>

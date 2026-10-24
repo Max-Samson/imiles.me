@@ -84,6 +84,20 @@ test('已有仓库文章以同次读取的 blob SHA 建立二次编辑草稿', a
   );
   assert.equal(draft.baseBlobSha, version.blobSha);
   assert.equal(await repository.read('content/stories/fragment.md'), '原文');
+
+  // 废弃活动草稿后，未显式提供 baseBlobSha 时自动采用库中当前基线版本建立新草稿
+  await service.discardDraft(draft.id, draft.revision, 'user:test');
+  const draftWithoutSha = await service.createDraft(
+    {
+      collection: 'stories',
+      lang: 'en',
+      slug: 'fragment',
+      path: 'content/stories/fragment.md',
+      source: '草稿二',
+    },
+    'user:test',
+  );
+  assert.equal(draftWithoutSha.baseBlobSha, version.blobSha);
 });
 
 test('中文文件名导入后指定地址标识，草稿可保存并重开', async () => {

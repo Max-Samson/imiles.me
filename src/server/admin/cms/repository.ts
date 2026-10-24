@@ -17,26 +17,49 @@ export interface CmsRepository {
   sha(path: string): Promise<string | null>;
 }
 
-/** D1 持久化存储库：文章直接读取与列举 D1 数据库中的 cms_posts 表。 */
+const sourceFiles =
+  typeof import.meta.glob === 'function'
+    ? import.meta.glob<string>('/content/{blog,stories}/**/*.{md,mdx}', {
+        query: '?raw',
+        import: 'default',
+        eager: true,
+      })
+    : {};
+const staticFiles = Object.fromEntries(
+  Object.entries(sourceFiles).map(([path, body]) => [path.replace(/^\//, ''), body]),
+);
+
+async function sha256Hex(content: string): Promise<string> {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content));
+  return Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** D1 持久化存储库：文章直接读取与列举 D1 数据库中的 cms_posts 表，未同步的静态文章无缝回退。 */
 export function d1Repository(env: CloudflareEnv): CmsRepository {
   const posts = postRepository(env);
   return {
     mode: 'd1',
     async readVersion(path) {
       const post = await posts.findByTargetPath(path);
-      if (!post) throw new NotFoundError('文章不存在');
-      return { content: post.source, blobSha: post.sourceHash };
+      if (post) return { content: post.source, blobSha: post.sourceHash };
+      const staticContent = staticFiles[path];
+      if (staticContent !== undefined) {
+        return { content: staticContent, blobSha: await sha256Hex(staticContent) };
+      }
+      throw new NotFoundError('文章不存在');
     },
     async read(path) {
       const post = await posts.findByTargetPath(path);
-      if (!post) throw new NotFoundError('文章不存在');
-      return post.source;
+      if (post) return post.source;
+      const staticContent = staticFiles[path];
+      if (staticContent !== undefined) return staticContent;
+      throw new NotFoundError('文章不存在');
     },
     async list(path) {
       const normalizedPath = path.replace(/\/+$/, '');
       const collection = normalizedPath.startsWith('content/stories') ? 'stories' : 'blog';
       const all = await posts.listPublished(collection);
-      return all
+      const list = all
         .filter((item) => item.targetPath.startsWith(`${normalizedPath}/`))
         .map((item) => ({
           name: item.targetPath.split('/').pop() ?? item.slug,
@@ -45,10 +68,27 @@ export function d1Repository(env: CloudflareEnv): CmsRepository {
           sha: item.sourceHash,
           size: item.sourceBytes,
         }));
+      const seenPaths = new Set(list.map((item) => item.path));
+      for (const [filePath, content] of Object.entries(staticFiles)) {
+        if (filePath.startsWith(`${normalizedPath}/`) && !seenPaths.has(filePath)) {
+          const bytes = new TextEncoder().encode(content);
+          list.push({
+            name: filePath.split('/').pop() ?? filePath,
+            path: filePath,
+            type: 'file' as const,
+            sha: await sha256Hex(content),
+            size: bytes.length,
+          });
+        }
+      }
+      return list;
     },
     async sha(path) {
       const post = await posts.findByTargetPath(path);
-      return post ? post.sourceHash : null;
+      if (post) return post.sourceHash;
+      const staticContent = staticFiles[path];
+      if (staticContent !== undefined) return sha256Hex(staticContent);
+      return null;
     },
   };
 }
