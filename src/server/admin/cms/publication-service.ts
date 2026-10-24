@@ -155,6 +155,9 @@ export function publicationService(
     async get(operationId: string) {
       return publicResult(await operations.get(operationId));
     },
+    async pendingPublications() {
+      return operations.pendingPublications();
+    },
     async latestCommittedForPath(path: string) {
       const attempt = await operations.latestCommittedForPath(path);
       return attempt ? publicResult(attempt) : null;

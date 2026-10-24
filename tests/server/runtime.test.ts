@@ -7,6 +7,7 @@ import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { getPlatformProxy, type PlatformProxy } from 'wrangler';
 import { executeD1Batch } from '../../src/server/db/batch';
 import { auditTimestamps, primaryKeyColumn } from '../../src/server/db/schema/common';
+import { getServerEnv } from '../../src/server/env';
 import { handleApiError } from '../../src/server/errors';
 import {
   cacheKey,
@@ -157,5 +158,25 @@ test('KV 网络故障会回源，缓存写入/失效失败可观测且不伪造�
     );
   } finally {
     log.mock.restore();
+  }
+});
+
+test('getServerEnv properly falls back from runtimeEnv to process.env for scalar secrets', () => {
+  const previousToken = process.env.CMS_GITHUB_TOKEN;
+  process.env.CMS_GITHUB_TOKEN = 'test-token-from-process';
+  try {
+    const env = getServerEnv({
+      runtime: {
+        env: {
+          ENVIRONMENT: 'development',
+          SITE_URL: 'http://localhost:4321',
+        } as unknown as WorkerBindings,
+        ctx: {} as unknown as ExecutionContext,
+      },
+    });
+    assert.equal(env.CMS_GITHUB_TOKEN, 'test-token-from-process');
+  } finally {
+    if (previousToken === undefined) delete process.env.CMS_GITHUB_TOKEN;
+    else process.env.CMS_GITHUB_TOKEN = previousToken;
   }
 });

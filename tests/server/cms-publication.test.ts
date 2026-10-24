@@ -103,10 +103,14 @@ test('未知 Git 结果只用原操作对账，不重复写入', async () => {
   const service = publicationService(platform.env, content, writer);
   const operationId = crypto.randomUUID();
   assert.equal((await service.publish(draft.id, 1, operationId, 'user:test')).status, 'unknown');
+  const pendings = await service.pendingPublications();
+  assert.ok(pendings.some((item) => item.operationId === operationId));
   assert.equal((await service.publish(draft.id, 1, operationId, 'user:test')).status, 'unknown');
   confirmed = true;
   assert.equal((await service.publish(draft.id, 1, operationId, 'user:test')).status, 'committed');
   assert.equal(writes, 1);
+  const afterCommit = await service.pendingPublications();
+  assert.ok(!afterCommit.some((item) => item.operationId === operationId));
 });
 
 test('发布待对账时不能废弃草稿', async () => {

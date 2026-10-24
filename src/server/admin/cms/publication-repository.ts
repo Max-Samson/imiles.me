@@ -25,6 +25,14 @@ export function publicationRepository(env: CloudflareEnv) {
       void sourceSnapshot;
       return summary;
     },
+    async pendingPublications(): Promise<Omit<CmsPublicationAttempt, 'sourceSnapshot'>[]> {
+      const rows = await db.query.cmsPublicationAttempts.findMany({
+        where: inArray(attempts.status, ['prepared', 'in_flight', 'unknown']),
+        columns: { sourceSnapshot: false },
+        orderBy: [desc(attempts.updatedAt)],
+      });
+      return rows;
+    },
     async get(operationId: string): Promise<CmsPublicationAttempt> {
       const attempt = await db.query.cmsPublicationAttempts.findFirst({
         where: eq(attempts.operationId, operationId),

@@ -59,6 +59,18 @@ export interface CmsDraftAsset {
 
 const endpoint = '/api/v1/admin/cms/drafts';
 
+export interface CmsSessionInfo {
+  mode: 'snapshot' | 'github';
+  repo: string;
+  branch: string;
+  isProductionBranch: boolean;
+  isTestBranch: boolean;
+  isLocalBranch?: boolean;
+  isConfigured: boolean;
+  writable: boolean;
+  session?: unknown;
+}
+
 export const cmsDocumentClient = {
   list: () => adminApiRequest<CmsDraftSummary[]>(endpoint),
   get: (id: string) => adminApiRequest<CmsDraft>(`${endpoint}/${encodeURIComponent(id)}`),
@@ -112,6 +124,8 @@ export const cmsDocumentClient = {
     adminApiRequest<CmsPublicationResult | null>(
       `/api/v1/admin/cms/publications?path=${encodeURIComponent(path)}`,
     ),
+  pendingPublications: () =>
+    adminApiRequest<CmsPublicationResult[]>('/api/v1/admin/cms/publications?pending=true'),
   verifyDeployment: (operationId: string) =>
     adminApiRequest<CmsPublicationResult>(
       `/api/v1/admin/cms/publications/${encodeURIComponent(operationId)}/verify`,
@@ -133,8 +147,5 @@ export const cmsDocumentClient = {
     adminApiRequest<CmsDeletionResult>(
       `/api/v1/admin/cms/deletions/${encodeURIComponent(operationId)}`,
     ),
-  session: () =>
-    adminApiRequest<{ mode: 'snapshot' | 'github'; writable: boolean }>(
-      '/api/v1/admin/cms/session',
-    ),
+  session: () => adminApiRequest<CmsSessionInfo>('/api/v1/admin/cms/session'),
 };

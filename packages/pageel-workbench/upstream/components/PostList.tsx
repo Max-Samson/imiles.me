@@ -16,6 +16,8 @@ import { PlusIcon } from './icons/PlusIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { DocumentIcon } from './icons/DocumentIcon';
 import { ImageIcon } from './icons/ImageIcon';
+import { EditIcon } from './icons/EditIcon';
+import { EyeIcon } from './icons/EyeIcon';
 import PostDetailView from './PostDetailView';
 import PostUploadValidationModal from './PostUploadValidationModal';
 import PostImageSelectionModal from './PostImageSelectionModal';
@@ -27,7 +29,7 @@ import FilterBar, { matchesFilter, type FilterValue } from './FilterBar';
 import { usePostActions, type PostData } from '../hooks/usePostActions';
 import { cmsDocumentClient, type CmsDeletionResult, type CmsDraftSummary } from '../../../../src/lib/admin/cms-document-client';
 import { parseSourceDocument } from '../../../../src/lib/content-source';
-import { resolveNewContentTarget } from '../../../../src/lib/content-routing';
+import { resolveNewContentTarget, resolveContentPublicPath } from '../../../../src/lib/content-routing';
 
 // TD-09: Simplified props — PostList reads settings from CollectionStore (SSoT)
 interface PostListProps {
@@ -322,13 +324,20 @@ const PostList: React.FC<PostListProps> = ({
             }
         });
 
-        const [results, drafts, deletions] = await Promise.all([Promise.all(postDataPromises), cmsDocumentClient.list(), cmsDocumentClient.pendingDeletions()]);
+        const [results, drafts, deletions, publications] = await Promise.all([
+          Promise.all(postDataPromises),
+          cmsDocumentClient.list(),
+          cmsDocumentClient.pendingDeletions(),
+          cmsDocumentClient.pendingPublications(),
+        ]);
+        const pubMap = new Map(publications.map(p => [p.targetPath, p]));
         const merged = new Map(results.filter((p): p is PostData => p !== null).map(post => [post.path, post]));
         for (const draft of drafts.filter((item: CmsDraftSummary) => item.targetPath.startsWith(`${path}/`))) {
           const existing = merged.get(draft.targetPath);
+          const pendingPub = pubMap.get(draft.targetPath);
           if (existing) {
             // 列表主标题保留仓库版本；D1 草稿只增加状态，不冒充当前已发布内容。
-            merged.set(draft.targetPath, { ...existing, draft });
+            merged.set(draft.targetPath, { ...existing, draft, publication: pendingPub });
           } else {
             merged.set(draft.targetPath, {
               name: draft.targetPath.split('/').pop() ?? draft.slug,
@@ -340,6 +349,7 @@ const PostList: React.FC<PostListProps> = ({
               thumbnailUrl: null,
               html_url: '',
               draft,
+              publication: pendingPub,
             });
           }
         }
@@ -422,6 +432,7 @@ const PostList: React.FC<PostListProps> = ({
       { value: 'date-asc', label: '日期从旧到新' },
       { value: 'title-asc', label: '标题升序' },
       { value: 'title-desc', label: '标题降序' },
+      { value: 'status-asc', label: '状态优先' },
     ];
     if (activeTemplate?.fields) {
       const extraFields = activeTemplate.fields.filter(
@@ -467,6 +478,19 @@ const PostList: React.FC<PostListProps> = ({
           if (sortOption === 'date-asc') return dateA - dateB;
           if (sortOption === 'title-asc') return titleA.localeCompare(titleB);
           if (sortOption === 'title-desc') return titleB.localeCompare(titleA);
+
+          if (sortOption === 'status-asc' || sortOption === 'status-desc') {
+            const getStatusRank = (p: PostData) => {
+              if (p.deletion) return 1;
+              if (p.publication && ['prepared', 'in_flight', 'unknown'].includes(p.publication.status)) return 2;
+              if (p.draft && !p.sha) return 3;
+              if (p.draft) return 4;
+              if (p.frontmatter.draft === true) return 5;
+              return 6;
+            };
+            const diff = getStatusRank(a) - getStatusRank(b);
+            return sortOption === 'status-asc' ? diff : -diff;
+          }
 
           // WF-08: Dynamic field sorting
           const match = sortOption.match(/^(.+)-(asc|desc)$/);
@@ -554,9 +578,122 @@ const PostList: React.FC<PostListProps> = ({
       return <span className="text-notion-text text-xs block whitespace-normal break-words leading-snug line-clamp-2" title={String(val)}>{String(val)}</span>;
   };
 
-  const draftBadgeLabel = (post: PostData) => post.sha
-      ? post.frontmatter.draft === true ? '仓库文章有工作草稿' : '已发布 · 有工作草稿'
-      : '未发布草稿';
+  const tableFields = useMemo(() => {
+    return visibleFields.filter(f => f !== 'draft');
+  }, [visibleFields]);
+
+  const resolvePostPublicUrl = useCallback((post: PostData): string | null => {
+    if (post.deletion) return null;
+    if (post.draft?.publicPath) return post.draft.publicPath;
+    const isStories = post.path.startsWith('content/stories/') || path === 'content/stories';
+    const collection = isStories ? 'stories' : 'blog';
+    const isZh = post.frontmatter.lang === 'zh' || post.name.endsWith('-zh.mdx') || post.name.endsWith('-zh.md');
+    const lang = isZh ? 'zh' : 'en';
+    const entryId = post.name.replace(/\.mdx?$/, '');
+    try {
+      return resolveContentPublicPath(collection, lang, entryId);
+    } catch {
+      return null;
+    }
+  }, [path]);
+
+  const getPostStatus = (post: PostData): {
+    label: string;
+    variant: 'published' | 'draft' | 'pending' | 'warning' | 'danger';
+    tooltip?: string;
+    pulse?: boolean;
+  } => {
+    if (post.deletion) {
+      return {
+        label: '删除待对账',
+        variant: 'danger',
+        tooltip: `删除操作 (${post.deletion.operationId}) 待 Git 提交对账`,
+      };
+    }
+
+    if (post.publication && ['prepared', 'in_flight', 'unknown'].includes(post.publication.status)) {
+      return {
+        label: '发布待对账',
+        variant: 'warning',
+        tooltip: '发布结果待对账，点击行可继续对账',
+        pulse: true,
+      };
+    }
+
+    if (post.draft) {
+      if (!post.sha) {
+        return {
+          label: '未发布草稿',
+          variant: 'warning',
+          tooltip: '仅保存在 D1 本地草稿，尚未提交至 Git 仓库',
+        };
+      }
+      if (post.frontmatter.draft === true) {
+        return {
+          label: '仓库草稿 · 有修改',
+          variant: 'warning',
+          tooltip: '仓库文章为草稿，本地有未提交的工作草稿',
+        };
+      }
+      return {
+        label: '已发布 · 有工作草稿',
+        variant: 'pending',
+        tooltip: '线上已发布当前版本，本地有修改中的工作草稿',
+      };
+    }
+
+    if (post.frontmatter.draft === true) {
+      return {
+        label: '草稿 (未公开)',
+        variant: 'draft',
+        tooltip: '已提交仓库，但站点隐藏 (draft: true)',
+      };
+    }
+
+    return {
+      label: '已发布',
+      variant: 'published',
+      tooltip: '已提交仓库并在线公开',
+    };
+  };
+
+  const renderPostStatusBadge = (post: PostData, className = '') => {
+    const status = getPostStatus(post);
+
+    const variantStyles = {
+      published: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+      draft: 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/20',
+      warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+      pending: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+      danger: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+    };
+
+    const dotStyles = {
+      published: 'bg-emerald-500',
+      draft: 'bg-zinc-400',
+      warning: 'bg-amber-500',
+      pending: 'bg-blue-500',
+      danger: 'bg-red-500',
+    };
+
+    return (
+      <span
+        title={status.tooltip}
+        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border select-none ${
+          status.pulse
+            ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 animate-pulse'
+            : variantStyles[status.variant]
+        } ${className}`}
+      >
+        <span
+          className={`size-1.5 rounded-full shrink-0 ${dotStyles[status.variant]} ${
+            status.pulse ? 'animate-ping' : ''
+          }`}
+        />
+        <span>{status.label}</span>
+      </span>
+    );
+  };
 
   if (selectedPost) {
       return (
@@ -804,7 +941,10 @@ const PostList: React.FC<PostListProps> = ({
                                 })()}
                               </div>
                               <div className="p-4 flex-grow">
-                                  <h3 className="text-xs font-semibold text-notion-text mb-1 line-clamp-2 group-hover:text-notion-blue transition-colors flex items-center gap-1.5 flex-wrap">{post.frontmatter.title || post.name}{post.draft && <span title={post.sha ? 'D1 工作草稿不会替换当前站点版本' : '仅保存在 D1，尚未提交到仓库'} className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">{draftBadgeLabel(post)}</span>}{post.deletion && <span className="text-amber-500">删除待对账</span>}</h3>
+                                  <h3 className="text-xs font-semibold text-notion-text mb-1 line-clamp-2 group-hover:text-notion-blue transition-colors flex items-center gap-1.5 flex-wrap">
+                                      <span>{post.frontmatter.title || post.name}</span>
+                                      {renderPostStatusBadge(post)}
+                                  </h3>
                                   <div className="text-[11px] text-notion-muted line-clamp-3 leading-relaxed">
                                       {post.frontmatter.description || post.frontmatter.excerpt || (post.body ? post.body.substring(0, 100) : '')}
                                   </div>
@@ -820,11 +960,12 @@ const PostList: React.FC<PostListProps> = ({
                   <div className="border border-notion-border rounded-xl overflow-x-auto bg-notion-bg shadow-2xs">
                       <table className="w-full divide-y divide-notion-border text-sm table-fixed">
                           <colgroup>
-                              <col style={{ width: `${columnWidths['__name__'] || 35}%` }} />
-                              {visibleFields.map(field => (
-                                  <col key={field} style={{ width: `${columnWidths[field] || 15}%` }} />
+                              <col style={{ width: `${columnWidths['__name__'] || 36}%` }} />
+                              {tableFields.map(field => (
+                                  <col key={field} style={{ width: `${columnWidths[field] || (field === 'lang' ? 10 : 16)}%` }} />
                               ))}
-                              <col style={{ width: '100px' }} />
+                              <col style={{ width: '150px' }} />
+                              <col style={{ width: '110px' }} />
                           </colgroup>
                           <thead className="bg-notion-sidebar/60 text-notion-muted font-medium">
                               <tr>
@@ -837,7 +978,7 @@ const PostList: React.FC<PostListProps> = ({
                                       {getSortIndicator('title') && <span className="text-notion-blue text-[10px]">{getSortIndicator('title')}</span>}
                                     </span>
                                   </th>
-                                  {visibleFields.map(field => (
+                                  {tableFields.map(field => (
                                       <th
                                         key={field}
                                         className="px-4 py-2.5 text-left text-xs font-medium border-r border-notion-border select-none truncate cursor-pointer hover:bg-notion-hover transition-colors"
@@ -849,11 +990,24 @@ const PostList: React.FC<PostListProps> = ({
                                         </span>
                                       </th>
                                   ))}
-                                  <th className="px-4 py-2.5 w-10"></th>
+                                  <th
+                                    className="px-4 py-2.5 text-left text-xs font-medium border-r border-notion-border select-none truncate cursor-pointer hover:bg-notion-hover transition-colors"
+                                    onClick={() => handleColumnSort('status')}
+                                  >
+                                    <span className="flex items-center gap-1">
+                                      状态
+                                      {getSortIndicator('status') && <span className="text-notion-blue text-[10px]">{getSortIndicator('status')}</span>}
+                                    </span>
+                                  </th>
+                                  <th className="px-4 py-2.5 text-right text-xs font-medium select-none truncate">
+                                    操作
+                                  </th>
                               </tr>
                           </thead>
                           <tbody className="divide-y divide-notion-border">
-                              {currentPosts.map(post => (
+                              {currentPosts.map(post => {
+                                  const publicUrl = resolvePostPublicUrl(post);
+                                  return (
                                   <tr key={post.path} onClick={() => post.deletion ? setPostToDelete(post) : void openPost(post)} className="hover:bg-notion-hover/50 cursor-pointer group transition-colors">
                                       <td className="px-4 py-2.5 border-r border-notion-border overflow-hidden">
                                           <div className="flex items-start gap-3">
@@ -873,47 +1027,75 @@ const PostList: React.FC<PostListProps> = ({
                                                   })()}
                                               </div>
                                               
-                                              <div className="min-w-0">
+                                              <div className="min-w-0 flex-1">
                                                   <span className="font-medium text-notion-text block truncate" title={post.frontmatter.title || post.name}>
-                                                      {post.frontmatter.title || post.name}{post.draft && <span title={post.sha ? 'D1 工作草稿不会替换当前站点版本' : '仅保存在 D1，尚未提交到仓库'} className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">{draftBadgeLabel(post)}</span>}{post.deletion && <span className="ml-2 text-amber-500">删除待对账</span>}
+                                                      {post.frontmatter.title || post.name}
                                                   </span>
                                               </div>
                                           </div>
                                       </td>
                                       
-                                      {visibleFields.map(field => (
-                                          <td key={field} className="px-4 py-2.5 border-r border-notion-border align-top overflow-hidden">
+                                      {tableFields.map(field => (
+                                          <td key={field} className="px-4 py-2.5 border-r border-notion-border align-middle overflow-hidden">
                                               {renderDynamicCell(post, field)}
                                           </td>
                                       ))}
 
-                                      <td className="px-4 py-2.5 text-right">
-                                          <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <td className="px-4 py-2.5 border-r border-notion-border align-middle whitespace-nowrap overflow-hidden">
+                                          {renderPostStatusBadge(post)}
+                                      </td>
+
+                                      <td className="px-4 py-2.5 text-right align-middle whitespace-nowrap">
+                                          <div className="flex justify-end items-center gap-1">
                                               <button
-                                                  disabled onClick={(e) => { e.stopPropagation(); handleUpdatePostFile(post); }}
-                                                  className="p-1 text-notion-muted hover:text-notion-text hover:bg-notion-hover rounded-md transition-colors cursor-pointer"
-                                                  title={t('postList.updateFile')}
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      if (post.deletion) setPostToDelete(post);
+                                                      else void openPost(post);
+                                                  }}
+                                                  className="p-1.5 text-notion-muted hover:text-notion-text hover:bg-notion-hover rounded-md transition-colors cursor-pointer"
+                                                  title={post.deletion ? '核对删除结果' : '编辑文章'}
                                               >
-                                                  <DocumentIcon className="w-3.5 h-3.5" />
+                                                  <EditIcon className="w-3.5 h-3.5" />
                                               </button>
-                                              <button
-                                                  disabled onClick={(e) => { e.stopPropagation(); handleUpdateImage(post); }}
-                                                  className="p-1 text-notion-muted hover:text-notion-text hover:bg-notion-hover rounded-md transition-colors cursor-pointer"
-                                                  title={t('postList.updateImage')}
-                                              >
-                                                  <ImageIcon className="w-3.5 h-3.5" />
-                                              </button>
+                                              {publicUrl && post.sha && !post.frontmatter.draft ? (
+                                                  <a
+                                                      href={publicUrl}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      onClick={(e) => e.stopPropagation()}
+                                                      className="p-1.5 text-notion-muted hover:text-notion-blue hover:bg-notion-hover rounded-md transition-colors inline-flex items-center"
+                                                      title="在新标签页打开线上文章"
+                                                  >
+                                                      <EyeIcon className="w-3.5 h-3.5" />
+                                                  </a>
+                                              ) : (
+                                                  <button
+                                                      type="button"
+                                                      disabled
+                                                      className="p-1.5 text-notion-muted/30 cursor-not-allowed rounded-md inline-flex items-center"
+                                                      title={post.frontmatter.draft ? '草稿尚未公开' : '未发布到线上'}
+                                                  >
+                                                      <EyeIcon className="w-3.5 h-3.5" />
+                                                  </button>
+                                              )}
                                               <button 
-                                                onClick={(e) => { e.stopPropagation(); setPostToDelete(post); }}
-                                                className="text-notion-muted hover:text-red-500 hover:bg-red-500/10 p-1 rounded-md transition-colors cursor-pointer"
-                                                title={post.draft ? '放弃工作草稿' : '删除已发布文章'}
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setPostToDelete(post);
+                                                  }}
+                                                  className="p-1.5 text-notion-muted hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors cursor-pointer"
+                                                  title={post.draft ? '放弃工作草稿' : post.deletion ? '核对删除结果' : '删除已发布文章'}
                                               >
                                                   <TrashIcon className="w-3.5 h-3.5" />
                                               </button>
                                           </div>
                                       </td>
                                   </tr>
-                              ))}
+                                  );
+                              })}
                           </tbody>
                       </table>
                   </div>
