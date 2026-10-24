@@ -6,6 +6,7 @@ import { commitCmsDraftAssets, findCmsAssetForPublication } from './asset-servic
 import { deletionRepository } from './deletion-repository';
 import { verifyGitHubPublicationDeployment } from './deployment-verifier';
 import { draftRepository } from './draft-repository';
+import { postRepository } from './post-repository';
 import { publicationRepository } from './publication-repository';
 import { preparePublication } from './publication-validation';
 import { d1PublicationWriter, githubPublicationWriter, type PublicationWriter } from './publisher';
@@ -14,7 +15,18 @@ import type { CmsRepository } from './repository';
 async function assertPublicPathAvailable(
   content: CmsRepository,
   draft: { collection: 'blog' | 'stories'; targetPath: string; publicPath: string },
+  env?: CloudflareEnv,
 ) {
+  // D1 原生模式：直接查询索引，O(1) 完成冲突判定，避免多级目录扫描
+  if (content.mode === 'd1' && env) {
+    const posts = postRepository(env);
+    const existing = await posts.findByPath(draft.publicPath);
+    if (existing && existing.targetPath !== draft.targetPath) {
+      throw new ConflictError(`公开地址已由仓库文件占用：${existing.targetPath}`);
+    }
+    return;
+  }
+
   // 文件名不同也可能归一化到同一 URL；必须检查集合内其他文件，而非仅查目标路径。
   const directories = [draft.collection === 'blog' ? 'content/blog' : 'content/stories'];
   let inspected = 0;
@@ -120,11 +132,15 @@ export function publicationService(
     // 在写入前复查 Git 基准；GitHub PUT 还会使用同一个 blob SHA 做最终条件更新。
     let currentSha: string | null;
     try {
-      await assertPublicPathAvailable(content, {
-        collection: attempt.targetPath.startsWith('content/stories/') ? 'stories' : 'blog',
-        targetPath: attempt.targetPath,
-        publicPath: attempt.publicPath,
-      });
+      await assertPublicPathAvailable(
+        content,
+        {
+          collection: attempt.targetPath.startsWith('content/stories/') ? 'stories' : 'blog',
+          targetPath: attempt.targetPath,
+          publicPath: attempt.publicPath,
+        },
+        env,
+      );
       currentSha = await content.sha(attempt.targetPath);
     } catch (error) {
       attempt = await operations.finish(
@@ -145,6 +161,7 @@ export function publicationService(
       source: attempt.sourceSnapshot ?? '',
       expectedBlobSha: attempt.expectedBlobSha,
       operationId,
+      actorId: attempt.createdBy,
     });
     attempt = await operations.finish(
       operationId,
@@ -230,7 +247,7 @@ export function publicationService(
         )
           throw new ValidationError(`图片不存在或不属于当前草稿：${assetPath}`);
       }
-      await assertPublicPathAvailable(content, draft);
+      await assertPublicPathAvailable(content, draft, env);
       const sourceBytes = new TextEncoder().encode(prepared.source).length;
       // 固定实际送往 Git 的文本，后续重试不得读取草稿的新修订替换这份快照。
       const attempt = await operations.create({

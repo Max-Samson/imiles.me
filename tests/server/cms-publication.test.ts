@@ -3,11 +3,13 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { after, before, test } from 'node:test';
 import { getPlatformProxy, type PlatformProxy } from 'wrangler';
+import { d1DeletionWriter } from '../../src/server/admin/cms/deletion-writer';
 import { documentService } from '../../src/server/admin/cms/document-service';
+import { postRepository } from '../../src/server/admin/cms/post-repository';
 import { publicationRepository } from '../../src/server/admin/cms/publication-repository';
 import { publicationService } from '../../src/server/admin/cms/publication-service';
 import type { PublicationWriter } from '../../src/server/admin/cms/publisher';
-import { githubPublicationWriter } from '../../src/server/admin/cms/publisher';
+import { d1PublicationWriter, githubPublicationWriter } from '../../src/server/admin/cms/publisher';
 import { snapshotRepository } from '../../src/server/admin/cms/repository';
 import type { WorkerBindings } from '../../src/worker-configuration';
 
@@ -18,7 +20,11 @@ before(async () => {
     persist: false,
     remoteBindings: false,
   });
-  for (const migration of ['0001_marvelous_ares.sql', '0002_modern_dragon_man.sql']) {
+  for (const migration of [
+    '0001_marvelous_ares.sql',
+    '0002_modern_dragon_man.sql',
+    '0004_shiny_makkari.sql',
+  ]) {
     const sql = readFileSync(`drizzle/migrations/${migration}`, 'utf8');
     for (const statement of sql.split('--> statement-breakpoint').filter((part) => part.trim())) {
       await platform.env.DB.prepare(statement).run();
@@ -349,4 +355,89 @@ test('GitHub 写入失败时捕获详细状态码和错误原因并持久化到 
   });
   assert.equal(written.kind, 'failed');
   assert.equal(written.errorCode, 'GITHUB_403: Resource not accessible by personal access token');
+});
+
+test('D1 发布写入支持 KaTeX 公式预渲染，更新时保留创建审计信息', async () => {
+  const writer = d1PublicationWriter(platform.env);
+  const posts = postRepository(platform.env);
+  const op1 = crypto.randomUUID();
+  const sourceWithMath =
+    '---\ntitle: "公式测试"\ndescription: "数学摘要"\npubDate: "2026-10-24"\ntags: ["math"]\nlang: "zh"\ndraft: false\n---\n\n行内公式 $E=mc^2$ 与块级公式：\n\n$$\\sum_{i=1}^n i$$\n';
+
+  const res1 = await writer.write({
+    path: 'content/blog/math-test.md',
+    source: sourceWithMath,
+    expectedBlobSha: null,
+    operationId: op1,
+    actorId: 'user:author-1',
+  });
+  assert.equal(res1.kind, 'committed');
+
+  const post1 = await posts.findByPath('/zh/blog/math-test');
+  assert.ok(post1);
+  assert.equal(post1.createdBy, 'user:author-1');
+  assert.equal(post1.updatedBy, 'user:author-1');
+  assert.ok(post1.contentHtml.includes('katex-display'));
+  assert.ok(post1.contentHtml.includes('katex-mathml'));
+
+  // 二次更新：由另一个操作人更新，验证 createdBy/createdAt 未被覆写
+  const op2 = crypto.randomUUID();
+  const updatedSource = sourceWithMath.replace('数学摘要', '更新后的数学摘要');
+  const res2 = await writer.write({
+    path: 'content/blog/math-test.md',
+    source: updatedSource,
+    expectedBlobSha: post1.sourceHash,
+    operationId: op2,
+    actorId: 'user:editor-2',
+  });
+  assert.equal(res2.kind, 'committed');
+
+  const post2 = await posts.findByPath('/zh/blog/math-test');
+  assert.ok(post2);
+  assert.equal(post2.id, post1.id);
+  assert.equal(post2.createdBy, 'user:author-1'); // 必须保留原始创建人！
+  assert.equal(post2.createdAt, post1.createdAt); // 必须保留原始创建时间！
+  assert.equal(post2.updatedBy, 'user:editor-2'); // 更新人已记录
+  assert.equal(post2.description, '更新后的数学摘要');
+});
+
+test('D1 删除与归档语义正确对账，未曾存在的文章不误报成功', async () => {
+  const delWriter = d1DeletionWriter(platform.env);
+  const fakeOp = crypto.randomUUID();
+
+  // 1. 对从来不存在的文章做对账，应返回 null，不误报成功
+  const fakeReconcile = await delWriter.reconcile({
+    path: 'content/blog/never-existed.md',
+    operationId: fakeOp,
+  });
+  assert.equal(fakeReconcile, null);
+
+  // 2. 正常删除已存在的文章
+  const pubWriter = d1PublicationWriter(platform.env);
+  const posts = postRepository(platform.env);
+  const testPath = 'content/blog/to-delete.md';
+  await pubWriter.write({
+    path: testPath,
+    source: '---\ntitle: "待删"\n---\nbody',
+    expectedBlobSha: null,
+    operationId: crypto.randomUUID(),
+  });
+
+  const existing = await posts.findByTargetPath(testPath);
+  assert.ok(existing);
+
+  const delOp = crypto.randomUUID();
+  const delRes = await delWriter.delete({
+    path: testPath,
+    expectedBlobSha: existing.sourceHash,
+    operationId: delOp,
+  });
+  assert.equal(delRes.kind, 'committed');
+
+  // 3. 对已归档文章对账，确认返回 commitSha
+  const confirmed = await delWriter.reconcile({
+    path: testPath,
+    operationId: delOp,
+  });
+  assert.equal(confirmed, `d1:del:${delOp}`);
 });

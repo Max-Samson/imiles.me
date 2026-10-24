@@ -9,7 +9,7 @@ import { resolveNewContentTarget } from '../../../../src/lib/content-routing';
 import { parseSourceDocument } from '../../../../src/lib/content-source';
 import { fieldLabel } from '../../integration/labels';
 import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
-import { ArrowLeft, SlidersHorizontal, Save, Info, Send, Globe, Copy, Check, ExternalLink, GitBranch, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, SlidersHorizontal, Save, Info, Send, Globe, Copy, Check, ExternalLink, GitBranch, ShieldCheck, AlertTriangle, Database } from 'lucide-react';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { marked } from 'marked';
@@ -272,6 +272,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   const [checkingDeployment, setCheckingDeployment] = useState(false);
   const [publishMode, setPublishMode] = useState<'loading' | 'snapshot' | 'github' | 'd1'>('loading');
   const [sessionInfo, setSessionInfo] = useState<CmsSessionInfo | null>(null);
+  const isD1Mode = publishMode === 'd1' || sessionInfo?.mode === 'd1';
   const [showPublishConfirmModal, setShowPublishConfirmModal] = useState(false);
   const [publication, setPublication] = useState<CmsPublicationResult | null>(post.publication ?? null);
   const [lastCommit, setLastCommit] = useState<CmsPublicationResult | null>(post.publication?.status === 'committed' ? post.publication : null);
@@ -1406,11 +1407,12 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       {saveMessage && <p role={saveError ? 'alert' : 'status'} className={`border-b px-6 py-2 text-xs ${saveError ? 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400' : 'border-notion-border text-notion-muted'}`}>{saveMessage}</p>}
       {(publishMessage || lastCommit) && <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-notion-border px-6 py-2 text-xs text-notion-muted">
         {publishMessage && <span>{publishMessage}</span>}
-        {lastCommit?.resultCommitSha && <span className="font-mono">Git {lastCommit.resultCommitSha.slice(0, 12)}</span>}
-        {lastCommit && <span>部署：{{ unverified: '未核实', pending: '排队中', running: '运行中', verified: '已核实', failed: '失败', cancelled: '已取消' }[lastCommit.deploymentStatus]}</span>}
-        {lastCommit && <button type="button" disabled={checkingDeployment} onClick={() => void handleVerifyDeployment()} className="underline disabled:opacity-50">{checkingDeployment ? '检查中…' : '检查部署'}</button>}
+        {lastCommit?.resultCommitSha && !lastCommit.resultCommitSha.startsWith('d1:') && <span className="font-mono">Git {lastCommit.resultCommitSha.slice(0, 12)}</span>}
+        {lastCommit && !isD1Mode && <span>部署：{{ unverified: '未核实', pending: '排队中', running: '运行中', verified: '已核实', failed: '失败', cancelled: '已取消' }[lastCommit.deploymentStatus]}</span>}
+        {lastCommit && !isD1Mode && <button type="button" disabled={checkingDeployment} onClick={() => void handleVerifyDeployment()} className="underline disabled:opacity-50">{checkingDeployment ? '检查中…' : '检查部署'}</button>}
         {lastCommit?.deploymentRef && /^\d+$/.test(lastCommit.deploymentRef) && /^[\w.-]+\/[\w.-]+$/.test(repo.full_name) && <a className="underline" href={`https://github.com/${repo.full_name}/actions/runs/${lastCommit.deploymentRef}`} target="_blank" rel="noopener noreferrer">查看 Deploy 记录</a>}
-        {lastCommit && <a className="underline" href={lastCommit.publicPath} target="_blank" rel="noopener noreferrer">查看当前线上版</a>}
+        {lastCommit && isD1Mode && <span className="text-emerald-600 dark:text-emerald-400 font-medium">✓ 已即时同步至全站</span>}
+        {lastCommit && <a className="underline hover:text-notion-text" href={lastCommit.publicPath} target="_blank" rel="noopener noreferrer">查看当前线上版 ↗</a>}
       </div>}
 
       {/* Main Scrollable Content — 2-column WordPress-style layout */}

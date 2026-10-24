@@ -18,6 +18,14 @@ const postRepo = postRepository(env);
 // 1. 优先从 D1 数据库查询已发布文章
 const d1Post = await postRepo.findByPath(pathname);
 
+// 2. 检索是否有同路径的静态 Content Collection 文章
+const staticPosts = await getCollection('blog', ({ data }) => data.draft !== true);
+const matchedStatic = staticPosts.find((p) => resolveContentPublicPath('blog', 'en', p.id) === pathname);
+
+if (!d1Post && !matchedStatic) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
 let postData: {
   title: string;
   description: string;
@@ -33,7 +41,30 @@ let tocHeadings: Array<{ depth: number; slug: string; text: string }> = [];
 let ContentComponent: any = null;
 let alternateLocales: Array<'en' | 'zh'> = ['en'];
 
-if (d1Post) {
+// 若静态存在且与 D1 源码相同（或属于 MDX 构建产物），优先使用完整的 Astro MDX 组件渲染流水线
+if (matchedStatic && (!d1Post || (d1Post.format === 'mdx' && d1Post.contentRaw === (matchedStatic.body ?? '')))) {
+  const rendered = await render(matchedStatic);
+  ContentComponent = rendered.Content;
+  tocHeadings = rendered.headings.filter((h) => h.depth >= 2 && h.depth <= 3);
+  postData = {
+    title: d1Post?.title ?? matchedStatic.data.title,
+    description: d1Post?.description ?? matchedStatic.data.description,
+    pubDate: d1Post ? new Date(d1Post.pubDate) : matchedStatic.data.pubDate,
+    updatedDate: d1Post?.updatedDate ? new Date(d1Post.updatedDate) : matchedStatic.data.updatedDate,
+    heroImage: d1Post?.heroImage ?? matchedStatic.data.heroImage,
+    tags: d1Post
+      ? (() => {
+          try {
+            return JSON.parse(d1Post.tags);
+          } catch {
+            return [];
+          }
+        })()
+      : matchedStatic.data.tags,
+    shareText: d1Post?.shareText ?? matchedStatic.data.shareText,
+    body: matchedStatic.body ?? '',
+  };
+} else if (d1Post) {
   postData = {
     title: d1Post.title,
     description: d1Post.description ?? '',
@@ -53,25 +84,7 @@ if (d1Post) {
   };
   tocHeadings = extractHeadingsFromHtml(d1Post.contentHtml);
 } else {
-  // 2. 回退查 Astro Content Collections
-  const posts = await getCollection('blog', ({ data }) => data.draft !== true);
-  const matched = posts.find((p) => resolveContentPublicPath('blog', 'en', p.id) === pathname);
-  if (!matched) {
-    return new Response(null, { status: 404, statusText: 'Not Found' });
-  }
-  const rendered = await render(matched);
-  ContentComponent = rendered.Content;
-  tocHeadings = rendered.headings.filter((h) => h.depth >= 2 && h.depth <= 3);
-  postData = {
-    title: matched.data.title,
-    description: matched.data.description,
-    pubDate: matched.data.pubDate,
-    updatedDate: matched.data.updatedDate,
-    heroImage: matched.data.heroImage,
-    tags: matched.data.tags,
-    shareText: matched.data.shareText,
-    body: matched.body ?? '',
-  };
+  return new Response(null, { status: 404, statusText: 'Not Found' });
 }
 
 const readTime = calculateReadTime(postData.body);
@@ -80,24 +93,35 @@ const postUrl = `${siteUrl}${pathname}`;
 const showTOC = tocHeadings.length >= 3;
 const slug = pathname.slice('/blog/'.length);
 
+const etag = `W/"${d1Post?.sourceHash ?? 'static'}"`;
+if (Astro.request.headers.get('if-none-match') === etag) {
+  return new Response(null, {
+    status: 304,
+    headers: {
+      'ETag': etag,
+      'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=1800',
+    },
+  });
+}
+
+Astro.response.headers.set('ETag', etag);
 Astro.response.headers.set(
   'Cache-Control',
-  'public, max-age=60, s-maxage=3600, stale-while-revalidate=86400',
+  'public, max-age=60, s-maxage=300, stale-while-revalidate=1800',
 );
 ---
 
 <BaseLayout
   title={`${postData.title} | Miles`}
   description={postData.description}
+  ogImage={postData.heroImage}
   ogType="article"
   publishedTime={postData.pubDate}
   updatedTime={postData.updatedDate}
-  ogImage={postData.heroImage}
   alternateLocales={alternateLocales}
   tags={postData.tags}
   articleSection="Blog"
   articleTitle={postData.title}
-  loadKatex
 >
   <ArticleLayout
     title={postData.title}
@@ -106,17 +130,17 @@ Astro.response.headers.set(
     readTime={readTime.text}
     tags={postData.tags}
     shareUrl={postUrl}
-    shareText={postData.shareText}
     body={postData.body}
     frontmatter={{
       title: postData.title,
       description: postData.description,
       pubDate: postData.pubDate.toISOString().split('T')[0],
-      updatedDate: postData.updatedDate?.toISOString().split('T')[0],
       heroImage: postData.heroImage,
       tags: postData.tags,
     }}
     slug={slug}
+    backHref="/blog"
+    backLabel="content/blog"
   >
     {showTOC && (
       <div slot="before-content">
@@ -124,15 +148,13 @@ Astro.response.headers.set(
       </div>
     )}
 
-    {postData.contentHtml ? (
+    {ContentComponent ? (
+      <ContentComponent />
+    ) : postData.contentHtml ? (
       <div set:html={postData.contentHtml} />
-    ) : (
-      ContentComponent && <ContentComponent />
-    )}
-
-    <Fragment slot="enhancers">
-      <CodeBlockEnhancer client:idle />
-      <HeadingLinkEnhancer client:load />
-    </Fragment>
+    ) : null}
   </ArticleLayout>
+
+  <CodeBlockEnhancer client:load />
+  <HeadingLinkEnhancer client:load />
 </BaseLayout>

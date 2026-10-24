@@ -64,9 +64,21 @@ const siteUrl = Astro.site?.toString().replace(/\/$/, '') || 'https://imiles.me'
 const storyUrl = `${siteUrl}${pathname}`;
 const slug = pathname.slice('/stories/'.length);
 
+const etag = `W/"${d1Post?.sourceHash ?? 'static'}"`;
+if (Astro.request.headers.get('if-none-match') === etag) {
+  return new Response(null, {
+    status: 304,
+    headers: {
+      'ETag': etag,
+      'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=1800',
+    },
+  });
+}
+
+Astro.response.headers.set('ETag', etag);
 Astro.response.headers.set(
   'Cache-Control',
-  'public, max-age=60, s-maxage=3600, stale-while-revalidate=86400',
+  'public, max-age=60, s-maxage=300, stale-while-revalidate=1800',
 );
 ---
 
@@ -75,7 +87,7 @@ Astro.response.headers.set(
   description={storyData.description}
   ogType="article"
   publishedTime={storyData.pubDate}
-  updatedDate={storyData.updatedDate}
+  updatedTime={storyData.updatedDate}
   alternateLocales={alternateLocales}
   tags={storyData.tags}
   articleSection="Stories"

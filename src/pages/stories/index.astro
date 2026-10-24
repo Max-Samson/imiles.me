@@ -16,24 +16,42 @@ import { postRepository } from '@/server/admin/cms/post-repository';
 const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
 
-let sortedStories: Array<{
-  id: string;
-  data: {
-    title: string;
-    description?: string | null;
-    pubDate: Date;
-    updatedDate?: Date | null;
-    tags: string[];
-  };
-  body?: string;
-  publicPath?: string;
-}> = [];
+const storiesMap = new Map<
+  string,
+  {
+    id: string;
+    data: {
+      title: string;
+      description?: string | null;
+      pubDate: Date;
+      updatedDate?: Date | null;
+      tags: string[];
+    };
+    body?: string;
+    publicPath?: string;
+  }
+>();
+
+try {
+  const staticStories = await getCollection('stories', ({ data }) => data.draft !== true && data.lang === lang);
+  for (const s of staticStories) {
+    const publicPath = resolveContentPublicPath('stories', lang, s.id);
+    storiesMap.set(publicPath, {
+      id: s.id,
+      data: s.data,
+      body: s.body,
+      publicPath,
+    });
+  }
+} catch {
+  // 静态集合容错
+}
 
 try {
   const env = getServerEnv(Astro.locals);
-  const dbPosts = await postRepository(env).listPublished('stories', lang);
-  if (dbPosts.length > 0) {
-    sortedStories = dbPosts.map((p) => ({
+  const dbStories = await postRepository(env).listPublished('stories', lang);
+  for (const p of dbStories) {
+    storiesMap.set(p.publicPath, {
       id: p.slug,
       data: {
         title: p.title,
@@ -50,23 +68,15 @@ try {
       },
       body: p.contentRaw,
       publicPath: p.publicPath,
-    }));
+    });
   }
 } catch {
   // DB fallback
 }
 
-if (sortedStories.length === 0) {
-  const stories = await getCollection('stories', ({ data }) => data.draft !== true && data.lang === lang);
-  sortedStories = stories
-    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-    .map((s) => ({
-      id: s.id,
-      data: s.data,
-      body: s.body,
-      publicPath: resolveContentPublicPath('stories', lang, s.id),
-    }));
-}
+const sortedStories = Array.from(storiesMap.values()).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
 ---
 
 <BaseLayout title={t('PagestoriesTitle', { site: 'Miles' })} description={t('PageStoriesDescription')}>

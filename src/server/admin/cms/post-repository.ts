@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, or } from 'drizzle-orm';
 import type { CloudflareEnv } from '../../../env.d';
 import { createDrizzleClient, schema } from '../../db';
 import type { CmsPost, NewCmsPost } from '../../db/schema/cms';
@@ -18,24 +18,32 @@ export function postRepository(env: CloudflareEnv) {
       });
     },
 
-    async findByPath(publicPath: string): Promise<CmsPost | null> {
+    async findByPath(
+      publicPath: string,
+      options?: { includeArchived?: boolean },
+    ): Promise<CmsPost | null> {
       const normalizedPath =
         publicPath.endsWith('/') && publicPath.length > 1 ? publicPath.slice(0, -1) : publicPath;
+      const conditions = [eq(schema.cmsPosts.publicPath, normalizedPath)];
+      if (!options?.includeArchived) {
+        conditions.push(eq(schema.cmsPosts.status, 'published'));
+      }
       const post = await db.query.cmsPosts.findFirst({
-        where: and(
-          eq(schema.cmsPosts.publicPath, normalizedPath),
-          eq(schema.cmsPosts.status, 'published'),
-        ),
+        where: and(...conditions),
       });
       return post ?? null;
     },
 
-    async findByTargetPath(targetPath: string): Promise<CmsPost | null> {
+    async findByTargetPath(
+      targetPath: string,
+      options?: { includeArchived?: boolean },
+    ): Promise<CmsPost | null> {
+      const conditions = [eq(schema.cmsPosts.targetPath, targetPath)];
+      if (!options?.includeArchived) {
+        conditions.push(eq(schema.cmsPosts.status, 'published'));
+      }
       const post = await db.query.cmsPosts.findFirst({
-        where: and(
-          eq(schema.cmsPosts.targetPath, targetPath),
-          eq(schema.cmsPosts.status, 'published'),
-        ),
+        where: and(...conditions),
       });
       return post ?? null;
     },
@@ -50,15 +58,23 @@ export function postRepository(env: CloudflareEnv) {
 
     async upsert(post: NewCmsPost): Promise<CmsPost> {
       const existing = await db.query.cmsPosts.findFirst({
-        where: eq(schema.cmsPosts.publicPath, post.publicPath),
+        where: or(
+          eq(schema.cmsPosts.publicPath, post.publicPath),
+          eq(schema.cmsPosts.targetPath, post.targetPath),
+        ),
       });
 
       if (existing) {
+        const {
+          id: _ignoreId,
+          createdAt: _ignoreCreatedAt,
+          createdBy: _ignoreCreatedBy,
+          ...updateData
+        } = post;
         const [updated] = await db
           .update(schema.cmsPosts)
           .set({
-            ...post,
-            id: existing.id,
+            ...updateData,
             updatedAt: Date.now(),
           })
           .where(eq(schema.cmsPosts.id, existing.id))

@@ -18,25 +18,43 @@ import { postRepository } from '@/server/admin/cms/post-repository';
 const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
 
-let sortedPosts: Array<{
-  id: string;
-  data: {
-    title: string;
-    description?: string | null;
-    pubDate: Date;
-    updatedDate?: Date | null;
-    tags: string[];
-    heroImage?: string | null;
-  };
-  body?: string;
-  publicPath?: string;
-}> = [];
+const postsMap = new Map<
+  string,
+  {
+    id: string;
+    data: {
+      title: string;
+      description?: string | null;
+      pubDate: Date;
+      updatedDate?: Date | null;
+      tags: string[];
+      heroImage?: string | null;
+    };
+    body?: string;
+    publicPath?: string;
+  }
+>();
+
+try {
+  const staticPosts = await getCollection('blog', ({ data }) => data.draft !== true && data.lang === lang);
+  for (const p of staticPosts) {
+    const publicPath = resolveContentPublicPath('blog', lang, p.id);
+    postsMap.set(publicPath, {
+      id: p.id,
+      data: p.data,
+      body: p.body,
+      publicPath,
+    });
+  }
+} catch {
+  // 静态集合容错
+}
 
 try {
   const env = getServerEnv(Astro.locals);
   const dbPosts = await postRepository(env).listPublished('blog', lang);
-  if (dbPosts.length > 0) {
-    sortedPosts = dbPosts.map((p) => ({
+  for (const p of dbPosts) {
+    postsMap.set(p.publicPath, {
       id: p.slug,
       data: {
         title: p.title,
@@ -54,23 +72,15 @@ try {
       },
       body: p.contentRaw,
       publicPath: p.publicPath,
-    }));
+    });
   }
 } catch {
-  // DB 查询失败时静默回退
+  // DB 查询失败时回退到静态集合
 }
 
-if (sortedPosts.length === 0) {
-  const posts = await getCollection('blog', ({ data }) => data.draft !== true && data.lang === lang);
-  sortedPosts = posts
-    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-    .map((p) => ({
-      id: p.id,
-      data: p.data,
-      body: p.body,
-      publicPath: resolveContentPublicPath('blog', lang, p.id),
-    }));
-}
+const sortedPosts = Array.from(postsMap.values()).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
 ---
 
 <BaseLayout

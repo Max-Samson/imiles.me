@@ -15,6 +15,7 @@ export interface PublicationWriter {
     source: string;
     expectedBlobSha: string | null;
     operationId: string;
+    actorId?: string;
   }): Promise<PublishWriteResult>;
   reconcile(input: {
     path: string;
@@ -165,7 +166,7 @@ export function githubPublicationWriter(
 export function d1PublicationWriter(env: CloudflareEnv): PublicationWriter {
   const posts = postRepository(env);
   return {
-    async write({ path, source, expectedBlobSha }) {
+    async write({ path, source, expectedBlobSha, actorId }) {
       const parsed = parseSourceDocument(source);
       const collection = path.startsWith('content/stories/') ? 'stories' : 'blog';
       const lang = parsed.fields.lang === 'zh' ? 'zh' : 'en';
@@ -173,11 +174,12 @@ export function d1PublicationWriter(env: CloudflareEnv): PublicationWriter {
       const sourceBytes = new TextEncoder().encode(source).length;
       const sourceHash = await gitBlobSha(source);
 
-      const existing = await posts.findByTargetPath(path);
+      const existing = await posts.findByTargetPath(path, { includeArchived: true });
       if (expectedBlobSha && existing && existing.sourceHash !== expectedBlobSha) {
         return { kind: 'conflict', errorCode: 'BLOB_SHA_MISMATCH' };
       }
 
+      const actor = actorId || 'admin';
       const contentHtml = renderMarkdownToHtml(parsed.body);
       const post = await posts.upsert({
         collection,
@@ -206,8 +208,8 @@ export function d1PublicationWriter(env: CloudflareEnv): PublicationWriter {
         sourceBytes,
         draftId: null,
         status: 'published',
-        createdBy: 'admin',
-        updatedBy: 'admin',
+        createdBy: actor,
+        updatedBy: actor,
       });
 
       return {

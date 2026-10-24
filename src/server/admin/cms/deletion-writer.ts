@@ -111,8 +111,8 @@ export function d1DeletionWriter(env: CloudflareEnv): DeletionWriter {
       return { kind: 'committed', commitSha: `d1:del:${operationId}` };
     },
     async reconcile({ path, operationId }) {
-      const post = await posts.findByTargetPath(path);
-      if (!post || post.status === 'archived') {
+      const post = await posts.findByTargetPath(path, { includeArchived: true });
+      if (post && post.status === 'archived') {
         return `d1:del:${operationId}`;
       }
       return null;
