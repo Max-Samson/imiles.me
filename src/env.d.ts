@@ -23,7 +23,6 @@ export interface CloudflareEnv
   SUPABASE_S3_ENDPOINT?: string;
   SUPABASE_S3_REGION?: string;
   SUPABASE_STORAGE_BUCKET?: string;
-  CMS_DRAFT_STORAGE_BUCKET?: string;
   SUPABASE_S3_ACCESS_KEY_ID?: string;
   SUPABASE_S3_SECRET_ACCESS_KEY?: string;
 

@@ -42,6 +42,7 @@ CLOUDFLARE_TURNSTILE_WIDGET_NAME = "imiles-friend-link-application"
 # Supabase 项目元数据（凭据通过 wrangler secret put 写入）
 SUPABASE_PROJECT_REF = "ghdcvipfbkxjbglmvrfa"
 SUPABASE_S3_REGION = "ap-southeast-1"
+# 站点与 CMS 文章图片复用此公开桶；未发布图片也可能通过存储直链访问。
 SUPABASE_STORAGE_BUCKET = "blog-bucket"
 SUPABASE_S3_ENDPOINT = "https://ghdcvipfbkxjbglmvrfa.storage.supabase.co/storage/v1/s3"
 

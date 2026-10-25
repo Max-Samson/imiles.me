@@ -151,7 +151,7 @@ export const cmsDraftDetailRoute = defineRestRoute({
   },
 });
 
-/** 草稿媒体只进入私有存储；公开路径要等文章 Git 提交确认后才允许匿名读取。 */
+/** 图片复用站点公开桶；本站固定公开路径仍要等文章发布确认后才开放。 */
 export const cmsDraftAssetsRoute = defineRestRoute({
   GET: async ({ env }, route) => {
     await authorizeAdmin(route.request, env, 'admin:read');

@@ -205,8 +205,8 @@ D1 和 KV 的部署 binding 位于 `wrangler.toml`，实际资源名称和运维
 
 ### `cms_draft_assets`：草稿图片元数据
 
-`0003` 新增图片元数据表。`id` 使用 `cma_` 前缀；`draft_id` 外键指向草稿，`object_key` 是私有对象存储位置，`content_hash` 是 SHA-256，`mime`、`bytes` 描述经过图片字节校验的文件，`public_path` 保存固定 URL 对应的 `public/images/blog/<id>.<ext>` 逻辑路径。`status=staged` 仅允许后台预览；文章 Git 提交确认后，引用该图片的记录转为 `committed`，Worker 才通过 `/images/blog/<id>.<ext>` 匿名提供图片。这里的 `committed` 表示公开服务开放，**不表示图片字节已提交 Git**。`created_by`、`created_at`、`updated_at` 记录审计信息。对象 key 和公开路径分别唯一，`(draft_id, status)` 支持按草稿列举。图片字节使用现有 S3 兼容适配器，但要求单独配置私有 `CMS_DRAFT_STORAGE_BUCKET`，不复用站点图片桶，也不进入 D1。上线前必须核实桶拒绝匿名读取。
+`0003` 新增图片元数据表。`id` 使用 `cma_` 前缀；`draft_id` 外键指向草稿，`object_key` 是站点图片桶内的对象存储位置，`content_hash` 是 SHA-256，`mime`、`bytes` 描述经过图片字节校验的文件，`public_path` 保存固定 URL 对应的 `public/images/blog/<id>.<ext>` 逻辑路径。`status=staged` 时本站 Worker 仅允许后台预览；文章发布确认后，引用该图片的记录转为 `committed`，Worker 才通过 `/images/blog/<id>.<ext>` 匿名提供图片。这里的 `committed` 表示公开服务开放，**不表示图片字节已提交 Git**。`created_by`、`created_at`、`updated_at` 记录审计信息。对象 key 和公开路径分别唯一，`(draft_id, status)` 支持按草稿列举。图片字节使用现有 S3 兼容适配器，复用 `SUPABASE_STORAGE_BUCKET` 公开桶，不进入 D1。不再要求独立草稿桶；`staged`/`committed` 只控制本站 Worker 路由，公开桶直链可能在发布前访问到图片，不能用于私密素材。
 
-上传接口先写对象，再写 D1；D1 写入失败会尝试清理对象。极端中断仍可能留下无元数据的私有对象，后续清理任务应按前缀与 D1 记录核对。图片和文章跨 S3、D1、GitHub 没有原子事务；发布确认后开放图片可重试对账，生产须保留私有对象及 D1 记录，不得因文章删除而立即清除共用图片。`staged` 返回的公开路径不是可访问地址；`committed` 后通过公开 Worker 路由读取，站点页面仍需等部署完成才会引用新图片。
+上传接口先写对象，再写 D1；D1 写入失败会尝试清理对象。极端中断仍可能留下无元数据的对象，后续清理任务应按前缀与 D1 记录核对。图片和文章跨 S3、D1、GitHub 没有原子事务；发布确认后开放图片可重试对账，生产须保留对象及 D1 记录，不得因文章删除而立即清除共用图片。`staged` 返回的本站公开路径尚不可访问（不代表桶直链也不可访问）；`committed` 后通过公开 Worker 路由读取，站点页面仍需等部署完成才会引用新图片。
 
 完整 HTTP、缓存和服务分层约定见 [服务端 README](../src/server/README.md)。

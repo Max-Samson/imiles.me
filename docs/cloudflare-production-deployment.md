@@ -13,7 +13,7 @@ imiles.me
             ├─ KV binding: KV → BOLG-KV
             ├─ KV binding: SESSION → imiles-session
             ├─ Rate Limit binding: FRIEND_LINK_RATE_LIMITER
-            └─ Supabase S3 私有 Bucket
+            └─ Supabase S3 现有公开 Bucket
 
 /admin*、/api/v1/admin*
   └─ Cloudflare Access
@@ -232,10 +232,18 @@ pnpm exec wrangler secret put SUPABASE_S3_SECRET_ACCESS_KEY
 | `CLOUDFLARE_TURNSTILE_WIDGET_NAME` | `imiles-friend-link-application` | Turnstile 挂件名称 |
 | `SUPABASE_PROJECT_REF` | `ghdcvipfbkxjbglmvrfa` | Supabase 项目 Ref |
 | `SUPABASE_S3_REGION` | `ap-southeast-1` | S3 区域 |
-| `SUPABASE_STORAGE_BUCKET` | `blog-bucket` | 存储桶名称 |
+| `SUPABASE_STORAGE_BUCKET` | `blog-bucket` | 站点与 CMS 文章图片共用的现有公开桶 |
 | `SUPABASE_S3_ENDPOINT` | `https://ghdcvipfbkxjbglmvrfa.storage.supabase.co/...` | S3 端点 URL |
 
 > **注意**：上表中的资源 ID 均已在 `wrangler.toml` 中明文存在（`d1_databases.database_id`、`kv_namespaces.id`），进入 `[vars]` 只是让服务端代码可以通过统一的 `env.CLOUDFLARE_*` 接口读取，不引入额外的安全风险。
+
+### CMS 文章图片：复用现有公开桶（2026-10-25）
+
+- CMS 使用现有 `SUPABASE_STORAGE_BUCKET` 和 S3 配置，无需新增独立草稿桶；旧 `CMS_DRAFT_STORAGE_BUCKET` 配置不再读取。
+- 图片对象仍存放在 `cms/drafts/<draftId>/<assetId>` 前缀，避免覆盖现有站点资源；D1 只保存元数据，不新增迁移。
+- 上传、列表和预览 API 保留管理员鉴权；本站 `/images/blog/cma_<id>.<ext>` 路由仍等发布确认后才开放。
+- **公开桶自身的存储直链不受 D1 发布状态控制，未发布图片也可能被访问。** 此配置仅用于可公开的文章素材，不提供草稿图片保密保证。
+- 部署新代码即可沿用已有运行时 S3 配置，不需要创建新桶或修改桶权限；凭据仍只在 Worker 服务端使用，不能下发编辑器。
 
 ### 7.3 验证 Secrets 已写入
 
@@ -255,15 +263,15 @@ pnpm exec wrangler secret list
 Endpoint: https://ghdcvipfbkxjbglmvrfa.storage.supabase.co/storage/v1/s3
 Region:   ap-southeast-1
 Bucket:   blog-bucket
-对象前缀:  friend-links/screenshots/
+对象前缀:  cms/drafts/（文章图片）；friend-links/screenshots/（友链截图）
 ```
 
 上线前确认：
 
-1. `blog-bucket` 存在并保持 Private。
+1. 复用现有 `blog-bucket` 公开桶；不调整远程桶权限。
 2. S3 Access Key 仍有效，并与 Secret Access Key 配对。
 3. Worker 使用的 S3 密钥有上传、下载、列举和删除权限。
-4. 浏览器不能匿名读取 Bucket 对象。
+4. 公开桶直链允许匿名读取：只上传可公开素材；如启用友链截图上传，也不能提交私密截图。
 5. 若此前密钥曾出现在聊天、日志或截图中，先轮换再配置生产 Secret。
 
 Worker 会检查图片真实格式、尺寸、文件大小与 SHA-256；Bucket 的 MIME/大小限制只是第二层保护。

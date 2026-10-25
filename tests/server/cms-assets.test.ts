@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { after, before, test } from 'node:test';
+import { after, before, mock, test } from 'node:test';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
 import { getPlatformProxy, type PlatformProxy } from 'wrangler';
+import type { CloudflareEnv } from '../../src/env.d';
 import { cmsAssetService, readCmsImage } from '../../src/server/admin/cms/asset-service';
 import { documentService } from '../../src/server/admin/cms/document-service';
 import { snapshotRepository } from '../../src/server/admin/cms/repository';
@@ -69,19 +71,71 @@ test('草稿图片上传只接收单张通过字节校验的图片', async () =>
   );
 });
 
-test('草稿图片不得复用站点图片桶', () => {
+// 仅用于 SDK mock 的虚构配置；测试不连接真实桶，也不加载部署凭据。
+const articleStorageEnv = {
+  SUPABASE_STORAGE_BUCKET: 'public-images',
+  SUPABASE_S3_ENDPOINT: 'https://storage.example.invalid',
+  SUPABASE_S3_REGION: 'test',
+  SUPABASE_S3_ACCESS_KEY_ID: 'test',
+  SUPABASE_S3_SECRET_ACCESS_KEY: 'test',
+} satisfies CloudflareEnv;
+
+test('文章图片仍要求现有站点桶和完整 S3 配置，不再要求独立草稿桶', () => {
   assert.throws(() => cmsAssetService({}), { code: 'CMS_MEDIA_NOT_CONFIGURED' });
-  assert.throws(
-    () =>
-      cmsAssetService({
-        CMS_DRAFT_STORAGE_BUCKET: 'public-images',
-        SUPABASE_STORAGE_BUCKET: 'public-images',
-      }),
-    { code: 'CMS_MEDIA_NOT_CONFIGURED' },
-  );
+  for (const key of Object.keys(articleStorageEnv) as (keyof typeof articleStorageEnv)[]) {
+    assert.throws(() => cmsAssetService({ ...articleStorageEnv, [key]: undefined }), {
+      code: 'CMS_MEDIA_NOT_CONFIGURED',
+    });
+  }
+  assert.doesNotThrow(() => cmsAssetService({ ...platform.env, ...articleStorageEnv }));
 });
 
-test('Blog 草稿图片只写私有存储与 D1，受保护预览核对字节', async () => {
+test('文章 JPEG 上传默认写入已有站点桶，保留独立对象前缀和待发布状态', async () => {
+  const docs = documentService(platform.env, () => snapshotRepository({}));
+  const draft = await docs.createDraft(
+    {
+      collection: 'blog',
+      lang: 'en',
+      slug: 'shared-bucket-test',
+      source: '---\ntitle: Test\n---\nBody',
+    },
+    'user:test',
+  );
+  const bytes = Uint8Array.from(
+    await sharp({ create: { width: 8, height: 8, channels: 3, background: '#fff' } })
+      .jpeg()
+      .toBuffer(),
+  );
+  const service = cmsAssetService({ ...platform.env, ...articleStorageEnv });
+  const send = mock.method(S3Client.prototype, 'send', async (command: unknown) => {
+    assert.ok(command instanceof PutObjectCommand);
+    assert.equal(command.input.Bucket, articleStorageEnv.SUPABASE_STORAGE_BUCKET);
+    assert.match(command.input.Key ?? '', new RegExp(`^cms/drafts/${draft.id}/cma_[a-f0-9]{32}$`));
+    assert.equal(command.input.ContentType, 'image/jpeg');
+    assert.deepEqual(command.input.Body, bytes);
+    return {};
+  });
+  try {
+    const asset = await service.upload(
+      draft.id,
+      upload([['image', new Blob([bytes], { type: 'image/jpeg' })]]),
+      'user:test',
+    );
+    assert.equal(send.mock.callCount(), 1);
+    assert.equal(asset.status, 'staged');
+    assert.match(asset.publicUrl, /^\/images\/blog\/cma_[a-f0-9]{32}\.jpg$/);
+    assert.equal((await service.list(draft.id))[0].id, asset.id);
+    // 只保证本站路由尚未开放，不把这个 404 当作公开桶直链也不可访问的证明。
+    await assert.rejects(service.publicImage(asset.publicUrl.split('/').at(-1) as string), {
+      code: 'NOT_FOUND',
+    });
+    assert.equal(send.mock.callCount(), 1);
+  } finally {
+    send.mock.restore();
+  }
+});
+
+test('Blog 草稿图片写对象存储与 D1，受保护预览核对字节', async () => {
   const objects = new Map<string, Uint8Array<ArrayBuffer>>();
   const storage: ObjectStorage = {
     async put(key, object) {

@@ -706,7 +706,7 @@ draft 路由隐藏仍须验收 Blog/Stories 列表、详情、RSS、搜索索引
 | `deployment_status TEXT`、`deployment_ref TEXT`、`deployed_at INTEGER` | 默认 `unverified`；允许 `unverified/pending/running/verified/failed/cancelled` | 与 Git 状态分开；只有匹配提交的部署证据才能 verified |
 | `error_code TEXT`、`created_by TEXT`、`created_at INTEGER`、`updated_at INTEGER`、`completed_at INTEGER` | 错误码可空，其余审计字段非空；完成时间可空 | 故障恢复与审计；不存 Git token 或任意异常全文 |
 
-建 `(draft_id, created_at DESC)` 与 `(status, updated_at)` 索引，并以 `UNIQUE(draft_id) WHERE status IN ('prepared','in_flight','unknown')` 阻止同一草稿并发发布。已结束操作保留 `operation_id`、请求指纹、摘要、提交引用；固定源文在结果确定并超过明确保留期后才可清理，`unknown` 操作不得清理快照。若以后需严格历史版本，另增有界修订表；普通保存目前只保留活动草稿最新版。媒体批次再加入 `cms_draft_assets`（`draft_id`、私有对象 key、hash、MIME、字节数、目标公开路径、状态），图片字节不进 D1。
+建 `(draft_id, created_at DESC)` 与 `(status, updated_at)` 索引，并以 `UNIQUE(draft_id) WHERE status IN ('prepared','in_flight','unknown')` 阻止同一草稿并发发布。已结束操作保留 `operation_id`、请求指纹、摘要、提交引用；固定源文在结果确定并超过明确保留期后才可清理，`unknown` 操作不得清理快照。若以后需严格历史版本，另增有界修订表；普通保存目前只保留活动草稿最新版。媒体批次再加入 `cms_draft_assets`（`draft_id`、对象 key、hash、MIME、字节数、目标公开路径、状态），图片字节不进 D1。
 
 普通保存执行 `UPDATE cms_drafts SET source=?, source_hash=?, source_bytes=?, revision=revision+1, ... WHERE id=? AND status='active' AND revision=?`；影响行数为零时返回 409。发布操作认领和最终状态更新分别通过 D1 条件更新/批处理完成；批处理只能保证 D1 内部原子性，**D1 与 GitHub 无跨系统事务**。[D1 当前单字符串或单行上限为 2,000,000 字节](https://developers.cloudflare.com/d1/platform/limits/)，1 MiB 是本站预留元数据余量的产品限制，不等于所有文章都能由 GitHub Contents API 的 JSON 响应完整读取；超过适配器可读范围必须明确拒绝或切换受验证的读取方式。
 
@@ -833,16 +833,16 @@ draft 路由隐藏仍须验收 Blog/Stories 列表、详情、RSS、搜索索引
 
 ### 17.13 草稿媒体暂存与受保护预览（2026-10-24）
 
-- 新增 `cms_draft_assets` 和 `0003_yielding_sasquatch.sql`。图片字节使用现有 S3 兼容协议，要求另配 `CMS_DRAFT_STORAGE_BUCKET` 私有桶，且不能复用站点已有图片桶；上线前需核实匿名读取确实关闭。D1 只记录草稿归属、对象 key、SHA-256、MIME、大小、预留公开路径和状态。Blog 活动草稿可上传单张 PNG/JPEG/WebP，复用项目图片结构与尺寸校验；Stories 拒绝图片。
-- `POST/GET /api/v1/admin/cms/drafts/:id/assets` 分别上传与列举，`GET /api/v1/admin/cms/assets/:assetId/preview` 经后台读取权限校验后返回私有图片，禁止缓存。上传返回 `publicUrl` 与 `previewUrl`，但 `status=staged` 表示公开地址尚不可用；正文和封面不能提前保存这个地址并发布。
+- 新增 `cms_draft_assets` 和 `0003_yielding_sasquatch.sql`。图片字节使用现有 S3 兼容协议，当前按 2026-10-25 单桶配置复用已有 `SUPABASE_STORAGE_BUCKET` 公开桶，不再要求独立草稿桶；图片上传后即可能通过存储直链访问。D1 只记录草稿归属、对象 key、SHA-256、MIME、大小、预留公开路径和状态。Blog 活动草稿可上传单张 PNG/JPEG/WebP，复用项目图片结构与尺寸校验；Stories 拒绝图片。
+- `POST/GET /api/v1/admin/cms/drafts/:id/assets` 分别上传与列举，`GET /api/v1/admin/cms/assets/:assetId/preview` 经后台读取权限校验后返回图片，禁止缓存。上传返回 `publicUrl` 与 `previewUrl`，但 `status=staged` 表示本站 Worker 公开地址尚不可用，不限制公开桶直链；正文和封面不能提前保存这个地址并发布。
 - 下一步必须实现固定媒体 Git 提交、超时对账、已存在资源版本校验、草稿引用到资产的匹配，以及失败后重试或清理；再将上传和预览接入 Pageel 的图片处理器。`publicationService` 仍要求图片已在仓库，当前暂存图片不能通过发布校验。远端运行前还需应用 `0003` 迁移并配置已有对象存储凭证。
 
 ### 17.14 公开文章图片与编辑台接线（2026-10-24，覆盖 17.13 的待办设计）
 
-- 媒体使用 **私有对象存储 + 同站 Worker 公开路由**，不再要求图片字节进入 Git。`/images/blog/cma_<id>.<ext>` 是文章中的稳定公开 URL；只有 D1 资源状态为 `committed` 时匿名 GET 才返回图片，未发布或未知图片返回 404。公开响应限制图片格式、校验字节哈希并设置 `nosniff`；草稿仍从受保护且不缓存的预览接口读取。
+- 媒体使用 **站点现有公开桶 + 同站 Worker 公开路由**（2026-10-25 单桶配置更新），不再要求图片字节进入 Git。`/images/blog/cma_<id>.<ext>` 是文章中的稳定公开 URL；只有 D1 资源状态为 `committed` 时该 Worker 路由的匿名 GET 才返回图片，未发布或未知图片返回 404。公开响应限制图片格式、校验字节哈希并设置 `nosniff`；草稿仍从受保护且不缓存的预览接口读取。上述门禁仅控制本站路由；公开桶直链可能提前访问图片，不承诺草稿字节保密。
 - 发布校验接受固定 Git 仓库已有图片、当前草稿上传图片、以及其他已发布图片；拒绝引用其他草稿的未发布图片。文章 Git 提交确认后，根据该操作的固定源文标记本草稿引用的图片 `committed`，幂等重试可补做状态转换。公开图片可早于文章部署访问；文章页面是否上线仍由指定 Deploy 工作流核验决定。
 - MDXEditor 上传处理器、源码编辑区插图按钮和封面上传入口使用同一草稿上传 API。新文稿先保存为 D1 草稿，再上传；正文持久化仍由保存草稿按钮负责。后台预览对新媒体改写为受保护预览 URL。Stories 继续禁用图片。
-- 此方案需要远端执行 `0003` 迁移，配置 `CMS_DRAFT_STORAGE_BUCKET` 与现有 S3 凭据，并核实桶匿名读取已关闭。对象生命周期、孤儿资源对账与生产端到端发布验收仍是运维事项；删除文章不会删除可能被其他文章引用的公开图片。第三方图片署名仍按 `src/data/imageCredits.ts` 的代码流程管理。
+- 此方案需要远端执行 `0003` 迁移，沿用现有 `SUPABASE_STORAGE_BUCKET` 与 S3 配置，不新增桶或凭据。该桶按公开文章图片用途使用，未发布图片也可能通过存储直链访问，不用于私密素材。对象生命周期、孤儿资源对账与生产端到端发布验收仍是运维事项；删除文章不会删除可能被其他文章引用的公开图片。第三方图片署名仍按 `src/data/imageCredits.ts` 的代码流程管理。
 - 复杂 MDX 保留源码编辑。后台“预览”只做 Markdown 近似渲染并显示限制提示；组件真实效果以 Astro 构建后的文章页面为准，不将 `marked` 结果视为完整 MDX 预览。
 
 ### 17.15 发布逻辑与工作台体验全闭环（2026-10-24）
@@ -853,7 +853,7 @@ draft 路由隐藏仍须验收 Blog/Stories 列表、详情、RSS、搜索索引
   - 修复发布完成后发布按钮永久禁用的边界条件，对于已有 Git 文章在产生新修改或新 D1 草稿时动态激活“更新发布”；按钮文字根据文章身份及当前操作状态在“发布”、“更新发布”、“对账”、“发布中…”之间精准切换。
 - **媒体上传适配器收敛**：
   - 为插件编辑器注入定制的 `EditorGitService`，将其 `uploadImage` 完全委托给 `handleCmsImageUpload`，将 `getImageBlob` 自动路由至受保护的预览端点；
-  - 彻底清理上游遗留的 `gitService.uploadFile` / `gitService.updateFileContent` 调用漏洞，封面上传与插图全部闭环至 D1 草稿资源与私有 S3 暂存；
+  - 彻底清理上游遗留的 `gitService.uploadFile` / `gitService.updateFileContent` 调用漏洞，封面上传与插图全部闭环至 D1 草稿资源与站点 S3 桶暂存；
   - 源码区“插入图片”按钮统一升级为 `LiquidGlassButton`，交互视觉与亮暗主题高度一致。
 - **发布后状态反馈与核验面板**：详情页顶部状态栏以结构化徽章呈现 Git 提交短哈希、Actions 工作流运行状态（已上线 / 排队中 / 运行中 / 构建失败 / 未核实）与线上访问入口，核验通过后直接展示“查看已上线页面 ↗”，状态未通过时提供手动“检查部署”触发器与 Actions 详情直链。
 
@@ -900,11 +900,11 @@ draft 路由隐藏仍须验收 Blog/Stories 列表、详情、RSS、搜索索引
    - 服务端 `createDraft` 弹性基线版本适配，未显式提供 `baseBlobSha` 时自动以当前版本建立基准草稿。
 2. **发布与更新发布**：
    - 点击“发布”/“更新发布”原子校验属性与正文，将草稿源文解析、提取元数据、预渲染 HTML 并写入 `cms_posts`；
-   - 自动推进草稿状态为 `published`，并将已关联的私有暂存图片状态转换为 `committed`。
+   - 自动推进草稿状态为 `published`，并将已关联的暂存图片状态转换为 `committed`。
 3. **文章下线与删除**：
    - 提供两步受控删除流程：有活动草稿时先废弃草稿，确认删除文章时从 D1 标记为 `archived`，实现安全归档与前台即时下线。
 4. **媒体管理闭环**：
-   - 编辑器插图与封面图统一走受保护的草稿资产端点暂存至私有对象存储；
+   - 编辑器插图与封面图统一走受保护的草稿资产端点暂存至现有站点公开桶（存储直链不受发布状态限制）；
    - 发布后通过 Worker `/images/blog/cma_<id>.<ext>` 提供公开高速分发与哈希防篡改校验。
 
 ### 18.4 生产上线就绪验证
