@@ -15,6 +15,7 @@ import {
   MDXEditor,
   tablePlugin,
   codeMirrorPlugin,
+  CodeMirrorEditor,
   linkDialogPlugin,
   jsxPlugin,
   InsertTable,
@@ -199,8 +200,23 @@ export function MdxEditorSlot(props: EditorProps = {} as EditorProps) {
     linkPlugin(),
     imageTools.plugin,
     imagePluginConfig,
-    codeBlockPlugin({ defaultCodeBlockLanguage: '' }),
-    codeMirrorPlugin({ codeBlockLanguages: { ts: "TypeScript", typescript: "TypeScript", txt: "Plain text", plain: "Plain text", js: "JavaScript", bash: "Shell", json: "JSON", astro: "Astro", vue: "Vue", sql: "SQL", text: "Text", "": "Plain text" } }),
+    codeBlockPlugin({
+      defaultCodeBlockLanguage: '',
+      // 3.20 的默认描述器只匹配已列语言且不带 meta；复用官方编辑器兜底，不改写原语法。
+      codeBlockEditorDescriptors: [{ priority: -10, match: () => true, Editor: CodeMirrorEditor }],
+    }),
+    codeMirrorPlugin({
+      // 只扩充语言选项；语法高亮仍由已有 CodeMirror 按需加载，不新增解析器或执行代码。
+      codeBlockLanguages: {
+        ts: 'TypeScript', typescript: 'TypeScript', tsx: 'TypeScript (React)',
+        js: 'JavaScript', javascript: 'JavaScript', jsx: 'JavaScript (React)',
+        html: 'HTML', css: 'CSS', astro: 'Astro', vue: 'Vue',
+        json: 'JSON', yaml: 'YAML', yml: 'YAML', toml: 'TOML', sql: 'SQL',
+        bash: 'Shell', sh: 'Shell', shell: 'Shell', python: 'Python', py: 'Python',
+        markdown: 'Markdown', md: 'Markdown', mermaid: 'Mermaid（代码）',
+        txt: 'Plain text', plain: 'Plain text', text: 'Text', '': 'Plain text',
+      },
+    }),
     markdownShortcutPlugin(),
     toolbarPlugin({
       toolbarContents: () => (

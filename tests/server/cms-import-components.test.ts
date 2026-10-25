@@ -70,3 +70,20 @@ test('无 YAML 或属性不完整仍可导入，缺项留到发布前提示', ()
   }
   assert.throws(() => inspectImportedContent('bad.md', '---\ntitle: [\n---\n正文', 'blog'));
 });
+
+test('导入沿用现有解析器，完整保留代码语言、meta、未知语言和图片引用', () => {
+  const body = [
+    '# 导入正文',
+    '```mermaid\nflowchart LR\n  A --> B\n```',
+    '```tsx\nexport const Example = () => <span>示例</span>;\n```',
+    '```bash title="install.sh"\npnpm install\n```',
+    '```future-language custom-meta\n原样保留未知语法\n```',
+    '```\n无语言代码块\n```',
+    '![原始附件](attachments/diagram.svg)',
+  ].join('\n\n');
+  for (const format of ['md', 'mdx']) {
+    const imported = inspectImportedContent(`代码块.${format}`, body, 'blog');
+    assert.equal(imported.rawContent, body);
+    assert.equal(imported.body, body);
+  }
+});
