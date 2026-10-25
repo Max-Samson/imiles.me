@@ -33,6 +33,7 @@ function fixture({
   schemaStillMissing = false,
   historical = false,
   schemaDrift = false,
+  migrationSql = 'CREATE TABLE x(id integer);',
 } = {}) {
   const calls = [];
   let deployed = false;
@@ -45,10 +46,10 @@ function fixture({
     log() {},
     loadRequirements: async () => requirements,
     artifactHash: async () => hash,
-    readSql: async () => 'CREATE TABLE x(id integer);',
+    readSql: async () => migrationSql,
     read: async (path) =>
       path.endsWith('.sql')
-        ? 'CREATE TABLE x(id integer);'
+        ? migrationSql
         : JSON.stringify({ head: manifestHead, artifact: 'artifact' }),
     run: async (command, args) => {
       calls.push([command, args]);
@@ -150,7 +151,7 @@ test('无 SQL 变更只读校验结构，不 list/apply，也不重复 build', a
   assert.ok(calls.some(([, args]) => args.includes(`git-${head}`)));
 });
 
-test('仅计划模式不 apply、不 deploy；批准后迁移先于部署', async () => {
+test('仅计划模式不写入；自动范围迁移无需审批且先于部署', async () => {
   const options = { diff: 'A\0drizzle/migrations/0005_test.sql\0', sql: true };
   const first = fixture(options);
   const plan = await release(first.deps, { planOnly: true });
@@ -159,21 +160,22 @@ test('仅计划模式不 apply、不 deploy；批准后迁移先于部署', asyn
     false,
   );
   const second = fixture(options);
-  await release(second.deps, { approve: plan.prepared.approval });
+  assert.equal(plan.prepared.plan.execution, 'automatic');
+  await release(second.deps, {});
   const applyIndex = second.calls.findIndex(([, args]) => args.includes('apply'));
   const deployIndex = second.calls.findIndex(([, args]) => args.includes('deploy'));
   assert.ok(applyIndex >= 0 && applyIndex < deployIndex);
 });
 
-test('SQL 未批准、apply 失败、历史 SQL 修改均阻止 deploy', async () => {
+test('人工范围未批准、apply 失败、已执行 SQL 修改均阻止 deploy', async () => {
   const options = { diff: 'A\0drizzle/migrations/0005_test.sql\0', sql: true };
-  const first = fixture(options);
+  const first = fixture({ ...options, migrationSql: 'CREATE UNIQUE INDEX ux ON x(id);' });
   await assert.rejects(release(first.deps, {}), { code: 'D1_CONFIRMATION_REQUIRED' });
   const plan = await release(fixture(options).deps, { planOnly: true });
   const failed = fixture({ ...options, failApply: true });
   await assert.rejects(release(failed.deps, { approve: plan.prepared.approval }), /未知远程结果/);
   const modified = fixture({ diff: 'M\0drizzle/migrations/0004_old.sql\0' });
-  await assert.rejects(release(modified.deps, {}), /历史迁移/);
+  await assert.rejects(release(modified.deps, {}), { code: 'D1_APPLIED_MIGRATION_CHANGED' });
   for (const f of [first, failed, modified])
     assert.equal(
       f.calls.some(([, args]) => args.includes('deploy')),
@@ -317,4 +319,32 @@ test('批准不能复用于结构要求或 Wrangler 配置变化后的计划', a
       false,
     );
   }
+});
+
+test('仅修改未执行 SQL 也进入迁移同步，自动执行先于 deploy', async () => {
+  const f = fixture({ diff: 'M\0drizzle/migrations/0005_test.sql\0', sql: true });
+  await release(f.deps, {});
+  const apply = f.calls.findIndex(([, args]) => args.includes('apply'));
+  const deploy = f.calls.findIndex(([, args]) => args.includes('deploy'));
+  assert.ok(apply >= 0 && deploy > apply);
+});
+
+test('内容或仅 meta JSON 变更不触发迁移清单或写入，仍检查结构', async () => {
+  for (const diff of [
+    'M\0src/components/Test.tsx\0',
+    'M\0content/blog/test.md\0',
+    'M\0drizzle/migrations/meta/_journal.json\0',
+  ]) {
+    const f = fixture({ diff });
+    await release(f.deps, {});
+    assert.equal(f.calls.filter(([, args]) => args.includes('migrations')).length, 0);
+    assert.equal(f.calls.filter(([, args]) => args.includes('execute')).length, 2);
+  }
+});
+
+test('兼容 SQL 自动 apply 失败时不 deploy，不自动重试', async () => {
+  const f = fixture({ diff: 'A\0drizzle/migrations/0005_test.sql\0', sql: true, failApply: true });
+  await assert.rejects(release(f.deps, {}), /未知远程结果/);
+  assert.equal(f.calls.filter(([, args]) => args.includes('apply')).length, 1);
+  assert.equal(f.calls.filter(([, args]) => args.includes('deploy')).length, 0);
 });

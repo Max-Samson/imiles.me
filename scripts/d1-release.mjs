@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { lstat, readFile } from 'node:fs/promises';
 import { stripVTControlCharacters } from 'node:util';
 import { parseSchemaReadiness, schemaReadinessQuery } from './d1-schema.mjs';
+import { automaticMigrationFindings } from './d1-sql-policy.mjs';
 import { migrationDirectory, migrationNamePattern } from './release-paths.mjs';
 
 // 当前只有生产环境。未配置的测试环境必须报错，绝不能默认使用生产库。
@@ -166,11 +167,16 @@ export class D1ReleaseService {
   }
 
   async prepare(changes, revision, options = {}) {
+    const modified = changes?.modified ?? [];
     if (
       typeof changes?.migrationChanged !== 'boolean' ||
       !Array.isArray(changes.added) ||
-      changes.added.some((file) => typeof file !== 'string' || !migrationNamePattern.test(file)) ||
-      changes.migrationChanged !== changes.added.length > 0
+      !Array.isArray(modified) ||
+      [...changes.added, ...modified].some(
+        (file) => typeof file !== 'string' || !migrationNamePattern.test(file),
+      ) ||
+      new Set([...changes.added, ...modified]).size !== changes.added.length + modified.length ||
+      changes.migrationChanged !== changes.added.length + modified.length > 0
     ) {
       throw new D1ReleaseError('D1_CHANGES_INVALID', '无法确定 SQL 变更范围');
     }
@@ -180,8 +186,17 @@ export class D1ReleaseService {
       throw new D1ReleaseError('D1_REVISION_INVALID', '迁移必须绑定完整发布提交');
     }
     const pending = await this.listPending();
+    // 仅 pending 能证明当前未执行；文件名账本不能证明已执行 SQL 的内容未变。
+    // 即使本次无 pending，也必须先拒绝已执行文件的修改，不能提前跳过。
+    const appliedEdits = modified.filter((file) => !pending.includes(file));
+    if (appliedEdits.length) {
+      throw new D1ReleaseError(
+        'D1_APPLIED_MIGRATION_CHANGED',
+        `已执行或无法证实未执行的 SQL 被修改：${appliedEdits.join(', ')}；请新增向前迁移，不会重放旧文件`,
+      );
+    }
     if (!pending.length) return { skipped: true, reason: 'already-applied' };
-    const allowed = options.reconcileD1 ? options.knownMigrations : changes.added;
+    const allowed = options.reconcileD1 ? options.knownMigrations : [...changes.added, ...modified];
     if (
       !Array.isArray(allowed) ||
       allowed.some((file) => !migrationNamePattern.test(file)) ||
@@ -205,8 +220,13 @@ export class D1ReleaseService {
         `迁移需要单独审查：${JSON.stringify(findings)}`,
       );
     }
+    const manualReasons = automaticMigrationFindings(entries);
+    // 自动化是独立策略，不是内部生成 --approve 冒充人工审批；历史补齐仍需明确批准。
+    const execution =
+      options.reconcileD1 || manualReasons.length ? 'approval-required' : 'automatic';
     const plan = {
       ...this.config,
+      execution,
       base: revision.base,
       head: revision.head,
       // 历史补齐必须显式选择；批准同时绑定整套结构要求和目标绑定配置。
@@ -218,27 +238,49 @@ export class D1ReleaseService {
         sha256: createHash('sha256').update(sql).digest('hex'),
       })),
     };
-    return { skipped: false, plan, approval: approvalDigest(plan) };
+    return { skipped: false, plan, approval: approvalDigest(plan), manualReasons };
   }
 
   async apply(prepared, approval, beforeApply = async () => {}) {
     if (prepared.skipped) return { applied: false, ...prepared };
-    if (approval !== prepared.approval || approvalDigest(prepared.plan) !== approval) {
+    if (approvalDigest(prepared.plan) !== prepared.approval) {
+      throw new D1ReleaseError('D1_PLAN_CHANGED', '迁移计划被修改，停止执行');
+    }
+    if (
+      !['automatic', 'approval-required'].includes(prepared.plan.execution) ||
+      (prepared.plan.execution === 'automatic' && prepared.plan.reconcileD1)
+    ) {
+      throw new D1ReleaseError('D1_PLAN_INVALID', '迁移执行策略无效');
+    }
+    if (prepared.plan.execution === 'approval-required' && approval !== prepared.approval) {
       throw new D1ReleaseError(
         'D1_CONFIRMATION_REQUIRED',
         `请审核迁移计划后，用 --approve ${prepared.approval} 明确批准`,
       );
+    }
+    // 即使自动策略无需人工摘要，传入的旧摘要也不能被静默接受。
+    if (approval !== undefined && approval !== prepared.approval) {
+      throw new D1ReleaseError('D1_CONFIRMATION_REQUIRED', '批准摘要与当前迁移计划不符');
     }
     await beforeApply();
     const names = prepared.plan.migrations.map(({ file }) => file);
     if (JSON.stringify(await this.listPending()) !== JSON.stringify(names)) {
       throw new D1ReleaseError('D1_PENDING_CHANGED', '批准后的待应用迁移清单已变化，停止发布');
     }
+    const entries = [];
     for (const { file, sha256 } of prepared.plan.migrations) {
       const sql = await this.readSql(`${migrationDirectory}/${file}`);
       if (createHash('sha256').update(sql).digest('hex') !== sha256) {
         throw new D1ReleaseError('D1_SQL_CHANGED', '批准后的 SQL 内容已变化，停止发布');
       }
+      entries.push({ file, sql });
+    }
+    // 复核执行时的真实 SQL，不仅信任计划标签；任意一条越界都不能自动写入。
+    if (
+      auditMigrationEntries(entries).length ||
+      (prepared.plan.execution === 'automatic' && automaticMigrationFindings(entries).length)
+    ) {
+      throw new D1ReleaseError('D1_SQL_REVIEW_REQUIRED', '执行前 SQL 策略复核失败');
     }
     // runner 超时/失败直接向上传递：远程操作可能已执行，不能自动重试。
     await this.run('pnpm', [

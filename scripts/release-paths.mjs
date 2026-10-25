@@ -15,6 +15,7 @@ export function parseChangedPaths(output) {
 export function classifyMigrationChanges(entries) {
   if (!Array.isArray(entries)) throw new Error('无法确定 SQL 变更范围');
   const added = [];
+  const modified = [];
   for (const entry of entries) {
     if (!entry || typeof entry.path !== 'string' || !/^[AMD]$/.test(entry.status)) {
       throw new Error('Git 变更状态无效；必须禁用重命名折叠');
@@ -29,10 +30,16 @@ export function classifyMigrationChanges(entries) {
     if (!path.startsWith(`${migrationDirectory}/`) || !path.endsWith('.sql')) continue;
     const file = path.slice(migrationDirectory.length + 1);
     if (!migrationNamePattern.test(file)) throw new Error(`迁移文件名或层级不受支持：${path}`);
-    // 已入基线的迁移一律不可变，避免修改已执行 SQL 却误以为生产会重新应用。
-    // 重命名通过 git diff --no-renames 表现为删除与新增，也会在这里被拒绝。
-    if (status !== 'A') throw new Error(`禁止修改、删除或重命名历史迁移，请新增 SQL：${path}`);
-    added.push(file);
+    // 修改只触发核验，是否可执行必须再看远程 pending，不能在 Git 层猜测。
+    // 重命名由 --no-renames 表现为删除+新增；删除仍一律停止。
+    if (status === 'D') throw new Error(`禁止删除或重命名历史迁移，请新增 SQL：${path}`);
+    const target = status === 'A' ? added : modified;
+    if (added.includes(file) || modified.includes(file)) throw new Error('重复的迁移变更');
+    target.push(file);
   }
-  return Object.freeze({ migrationChanged: added.length > 0, added: Object.freeze(added.sort()) });
+  return Object.freeze({
+    migrationChanged: added.length + modified.length > 0,
+    added: Object.freeze(added.sort()),
+    modified: Object.freeze(modified.sort()),
+  });
 }

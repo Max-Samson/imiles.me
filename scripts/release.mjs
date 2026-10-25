@@ -100,7 +100,7 @@ export async function release(
   );
   const service = new D1ReleaseService({ run, readSql });
   const requirements = await loadRequirements({ read, readSql });
-  // 普通发布仅查询结构，不列迁移、不写数据库；历史漏迁移也不能静默绕过。
+  // 无 SQL 新增/修改时只读查结构，不 list/apply；历史漏迁移必须显式补齐。
   const schema = await service.inspectSchema(requirements);
   if (!schema.ready && !changes.migrationChanged && !options.reconcileD1) {
     throw new Error(
