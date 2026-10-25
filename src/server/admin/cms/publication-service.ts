@@ -70,7 +70,7 @@ async function sha256(source: string): Promise<string> {
   return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-/** D1 固定意图、Git 条件写入与结果未知对账；永不从浏览器接收仓库或 Token。 */
+/** D1 固定发布意图，协调各通道写入与结果未知对账；永不从浏览器接收仓库或凭据。 */
 export function publicationService(
   env: CloudflareEnv,
   content: CmsRepository,
@@ -187,7 +187,8 @@ export function publicationService(
       const attempt = await operations.get(operationId);
       if (attempt.status !== 'committed' || !attempt.resultBlobSha || !attempt.resultCommitSha)
         throw new ConflictError('Git 提交尚未确认，无法核验部署');
-      if (content.mode === 'd1' || attempt.resultCommitSha.startsWith('d1:')) {
+      // 只按操作自身识别 D1；当前 D1 会话不能替历史 Git 提交制造核验成功。
+      if (attempt.resultCommitSha.startsWith('d1:')) {
         return publicResult(
           await operations.recordDeployment(operationId, {
             status: 'verified',
@@ -197,7 +198,11 @@ export function publicationService(
         );
       }
       if (content.mode !== 'github')
-        throw new AppError('本地 snapshot 不支持部署核验', 503, 'CMS_LOCAL_DEPLOYMENT_UNAVAILABLE');
+        throw new AppError(
+          '当前发布通道不支持核验历史 Git 部署',
+          503,
+          'CMS_LOCAL_DEPLOYMENT_UNAVAILABLE',
+        );
       const evidence = await verifyGitHubPublicationDeployment(env, {
         targetPath: attempt.targetPath,
         resultBlobSha: attempt.resultBlobSha,
@@ -252,6 +257,7 @@ export function publicationService(
       // 固定实际送往 Git 的文本，后续重试不得读取草稿的新修订替换这份快照。
       const attempt = await operations.create({
         operationId,
+        backend: content.mode === 'd1' || content.mode === 'github' ? content.mode : null,
         draftId,
         draftRevision: expectedRevision,
         requestHash,

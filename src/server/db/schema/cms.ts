@@ -84,7 +84,7 @@ export const cmsDraftAssets = sqliteTable(
   ],
 );
 
-/** D1 仅保存受保护的工作草稿；公开站点仍从 Git 文件构建。 */
+/** D1 保存受保护的工作草稿；公开内容由当前发布通道单独维护。 */
 export const cmsDrafts = sqliteTable(
   'cms_drafts',
   {
@@ -127,7 +127,34 @@ export const cmsDrafts = sqliteTable(
   ],
 );
 
-/** 每次发布固定实际 Git 文本与操作 ID，供超时后的安全对账。 */
+/** 每次成功保存的不可变快照；仅追加，不根据当前草稿反推已经丢失的旧版本。 */
+export const cmsDocumentRevisions = sqliteTable(
+  'cms_document_revisions',
+  {
+    id: primaryKeyColumn('cmr').notNull(),
+    draftId: text('draft_id')
+      .notNull()
+      .references(() => cmsDrafts.id, { onDelete: 'restrict' }),
+    revision: integer('revision').notNull(),
+    targetPath: text('target_path').notNull(),
+    source: text('source').notNull(),
+    sourceHash: text('source_hash').notNull(),
+    sourceBytes: integer('source_bytes').notNull(),
+    titleCache: text('title_cache'),
+    createdBy: text('created_by').notNull(),
+    createdAt: integer('created_at')
+      .notNull()
+      .$defaultFn(() => Date.now()),
+  },
+  (t) => [
+    uniqueIndex('uniq_cms_document_revisions_draft_revision').on(t.draftId, t.revision),
+    index('idx_cms_document_revisions_path_history').on(t.targetPath, t.createdAt, t.id),
+    check('cms_document_revisions_revision', sql`${t.revision} > 0`),
+    check('cms_document_revisions_bytes', sql`${t.sourceBytes} BETWEEN 1 AND 1048576`),
+  ],
+);
+
+/** 每次发布固定实际源文、通道与操作 ID，供超时后的安全对账。 */
 export const cmsPublicationAttempts = sqliteTable(
   'cms_publication_attempts',
   {
@@ -146,6 +173,8 @@ export const cmsPublicationAttempts = sqliteTable(
     status: text('status', { enum: cmsPublicationStatuses }).notNull().default('prepared'),
     resultBlobSha: text('result_blob_sha'),
     resultCommitSha: text('result_commit_sha'),
+    /** 固定发起时的发布通道；旧记录未知时保留 null，不用当前会话猜测。 */
+    backend: text('backend', { enum: ['d1', 'github'] }),
     deploymentStatus: text('deployment_status', {
       enum: ['unverified', 'pending', 'running', 'verified', 'failed', 'cancelled'],
     })
@@ -163,6 +192,7 @@ export const cmsPublicationAttempts = sqliteTable(
       .on(t.draftId)
       .where(sql`${t.status} IN ('prepared', 'in_flight', 'unknown')`),
     index('cms_publication_attempts_draft_history').on(t.draftId, t.createdAt),
+    index('idx_cms_publication_attempts_path_history').on(t.targetPath, t.createdAt, t.operationId),
     index('cms_publication_attempts_reconcile').on(t.status, t.updatedAt),
     check('cms_publication_attempts_revision', sql`${t.draftRevision} > 0`),
     check('cms_publication_attempts_bytes', sql`${t.sourceBytes} BETWEEN 1 AND 1048576`),

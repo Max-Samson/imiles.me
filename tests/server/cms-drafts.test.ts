@@ -19,7 +19,11 @@ before(async () => {
     persist: false,
     remoteBindings: false,
   });
-  for (const migration of ['0001_marvelous_ares.sql', '0002_modern_dragon_man.sql']) {
+  for (const migration of [
+    '0001_marvelous_ares.sql',
+    '0002_modern_dragon_man.sql',
+    '0005_cms_document_history.sql',
+  ]) {
     const sql = readFileSync(`drizzle/migrations/${migration}`, 'utf8');
     for (const statement of sql.split('--> statement-breakpoint').filter((part) => part.trim())) {
       await platform.env.DB.prepare(statement).run();

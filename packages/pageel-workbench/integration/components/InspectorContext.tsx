@@ -1,5 +1,4 @@
 import type { JsxEditorProps } from '@mdxeditor/editor';
-import { Boxes, FileText, Sliders } from 'lucide-react';
 import {
   type ReactNode,
   createContext,
@@ -19,7 +18,7 @@ import {
 import { type ContentComponentConfig, findComponent } from '../component-config';
 import type { DocumentComponentInstance } from './useDocumentComponents';
 
-export type InspectorMode = 'article' | 'library' | 'component';
+export type InspectorMode = 'article' | 'status' | 'library' | 'component';
 
 export interface SelectedComponentData {
   id?: string;
@@ -304,76 +303,106 @@ export function useOptionalComponentInspector() {
   return useContext(Context);
 }
 
-export function ComponentInspector() {
+/** 侧栏切换独立于正文编辑模式；查看状态不会卸载或重建正文编辑器。 */
+export function ComponentInspector({
+  statusPanel,
+  statusAttention = false,
+}: {
+  statusPanel: ReactNode;
+  statusAttention?: boolean;
+}) {
   const state = useComponentInspector();
+  const tabs: { mode: InspectorMode; label: string }[] = [
+    { mode: 'article', label: '文章' },
+    { mode: 'status', label: '状态' },
+    { mode: 'library', label: '组件库' },
+    { mode: 'component', label: '当前组件' },
+  ];
 
   return (
-    <div className="flex flex-col">
-      {/* 3 Tabs Header: 文章 ｜ 组件库 ｜ 当前组件 */}
-      <div className="p-2 border-b border-notion-border bg-notion-sidebar sticky top-0 z-10 backdrop-blur-md">
+    <>
+      <div className="sticky top-0 z-10 border-b border-notion-border bg-notion-sidebar p-2 backdrop-blur-md">
         <div
-          className="grid grid-cols-3 p-1 rounded-lg bg-notion-bg border border-notion-border shadow-2xs gap-1"
-          role="group"
+          className="grid grid-cols-4 gap-0.5 rounded-lg border border-notion-border bg-notion-bg p-1 shadow-2xs"
+          role="tablist"
           aria-label="右栏属性面板切换"
         >
-          <button
-            type="button"
-            aria-pressed={state.mode === 'article'}
-            onClick={() => state.setMode('article')}
-            className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs transition-all cursor-pointer ${
-              state.mode === 'article'
-                ? 'bg-notion-hover text-notion-text font-semibold shadow-xs'
-                : 'text-notion-muted hover:text-notion-text font-medium'
-            }`}
-          >
-            <FileText className="h-3.5 w-3.5 opacity-75" />
-            <span>文章</span>
-          </button>
-          <button
-            type="button"
-            aria-pressed={state.mode === 'library'}
-            onClick={() => state.setMode('library')}
-            className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs transition-all cursor-pointer ${
-              state.mode === 'library'
-                ? 'bg-notion-hover text-notion-text font-semibold shadow-xs'
-                : 'text-notion-muted hover:text-notion-text font-medium'
-            }`}
-          >
-            <Boxes className="h-3.5 w-3.5 opacity-75" />
-            <span>组件库</span>
-          </button>
-          <button
-            type="button"
-            aria-pressed={state.mode === 'component'}
-            onClick={() => state.setMode('component')}
-            className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs transition-all cursor-pointer relative ${
-              state.mode === 'component'
-                ? 'bg-notion-hover text-notion-text font-semibold shadow-xs'
-                : 'text-notion-muted hover:text-notion-text font-medium'
-            }`}
-          >
-            <Sliders className="h-3.5 w-3.5 opacity-75" />
-            <span>当前组件</span>
-            {Boolean(state.selectedComponent) && (
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse ml-0.5" />
-            )}
-          </button>
+          {tabs.map((tab, index) => (
+            <button
+              key={tab.mode}
+              type="button"
+              role="tab"
+              id={`cms-inspector-tab-${tab.mode}`}
+              aria-selected={state.mode === tab.mode}
+              aria-controls={`cms-inspector-panel-${tab.mode}`}
+              tabIndex={state.mode === tab.mode ? 0 : -1}
+              onClick={() => state.setMode(tab.mode)}
+              onKeyDown={(event) => {
+                const next =
+                  event.key === 'ArrowRight'
+                    ? (index + 1) % tabs.length
+                    : event.key === 'ArrowLeft'
+                      ? (index + tabs.length - 1) % tabs.length
+                      : event.key === 'Home'
+                        ? 0
+                        : event.key === 'End'
+                          ? tabs.length - 1
+                          : null;
+                if (next === null) return;
+                event.preventDefault();
+                state.setMode(tabs[next].mode);
+                event.currentTarget.parentElement
+                  ?.querySelector<HTMLButtonElement>(`#cms-inspector-tab-${tabs[next].mode}`)
+                  ?.focus();
+              }}
+              className={`relative flex min-h-8 items-center justify-center gap-1 rounded-md px-1 text-[11px] whitespace-nowrap transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-notion-text ${state.mode === tab.mode ? 'bg-notion-hover font-semibold text-notion-text shadow-xs' : 'font-medium text-notion-muted hover:text-notion-text'}`}
+            >
+              {tab.label}
+              {tab.mode === 'status' && statusAttention && (
+                <span className="size-1.5 shrink-0 rounded-full bg-red-500">
+                  <span className="sr-only">有待处理的操作提示</span>
+                </span>
+              )}
+              {tab.mode === 'component' && Boolean(state.selectedComponent) && (
+                <span aria-hidden="true" className="size-1 shrink-0 rounded-full bg-blue-500" />
+              )}
+            </button>
+          ))}
         </div>
       </div>
-
-      {/* Component Library Panel */}
-      {state.mode === 'library' && (
-        <div className="cms-library-panel">
-          <ComponentLibrary />
+      <div
+        id="cms-inspector-panel-status"
+        role="tabpanel"
+        aria-labelledby="cms-inspector-tab-status"
+        tabIndex={0}
+        hidden={state.mode !== 'status'}
+      >
+        {statusPanel}
+      </div>
+      {
+        <div
+          hidden={state.mode !== 'library'}
+          id="cms-inspector-panel-library"
+          role="tabpanel"
+          aria-labelledby="cms-inspector-tab-library"
+          tabIndex={0}
+          className="cms-library-panel"
+        >
+          {state.mode === 'library' && <ComponentLibrary />}
         </div>
-      )}
-
-      {/* Current Component Parameters Panel */}
-      {state.mode === 'component' && (
-        <div className="cms-component-panel">
-          <ComponentProperties onBack={state.returnToLibrary} />
+      }
+      {
+        <div
+          hidden={state.mode !== 'component'}
+          id="cms-inspector-panel-component"
+          role="tabpanel"
+          aria-labelledby="cms-inspector-tab-component"
+          tabIndex={0}
+          className="cms-component-panel"
+        >
+          {state.mode === 'component' && <ComponentProperties onBack={state.returnToLibrary} />}
         </div>
-      )}
-    </div>
+      }
+    </>
   );
 }

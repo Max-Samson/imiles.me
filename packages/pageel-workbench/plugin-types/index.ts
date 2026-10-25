@@ -48,7 +48,11 @@ export interface EditorProps {
   /** Callback to open image gallery picker — returns selected image path or null */
   onRequestImage?: () => Promise<string | null>;
   /** 宿主上传到当前 D1 草稿，返回将来公开的站内路径。 */
-  onUploadImage?: (image: File) => Promise<string>;
+  onUploadImage?: (image: File, signal?: AbortSignal) => Promise<string>;
+  /** 当前打开文稿的实例标识，防止异步插图写入其他文章。 */
+  imageDocumentKey?: string;
+  /** 弹窗与上传期间保护保存、发布和模式切换。 */
+  onImagePendingChange?: (pending: boolean) => void;
   /** Base URL to prepend to relative image paths for display */
   imageBaseUrl?: string;
   /** Markdown set by parent (e.g. after Source tab edit). Plugin MUST sync when version changes. (Review L1) */

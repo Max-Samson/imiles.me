@@ -24,8 +24,32 @@ export const editorZh: Record<string, string> = {
   'toolbar.bold': '加粗', 'toolbar.italic': '斜体', 'toolbar.underline': '下划线',
   'toolbar.removeBold': '取消加粗', 'toolbar.removeItalic': '取消斜体', 'toolbar.removeUnderline': '取消下划线',
   'toolbar.bulletedList': '无序列表', 'toolbar.numberedList': '有序列表', 'toolbar.checkList': '任务列表',
-  'toolbar.link': '插入链接', 'toolbar.image': '插入图片链接', 'toolbar.table': '插入表格', 'toolbar.codeBlock': '插入代码块',
+  'toolbar.link': '插入链接', 'toolbar.image': '插入图片', 'toolbar.table': '插入表格', 'toolbar.codeBlock': '插入代码块',
   'toolbar.undo': '撤销 {{shortcut}}', 'toolbar.redo': '重做 {{shortcut}}',
+
+  // 图片弹窗
+  'uploadImage.dialogTitle': '插入图片',
+  'uploadImage.uploadInstructions': '从本地设备上传图片：',
+  'uploadImage.addViaUrlInstructions': '或通过图片链接（URL）插入：',
+  'uploadImage.addViaUrlInstructionsNoUpload': '通过图片链接（URL）插入：',
+  'uploadImage.autoCompletePlaceholder': '粘贴或输入图片链接 (https://...)',
+  'uploadImage.alt': '图片替代文本 (Alt)：',
+  'uploadImage.title': '图片标题 (Title，可选)：',
+
+  // 编辑已有图片
+  'imageEditor.deleteImage': '删除图片',
+  'imageEditor.editImage': '编辑图片属性',
+
+  // 链接弹窗
+  'createLink.url': '链接地址 (URL)：',
+  'createLink.urlPlaceholder': '粘贴或输入链接 (https://...)',
+  'createLink.title': '链接标题 (可选)：',
+  'createLink.saveTooltip': '确认设置链接',
+  'createLink.cancelTooltip': '取消',
+
+  // 通用弹窗操作
+  'dialogControls.save': '确认插入',
+  'dialogControls.cancel': '取消',
 };
 export function translateEditor(key: string, fallback: string, values?: Record<string, unknown>) {
   return (editorZh[key] ?? fallback).replace(/{{(.*?)}}/g, (match, name) => String(values?.[name] ?? match));

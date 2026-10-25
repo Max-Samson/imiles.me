@@ -1,3 +1,11 @@
+import type {
+  CmsHistoryPage,
+  CmsHistorySnapshot,
+  CmsPublicationResult,
+} from '../../shared/admin/cms-history';
+
+export type { CmsPublicationResult } from '../../shared/admin/cms-history';
+
 import type { ContentCollection, ContentLanguage } from '../../config/content-collections';
 import { adminApiRequest } from './api-client';
 
@@ -19,22 +27,6 @@ export interface CmsDraftSummary {
 export interface CmsDraft extends CmsDraftSummary {
   source: string;
   publication?: CmsPublicationResult | null;
-}
-
-export interface CmsPublicationResult {
-  operationId: string;
-  draftId: string;
-  draftRevision: number;
-  targetPath: string;
-  publicPath: string;
-  status: 'prepared' | 'in_flight' | 'unknown' | 'committed' | 'conflict' | 'failed';
-  deploymentStatus: 'unverified' | 'pending' | 'running' | 'verified' | 'failed' | 'cancelled';
-  deploymentRef: string | null;
-  deployedAt: number | null;
-  /** 服务端发布记录中的稳定错误码；无错误时为 null。 */
-  errorCode: string | null;
-  resultBlobSha: string | null;
-  resultCommitSha: string | null;
 }
 
 export interface CmsDeletionResult {
@@ -74,6 +66,16 @@ export interface CmsSessionInfo {
 }
 
 export const cmsDocumentClient = {
+  history: (path: string, cursor?: string, signal?: AbortSignal) => {
+    const query = new URLSearchParams({ path, limit: '20' });
+    if (cursor) query.set('cursor', cursor);
+    return adminApiRequest<CmsHistoryPage>(`/api/v1/admin/cms/history?${query}`, signal);
+  },
+  historySnapshot: (path: string, id: string, signal?: AbortSignal) =>
+    adminApiRequest<CmsHistorySnapshot>(
+      `/api/v1/admin/cms/history/${encodeURIComponent(id)}?${new URLSearchParams({ path })}`,
+      signal,
+    ),
   list: () => adminApiRequest<CmsDraftSummary[]>(endpoint),
   get: (id: string) => adminApiRequest<CmsDraft>(`${endpoint}/${encodeURIComponent(id)}`),
   create: (input: {
@@ -98,12 +100,12 @@ export const cmsDocumentClient = {
     }),
   listAssets: (id: string) =>
     adminApiRequest<CmsDraftAsset[]>(`${endpoint}/${encodeURIComponent(id)}/assets`),
-  uploadAsset: (id: string, image: File) => {
+  uploadAsset: (id: string, image: File, signal?: AbortSignal) => {
     const form = new FormData();
     form.set('image', image);
     return adminApiRequest<CmsDraftAsset>(
       `${endpoint}/${encodeURIComponent(id)}/assets`,
-      undefined,
+      signal,
       fetch,
       { method: 'POST', body: form },
     );

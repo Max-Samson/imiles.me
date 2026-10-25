@@ -21,6 +21,7 @@ before(async () => {
   for (const migration of [
     '0001_marvelous_ares.sql',
     '0002_modern_dragon_man.sql',
+    '0005_cms_document_history.sql',
     '0003_yielding_sasquatch.sql',
   ]) {
     const sql = readFileSync(`drizzle/migrations/${migration}`, 'utf8');

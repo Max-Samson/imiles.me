@@ -1,6 +1,7 @@
 import remarkMdx from 'remark-mdx';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
+import { collectContentImages } from '../../../lib/content-images';
 import {
   parseSourceDocument,
   type SourceDocument,
@@ -9,13 +10,7 @@ import {
 import type { CmsDraft } from '../../db/schema/cms';
 import { ValidationError } from '../../errors';
 
-type AstNode = {
-  type: string;
-  value?: string;
-  url?: string;
-  name?: string | null;
-  children?: AstNode[];
-};
+type AstNode = import('../../../lib/content-images').ImageAstNode;
 
 function validDate(value: unknown): boolean {
   if (typeof value !== 'string' && !(value instanceof Date)) return false;
@@ -106,10 +101,12 @@ export function preparePublication(draft: CmsDraft): { source: string; assetPath
     ) {
       throw new ValidationError('Stories 的 HTML 仅允许 <br/>');
     }
-    if (node.type === 'image' && node.url) checkAsset(node.url);
     for (const child of node.children ?? []) walk(child);
   };
   walk(tree);
+  const references = collectContentImages(tree);
+  if (references.issues.length) throw new ValidationError('图片引用无效', references.issues);
+  for (const image of references.images) checkAsset(image.url);
   if (typeof fields.heroImage === 'string' && fields.heroImage) checkAsset(fields.heroImage);
   // draft 字段由服务端决定，浏览器传来的值不能改变发布意图。
   const source = updateSourceFields(draft.source, { draft: false });

@@ -1,6 +1,6 @@
 # 数据库设计与迁移约定
 
-当前使用 Cloudflare D1 + Drizzle ORM。业务表已有 `friend_links`、`cms_drafts`、`cms_publication_attempts` 和 `cms_deletion_attempts`；对应版本化迁移依次为 `0000_friend_links`、`0001_marvelous_ares`、`0002_modern_dragon_man`。本文以当前 schema 和迁移文件为准；本地迁移已执行，不据此推断远端生产库已迁移。
+当前使用 Cloudflare D1 + Drizzle ORM。业务表包含友链、CMS 草稿、已发布文章、图片元数据、发布/删除尝试及不可变修订快照。`drizzle/migrations/0000–0005` 与 schema、snapshot、journal 配套维护；以版本化文件为准，隔离本地验证不代表现有本地业务库或生产库已迁移。
 
 ## 命名与公共字段
 
@@ -79,7 +79,7 @@ export type NewExampleItem = InferInsertModel<typeof exampleItems>;
 
 ## CMS 工作草稿与仓库操作
 
-Schema 位于 `src/server/db/schema/cms.ts`。D1 保存后台工作草稿、发布和删除操作记录；公开 Blog / Stories 的内容仍来自 Git 仓库中的 `content/blog/**/*.md[x]`、`content/stories/**/*.md`，经 Astro 构建部署后才影响线上页面。`draft: true` 是文章 frontmatter 字段，不等于 `cms_drafts.status`。图片不存入这三张表；当前图片目录列举也不代表图片上传已开放。
+Schema 位于 `src/server/db/schema/cms.ts`。D1 保存后台工作草稿、修订快照、发布和删除操作记录。当前 D1 原生发布模式将公开 Blog / Stories 写入 `cms_posts`，文件内容仍可作为静态回退；兼容的 Git 通道则提交 `content/blog/**/*.md[x]`、`content/stories/**/*.md`，需构建部署后才影响线上页面。`draft: true` 是文章 frontmatter 字段，不等于 `cms_drafts.status`。图片字节存于对象存储，元数据保存在 `cms_draft_assets`；上传与文章发布有独立的权限、大小及资源归属校验。
 
 ### `cms_drafts`：一轮可修订的工作草稿
 
@@ -210,3 +210,9 @@ D1 和 KV 的部署 binding 位于 `wrangler.toml`，实际资源名称和运维
 上传接口先写对象，再写 D1；D1 写入失败会尝试清理对象。极端中断仍可能留下无元数据的对象，后续清理任务应按前缀与 D1 记录核对。图片和文章跨 S3、D1、GitHub 没有原子事务；发布确认后开放图片可重试对账，生产须保留对象及 D1 记录，不得因文章删除而立即清除共用图片。`staged` 返回的本站公开路径尚不可访问（不代表桶直链也不可访问）；`committed` 后通过公开 Worker 路由读取，站点页面仍需等部署完成才会引用新图片。
 
 完整 HTTP、缓存和服务分层约定见 [服务端 README](../src/server/README.md)。
+
+### `cms_document_revisions`：不可变保存快照（0005）
+
+状态侧栏的修改历史从此表读取，不再将 `cms_drafts.revision` 递增误认为旧正文已经保留。每次成功创建/保存草稿，以同一原子批处理追加一条 `cmr_` 快照；`draft_id + revision` 唯一，`target_path + created_at + id` 支持历史查询。只追加，不提供更新/恢复接口；迁移前已覆盖的版本不追补。
+
+快照包含源文、内容哈希、字节数、标题摘要、草稿修订与创建者/毫秒时间。摘要接口不返回正文或创建者；单个快照要求管理员权限并校验路径归属。发布尝试另增可空 `backend` 及路径历史索引，旧数据保留未知通道。详细接口与交互约定见 [CMS 规范](./specs/pageel-cms-spec.md#文稿状态与历史2026-10-25)。

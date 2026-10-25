@@ -3,7 +3,11 @@ import { readdir, readFile } from 'node:fs/promises';
 import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import ts from 'typescript';
-import { D1ReleaseService, readMigrationSql } from '../../scripts/d1-release.mjs';
+import {
+  auditMigrationEntries,
+  D1ReleaseService,
+  readMigrationSql,
+} from '../../scripts/d1-release.mjs';
 import {
   parseSchemaReadiness,
   readD1Requirements,
@@ -16,7 +20,17 @@ const result = (rows) => JSON.stringify([{ success: true, results: rows }]);
 test('真实迁移在隔离 SQLite 上复现历史漏表，补齐后满足最终快照要求', async () => {
   const expected = await requirements();
   assert.ok(expected.tables.some((table) => table.name === 'cms_posts'));
-  assert.equal(expected.migrations.length, 5);
+  assert.equal(expected.migrations.length, 6);
+  const historyMigration = expected.migrations.at(-1);
+  assert.deepEqual(
+    auditMigrationEntries([
+      {
+        file: historyMigration,
+        sql: await readMigrationSql(`drizzle/migrations/${historyMigration}`),
+      },
+    ]),
+    [],
+  );
   const db = new DatabaseSync(':memory:');
   try {
     db.exec(await readMigrationSql(`drizzle/migrations/${expected.migrations[0]}`));

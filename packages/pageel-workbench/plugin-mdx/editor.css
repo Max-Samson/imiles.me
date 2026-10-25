@@ -1,15 +1,15 @@
 /**
- * B2: CSS Isolation styles for MDXEditor
+ * B2: CSS Isolation & Dialog Styling for MDXEditor
  *
- * Prevents Tailwind CSS 4.0 preflight/reset from affecting
- * MDXEditor's internal styles (Lexical-based).
+ * Prevents Tailwind CSS reset from breaking MDXEditor internal styles,
+ * and fixes the layout, alignment, and UX of dialogs (Image, Link, Table, etc.).
  */
 
 .pageel-editor-slot {
   /* Reset all inherited styles to browser defaults */
   all: initial;
   display: block;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
   font-size: 16px;
   line-height: 1.6;
   color: #1f2937;
@@ -28,13 +28,16 @@
 .pageel-editor-slot .mdxeditor {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 }
 
 .pageel-editor-slot .mdxeditor-toolbar {
   background: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
   padding: 4px 8px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
 }
 
 /* Content area */
@@ -47,6 +50,959 @@
 .pageel-editor-slot .mdxeditor:focus-within {
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* ---------------------------------------------------------------------------
+   Dialog Overlay & Modal Window UX Overrides
+   Fixed: Upstream ImageDialog rendered title and form side-by-side horizontally.
+   We force a vertical column layout with modern modal styling.
+--------------------------------------------------------------------------- */
+
+/* Modal Backdrop */
+.pageel-editor-slot [class*="dialogOverlay"] {
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  z-index: 9999 !important;
+  animation: pageelFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Modal Content Card */
+.pageel-editor-slot [class*="dialogContent"],
+.pageel-editor-slot div[role="dialog"] {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: min(500px, calc(100vw - 32px)) !important;
+  max-width: 500px !important;
+  max-height: calc(100vh - 64px) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  gap: 0 !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.2), 0 8px 10px -6px rgba(15, 23, 42, 0.1) !important;
+  overflow: hidden !important;
+  z-index: 10000 !important;
+  font-family: inherit !important;
+  animation: pageelScaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Dialog Title (Header) */
+.pageel-editor-slot [class*="dialogContent"] > h2,
+.pageel-editor-slot div[role="dialog"] > h2,
+.pageel-editor-slot [class*="dialogTitle"] {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  color: #0f172a !important;
+  padding: 16px 20px 14px !important;
+  margin: 0 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  background-color: #f8fafc !important;
+  letter-spacing: -0.01em !important;
+}
+
+.pageel-editor-slot [class*="dialogContent"] > h2::before,
+.pageel-editor-slot div[role="dialog"] > h2::before {
+  content: "" !important;
+  display: inline-block !important;
+  width: 3.5px !important;
+  height: 15px !important;
+  border-radius: 2px !important;
+  background-color: #2563eb !important;
+}
+
+/* Multi-Field Form Inside Dialog */
+.pageel-editor-slot form[class*="multiFieldForm"] {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  padding: 20px !important;
+  margin: 0 !important;
+  max-height: calc(100vh - 140px) !important;
+  overflow-y: auto !important;
+}
+
+/* Form Fields */
+.pageel-editor-slot form[class*="multiFieldForm"] [class*="formField"] {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.pageel-editor-slot form[class*="multiFieldForm"] [class*="formField"] > label {
+  font-size: 13px !important;
+  font-weight: 550 !important;
+  color: #334155 !important;
+  line-height: 1.4 !important;
+}
+
+/* Local File Input Styling */
+.pageel-editor-slot form[class*="multiFieldForm"] input[type="file"] {
+  display: block !important;
+  width: 100% !important;
+  font-size: 13px !important;
+  color: #64748b !important;
+  background-color: #f8fafc !important;
+  border: 1.5px dashed #cbd5e1 !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  cursor: pointer !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease !important;
+}
+
+.pageel-editor-slot form[class*="multiFieldForm"] input[type="file"]:hover {
+  border-color: #2563eb !important;
+  background-color: #eff6ff !important;
+}
+
+.pageel-editor-slot form[class*="multiFieldForm"] input[type="file"]::file-selector-button {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 6px 14px !important;
+  border-radius: 6px !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  margin-right: 12px !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.pageel-editor-slot form[class*="multiFieldForm"] input[type="file"]::file-selector-button:hover {
+  background-color: #1d4ed8 !important;
+}
+
+/* Text & Autocomplete Inputs */
+.pageel-editor-slot form[class*="multiFieldForm"] input[type="text"],
+.pageel-editor-slot form[class*="multiFieldForm"] [class*="textInput"],
+.pageel-editor-slot form[class*="multiFieldForm"] [class*="downshiftInput"] {
+  width: 100% !important;
+  height: 38px !important;
+  padding: 0 12px !important;
+  font-size: 13.5px !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.pageel-editor-slot form[class*="multiFieldForm"] input[type="text"]:focus,
+.pageel-editor-slot form[class*="multiFieldForm"] [class*="textInput"]:focus,
+.pageel-editor-slot form[class*="multiFieldForm"] [class*="downshiftInput"]:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Dialog Action Buttons Row */
+.pageel-editor-slot form[class*="multiFieldForm"] > div:last-child {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-top: 4px !important;
+  padding-top: 14px !important;
+  border-top: 1px solid #f1f5f9 !important;
+}
+
+/* Save Button */
+.pageel-editor-slot [class*="primaryButton"],
+.pageel-editor-slot form[class*="multiFieldForm"] button[type="submit"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 36px !important;
+  padding: 0 18px !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.15s ease !important;
+}
+
+.pageel-editor-slot [class*="primaryButton"]:hover,
+.pageel-editor-slot form[class*="multiFieldForm"] button[type="submit"]:hover {
+  background-color: #1d4ed8 !important;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* Cancel Button */
+.pageel-editor-slot [class*="secondaryButton"],
+.pageel-editor-slot form[class*="multiFieldForm"] button[type="reset"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 36px !important;
+  padding: 0 16px !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  background-color: transparent !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.pageel-editor-slot [class*="secondaryButton"]:hover,
+.pageel-editor-slot form[class*="multiFieldForm"] button[type="reset"]:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Dark Theme Adaptation
+--------------------------------------------------------------------------- */
+
+html.dark .pageel-editor-slot [class*="dialogContent"],
+html.dark .pageel-editor-slot div[role="dialog"],
+.pageel-editor-slot .dark-theme [class*="dialogContent"],
+.pageel-editor-slot .dark-theme div[role="dialog"] {
+  background-color: #141923 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark .pageel-editor-slot [class*="dialogContent"] > h2,
+html.dark .pageel-editor-slot div[role="dialog"] > h2,
+.pageel-editor-slot .dark-theme [class*="dialogContent"] > h2,
+.pageel-editor-slot .dark-theme div[role="dialog"] > h2 {
+  background-color: #1a202c !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark .pageel-editor-slot form[class*="multiFieldForm"] [class*="formField"] > label,
+.pageel-editor-slot .dark-theme form[class*="multiFieldForm"] [class*="formField"] > label {
+  color: #cbd5e1 !important;
+}
+
+html.dark .pageel-editor-slot form[class*="multiFieldForm"] input[type="file"],
+.pageel-editor-slot .dark-theme form[class*="multiFieldForm"] input[type="file"] {
+  background-color: #0d1117 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #94a3b8 !important;
+}
+
+html.dark .pageel-editor-slot form[class*="multiFieldForm"] input[type="file"]:hover,
+.pageel-editor-slot .dark-theme form[class*="multiFieldForm"] input[type="file"]:hover {
+  border-color: #38bdf8 !important;
+  background-color: #162032 !important;
+}
+
+html.dark .pageel-editor-slot form[class*="multiFieldForm"] input[type="text"],
+html.dark .pageel-editor-slot form[class*="multiFieldForm"] [class*="textInput"],
+html.dark .pageel-editor-slot form[class*="multiFieldForm"] [class*="downshiftInput"],
+.pageel-editor-slot .dark-theme form[class*="multiFieldForm"] input[type="text"],
+.pageel-editor-slot .dark-theme form[class*="multiFieldForm"] [class*="textInput"],
+.pageel-editor-slot .dark-theme form[class*="multiFieldForm"] [class*="downshiftInput"] {
+  background-color: #0d1117 !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .pageel-editor-slot form[class*="multiFieldForm"] input[type="text"]:focus,
+html.dark .pageel-editor-slot form[class*="multiFieldForm"] [class*="textInput"]:focus,
+html.dark .pageel-editor-slot form[class*="multiFieldForm"] [class*="downshiftInput"]:focus,
+.pageel-editor-slot .dark-theme form[class*="multiFieldForm"] input[type="text"]:focus,
+.pageel-editor-slot .dark-theme form[class*="multiFieldForm"] [class*="textInput"]:focus,
+.pageel-editor-slot .dark-theme form[class*="multiFieldForm"] [class*="downshiftInput"]:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
+}
+
+html.dark .pageel-editor-slot form[class*="multiFieldForm"] > div:last-child,
+.pageel-editor-slot .dark-theme form[class*="multiFieldForm"] > div:last-child {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .pageel-editor-slot [class*="secondaryButton"],
+html.dark .pageel-editor-slot form[class*="multiFieldForm"] button[type="reset"],
+.pageel-editor-slot .dark-theme [class*="secondaryButton"],
+.pageel-editor-slot .dark-theme form[class*="multiFieldForm"] button[type="reset"] {
+  color: #94a3b8 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .pageel-editor-slot [class*="secondaryButton"]:hover,
+html.dark .pageel-editor-slot form[class*="multiFieldForm"] button[type="reset"]:hover,
+.pageel-editor-slot .dark-theme [class*="secondaryButton"]:hover,
+.pageel-editor-slot .dark-theme form[class*="multiFieldForm"] button[type="reset"]:hover {
+  background-color: #1c2232 !important;
+  color: #f1f5f9 !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Editor In-Content Image Controls & Floating Action Toolbar
+--------------------------------------------------------------------------- */
+
+/* Image selection highlight in editor */
+.pageel-editor-slot [class*="focusedImage"] {
+  outline: 2px solid #2563eb !important;
+  outline-offset: 3px !important;
+  border-radius: 6px !important;
+}
+
+/* Edit Image floating action pill toolbar */
+.pageel-editor-slot [class*="editImageToolbar"] {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 4px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1) !important;
+  z-index: 10 !important;
+}
+
+.pageel-editor-slot [class*="editImageToolbar"] button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 6px !important;
+  border: none !important;
+  background: transparent !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.pageel-editor-slot [class*="editImageToolbar"] button:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.dark .pageel-editor-slot [class*="editImageToolbar"],
+.pageel-editor-slot .dark-theme [class*="editImageToolbar"] {
+  background: #1a202c !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html.dark .pageel-editor-slot [class*="editImageToolbar"] button:hover,
+.pageel-editor-slot .dark-theme [class*="editImageToolbar"] button:hover {
+  background: #2d3748 !important;
+  color: #f1f5f9 !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Custom CmsImageDialog UX & UI Styles
+--------------------------------------------------------------------------- */
+
+.pageel-editor-slot .cms-image-dialogOverlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(15, 23, 42, 0.48) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  z-index: 9999 !important;
+  animation: pageelFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.pageel-editor-slot .cms-image-dialogContent {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: min(520px, calc(100vw - 32px)) !important;
+  max-width: 520px !important;
+  max-height: calc(100vh - 48px) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  gap: 0 !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.05) !important;
+  overflow: hidden !important;
+  z-index: 10000 !important;
+  font-family: inherit !important;
+  animation: pageelScaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.pageel-editor-slot .cms-image-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 16px 20px 10px 20px !important;
+  background-color: #ffffff !important;
+}
+
+.pageel-editor-slot .cms-image-header-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.pageel-editor-slot .cms-image-header-title h2 {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.pageel-editor-slot .cms-image-close-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 6px !important;
+  border: none !important;
+  background: transparent !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.pageel-editor-slot .cms-image-close-btn:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.pageel-editor-slot .cms-image-description {
+  font-size: 12.5px !important;
+  color: #64748b !important;
+  padding: 0 20px 12px 20px !important;
+  margin: 0 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  line-height: 1.5 !important;
+}
+
+/* Tabs */
+.pageel-editor-slot .cms-image-tabs {
+  display: flex !important;
+  gap: 6px !important;
+  padding: 12px 20px 0 20px !important;
+}
+
+.pageel-editor-slot .cms-image-tab {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  height: 32px !important;
+  padding: 0 14px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #f8fafc !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.pageel-editor-slot .cms-image-tab:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.pageel-editor-slot .cms-image-tab-active {
+  background: #ffffff !important;
+  color: #2563eb !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* Form */
+.pageel-editor-slot .cms-image-multiFieldForm {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  padding: 16px 20px 20px 20px !important;
+  margin: 0 !important;
+  max-height: calc(100vh - 180px) !important;
+  overflow-y: auto !important;
+}
+
+/* Dropzone */
+.pageel-editor-slot .cms-image-dropzone {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px 16px !important;
+  border: 1.5px dashed #cbd5e1 !important;
+  border-radius: 10px !important;
+  background: #f8fafc !important;
+  cursor: pointer !important;
+  text-align: center !important;
+  transition: all 0.2s ease !important;
+}
+
+.pageel-editor-slot .cms-image-dropzone:hover {
+  border-color: #2563eb !important;
+  background-color: #eff6ff !important;
+}
+
+.pageel-editor-slot .cms-image-dropzone-active {
+  border-color: #2563eb !important;
+  background-color: #dbeafe !important;
+  border-style: solid !important;
+}
+
+.pageel-editor-slot .cms-image-dropzone-disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+.pageel-editor-slot .cms-image-dropzone-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 20px !important;
+  background-color: #eff6ff !important;
+  margin-bottom: 10px !important;
+}
+
+.pageel-editor-slot .cms-image-dropzone-text p {
+  margin: 0 !important;
+}
+
+/* File Card */
+.pageel-editor-slot .cms-image-filecard {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 10px 14px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  background: #f8fafc !important;
+}
+
+.pageel-editor-slot .cms-image-filecard-thumb {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 6px !important;
+  object-fit: cover !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.pageel-editor-slot .cms-image-filecard-thumb-placeholder {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 6px !important;
+  background: #e2e8f0 !important;
+}
+
+.pageel-editor-slot .cms-image-filecard-info {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.pageel-editor-slot .cms-image-filecard-name {
+  font-size: 13.5px !important;
+  font-weight: 550 !important;
+  color: #0f172a !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  margin: 0 !important;
+}
+
+.pageel-editor-slot .cms-image-filecard-size {
+  font-size: 12px !important;
+  color: #64748b !important;
+  margin: 2px 0 0 0 !important;
+}
+
+.pageel-editor-slot .cms-image-filecard-remove {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 6px !important;
+  border: none !important;
+  background: transparent !important;
+  color: #ef4444 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.pageel-editor-slot .cms-image-filecard-remove:hover {
+  background: #fee2e2 !important;
+}
+
+/* Fields & Inputs */
+.pageel-editor-slot .cms-image-formField {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.pageel-editor-slot .cms-image-formField label {
+  font-size: 13px !important;
+  font-weight: 550 !important;
+  color: #334155 !important;
+  line-height: 1.4 !important;
+}
+
+.pageel-editor-slot .cms-image-input-wrap {
+  position: relative !important;
+  width: 100% !important;
+}
+
+.pageel-editor-slot .cms-image-formField input[type="text"],
+.pageel-editor-slot .cms-image-input-with-icon {
+  width: 100% !important;
+  height: 38px !important;
+  padding: 0 12px !important;
+  font-size: 13.5px !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.pageel-editor-slot .cms-image-input-with-icon {
+  padding-left: 36px !important;
+}
+
+.pageel-editor-slot .cms-image-formField input[type="text"]:focus,
+.pageel-editor-slot .cms-image-input-with-icon:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Real-time Preview */
+.pageel-editor-slot .cms-image-preview-box {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  background: #f8fafc !important;
+}
+
+.pageel-editor-slot .cms-image-preview-header {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+  padding: 6px 12px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  background: #f1f5f9 !important;
+}
+
+.pageel-editor-slot .cms-image-preview-canvas {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 12px !important;
+  min-height: 80px !important;
+  background-image: linear-gradient(45deg, #f1f5f9 25%, transparent 25%), linear-gradient(-45deg, #f1f5f9 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f1f5f9 75%), linear-gradient(-45deg, transparent 75%, #f1f5f9 75%) !important;
+  background-size: 16px 16px !important;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px !important;
+}
+
+.pageel-editor-slot .cms-image-preview-img {
+  max-height: 140px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+  border-radius: 4px !important;
+}
+
+/* Grid Fields */
+.pageel-editor-slot .cms-image-grid-fields {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+}
+
+@media (max-width: 500px) {
+  .pageel-editor-slot .cms-image-grid-fields {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Alerts */
+.pageel-editor-slot .cms-image-alert-error {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  padding: 10px 14px !important;
+  border-radius: 6px !important;
+  background-color: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  color: #b91c1c !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+.pageel-editor-slot .cms-image-alert-busy {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 14px !important;
+  border-radius: 6px !important;
+  background-color: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  color: #1d4ed8 !important;
+  font-size: 13px !important;
+}
+
+/* Footer */
+.pageel-editor-slot .cms-image-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-top: 4px !important;
+  padding-top: 14px !important;
+  border-top: 1px solid #f1f5f9 !important;
+}
+
+.pageel-editor-slot .cms-image-btn-primary {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 36px !important;
+  padding: 0 18px !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.15s ease !important;
+}
+
+.pageel-editor-slot .cms-image-btn-primary:hover:not(:disabled) {
+  background-color: #1d4ed8 !important;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.25) !important;
+}
+
+.pageel-editor-slot .cms-image-btn-primary:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+.pageel-editor-slot .cms-image-btn-secondary {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 36px !important;
+  padding: 0 16px !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  background-color: transparent !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.pageel-editor-slot .cms-image-btn-secondary:hover:not(:disabled) {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Dark Mode Overrides */
+html.dark .pageel-editor-slot .cms-image-dialogContent,
+.pageel-editor-slot .dark-theme .cms-image-dialogContent {
+  background-color: #141923 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-header,
+.pageel-editor-slot .dark-theme .cms-image-header {
+  background-color: #141923 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-header-title h2,
+.pageel-editor-slot .dark-theme .cms-image-header-title h2 {
+  color: #f1f5f9 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-close-btn,
+.pageel-editor-slot .dark-theme .cms-image-close-btn {
+  color: #94a3b8 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-close-btn:hover,
+.pageel-editor-slot .dark-theme .cms-image-close-btn:hover {
+  background-color: #1f2737 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-description,
+.pageel-editor-slot .dark-theme .cms-image-description {
+  color: #94a3b8 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-tab,
+.pageel-editor-slot .dark-theme .cms-image-tab {
+  background: #1a202c !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #94a3b8 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-tab:hover,
+.pageel-editor-slot .dark-theme .cms-image-tab:hover {
+  background: #232b3b !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-tab-active,
+.pageel-editor-slot .dark-theme .cms-image-tab-active {
+  background: #141923 !important;
+  color: #38bdf8 !important;
+  border-color: #38bdf8 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-dropzone,
+.pageel-editor-slot .dark-theme .cms-image-dropzone {
+  background: #0d1117 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-dropzone:hover,
+.pageel-editor-slot .dark-theme .cms-image-dropzone:hover {
+  border-color: #38bdf8 !important;
+  background-color: #162032 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-dropzone-icon,
+.pageel-editor-slot .dark-theme .cms-image-dropzone-icon {
+  background-color: #162032 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-filecard,
+.pageel-editor-slot .dark-theme .cms-image-filecard {
+  background: #0d1117 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-filecard-name,
+.pageel-editor-slot .dark-theme .cms-image-filecard-name {
+  color: #f1f5f9 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-formField label,
+.pageel-editor-slot .dark-theme .cms-image-formField label {
+  color: #cbd5e1 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-formField input[type="text"],
+html.dark .pageel-editor-slot .cms-image-input-with-icon,
+.pageel-editor-slot .dark-theme .cms-image-formField input[type="text"],
+.pageel-editor-slot .dark-theme .cms-image-input-with-icon {
+  background-color: #0d1117 !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-formField input[type="text"]:focus,
+html.dark .pageel-editor-slot .cms-image-input-with-icon:focus,
+.pageel-editor-slot .dark-theme .cms-image-formField input[type="text"]:focus,
+.pageel-editor-slot .dark-theme .cms-image-input-with-icon:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-preview-box,
+.pageel-editor-slot .dark-theme .cms-image-preview-box {
+  background: #0d1117 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-preview-header,
+.pageel-editor-slot .dark-theme .cms-image-preview-header {
+  background: #1a202c !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  color: #94a3b8 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-preview-canvas,
+.pageel-editor-slot .dark-theme .cms-image-preview-canvas {
+  background-image: linear-gradient(45deg, #161b26 25%, transparent 25%), linear-gradient(-45deg, #161b26 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #161b26 75%), linear-gradient(-45deg, transparent 75%, #161b26 75%) !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-alert-error,
+.pageel-editor-slot .dark-theme .cms-image-alert-error {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-alert-busy,
+.pageel-editor-slot .dark-theme .cms-image-alert-busy {
+  background-color: rgba(56, 189, 248, 0.1) !important;
+  border-color: rgba(56, 189, 248, 0.2) !important;
+  color: #7dd3fc !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-footer,
+.pageel-editor-slot .dark-theme .cms-image-footer {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-btn-secondary,
+.pageel-editor-slot .dark-theme .cms-image-btn-secondary {
+  color: #94a3b8 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .pageel-editor-slot .cms-image-btn-secondary:hover:not(:disabled),
+.pageel-editor-slot .dark-theme .cms-image-btn-secondary:hover:not(:disabled) {
+  background-color: #1c2232 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Animations */
+@keyframes pageelFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pageelScaleIn {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
 /* Spinner animation for loading */

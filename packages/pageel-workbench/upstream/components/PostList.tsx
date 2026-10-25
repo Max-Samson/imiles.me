@@ -228,10 +228,6 @@ const PostList: React.FC<PostListProps> = ({
       setSelectedPost(post);
       return;
     }
-    if (post.sha && !window.confirm('这篇文章有未发布草稿。确定继续编辑草稿？取消则打开当前线上版本。')) {
-      window.open(post.draft.publicPath, '_blank', 'noopener');
-      return;
-    }
     setOpeningPost(true);
     setError(null);
     try {

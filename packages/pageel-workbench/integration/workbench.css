@@ -308,3 +308,20 @@ html.dark .cms-component-select {
 .cms-target-highlight {
   animation: cms-pulse-outline 1.4s ease-out;
 }
+
+/* 历史使用单线时间轴，不虚构 D1 不存在的 Git 分支；竖线不穿过最后一个节点。 */
+.cms-history-entry:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 24px;
+  bottom: 3px;
+  width: 1px;
+  background: var(--color-notion-border);
+}
+.cms-status-panel { overflow-wrap: anywhere; }
+#cms-properties { scroll-margin-top: 80px; }
+.cms-status-panel pre { tab-size: 2; }
+@media (prefers-reduced-motion: reduce) {
+  .cms-status-panel *, #cms-properties [role='tab'] { animation: none; transition: none; }
+}

@@ -1,3 +1,5 @@
+import { DocumentStatusPanel } from '../../integration/components/DocumentStatusPanel';
+import type { StatusNotice, StatusTone } from '../../integration/status-model';
 import { validatePublicationFields } from '../../integration/publication-validation';
 import { ComponentInspector, useComponentInspector } from '../../integration/components/InspectorContext';
 import { useWorkbench } from '../../integration/context';
@@ -8,6 +10,7 @@ import { AdminApiError } from '../../../../src/lib/admin/api-error';
 import { resolveNewContentTarget, resolveExistingContentTarget } from '../../../../src/lib/content-routing';
 import { parseSourceDocument } from '../../../../src/lib/content-source';
 import { fieldLabel } from '../../integration/labels';
+import { cn } from '../../../../src/lib/utils';
 import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
 import { ArrowLeft, SlidersHorizontal, Save, Info, Send, Globe, Copy, Check, ExternalLink, GitBranch, ShieldCheck, AlertTriangle, Database } from 'lucide-react';
 
@@ -36,6 +39,8 @@ import PostImageSelectionModal from './PostImageSelectionModal';
 import { SlotRenderer, createEditorGitService, usePluginConfig, isPluginFallback } from '../plugins';
 import type { EditorProps } from '@pageel/plugin-types';
 import { NativePlainEditor } from './editors/NativePlainEditor';
+import { SourceImagePreview } from '../../integration/components/SourceImagePreview';
+import { cmsImagePreviewUrl } from '../../../../src/lib/content-images';
 
 
 
@@ -92,9 +97,9 @@ const CoverImage: React.FC<{
             setImageUrl(thumbnailUrl);
             return;
         }
-        const staged = /^\/images\/blog\/(cma_[a-f0-9]{32})\.(?:png|jpe?g|webp)$/.exec(thumbnailUrl);
-        if (staged) {
-            setImageUrl(`/api/v1/admin/cms/assets/${staged[1]}/preview`);
+        const previewUrl = cmsImagePreviewUrl(thumbnailUrl);
+        if (previewUrl) {
+            setImageUrl(previewUrl);
             return;
         }
 
@@ -233,6 +238,13 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   // @para-doc [#csa-new-post-editor-mode]
   const { t, language } = useI18n();
   const pluginConfig = usePluginConfig();
+  const [imagePending, setImagePending] = useState(false);
+  const imagePendingRef = useRef(false);
+  const imageDocumentKey = useRef(crypto.randomUUID());
+  const onImagePendingChange = useCallback((pending: boolean) => {
+      imagePendingRef.current = pending;
+      setImagePending(pending);
+  }, []);
   // Stories 为纯文字排版；其他集合（如 Blog）在配置了插件时启用富文本可视化编辑器。
   const hasWysiwygPlugin = !isPluginFallback(pluginConfig.plugins?.editor) && !post.path.startsWith('content/stories/');
   const [activeTab, setActiveTab] = useState<'edit' | 'code' | 'preview'>(() =>
@@ -243,15 +255,8 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   const editorRef = useRef<any>(null);
 
   const handleTabChange = (newTab: 'edit' | 'code' | 'preview') => {
-      if (activeTab === 'edit' && newTab !== 'edit') {
-          const latestMd = editorRef.current?.getMarkdown();
-          if (latestMd !== undefined) {
-              setEditableBody(latestMd);
-              if (latestMd !== savedBodyRef.current) {
-                  setIsDirty(true);
-              }
-          }
-      }
+      if (imagePendingRef.current) return;
+      // 真实正文改动已由 onChange 同步；切换视图不把初始归一化结果强写回原源码。
       if (activeTab !== 'edit' && newTab === 'edit') {
           setExternalMarkdownVersion(v => v + 1);
       }
@@ -268,11 +273,40 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   const [importError, setImportError] = useState('');
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState(false);
+  const saveSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const publishSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetSuccessStates = useCallback(() => {
+    if (saveSuccessTimerRef.current) {
+      clearTimeout(saveSuccessTimerRef.current);
+      saveSuccessTimerRef.current = null;
+    }
+    if (publishSuccessTimerRef.current) {
+      clearTimeout(publishSuccessTimerRef.current);
+      publishSuccessTimerRef.current = null;
+    }
+    setSaveSuccess(false);
+    setPublishSuccess(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (saveSuccessTimerRef.current) clearTimeout(saveSuccessTimerRef.current);
+      if (publishSuccessTimerRef.current) clearTimeout(publishSuccessTimerRef.current);
+    };
+  }, []);
   // 新建和导入的文稿尚未写入 D1，即使未再次键入也不能静默丢弃。
   const [isDirty, setIsDirty] = useState(Boolean(post.newTarget || post.imported));
   const [saveMessage, setSaveMessage] = useState('');
   const [saveError, setSaveError] = useState(false);
-  const [publishMessage, setPublishMessage] = useState('');
+  const [publishNotice, setPublishNotice] = useState<StatusNotice | null>(null);
+  const [historyVersion, setHistoryVersion] = useState(0);
+  // 文案与语义分开保存，侧栏可准确标识成功、失败和待对账，不通过字符串猜状态。
+  const setPublishMessage = useCallback((message: string, tone: StatusTone = 'info') => {
+      setPublishNotice(message ? { message, tone } : null);
+  }, []);
   const [publishing, setPublishing] = useState(false);
   const [checkingDeployment, setCheckingDeployment] = useState(false);
   const [publishMode, setPublishMode] = useState<'loading' | 'snapshot' | 'github' | 'd1'>('loading');
@@ -281,6 +315,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   const [showPublishConfirmModal, setShowPublishConfirmModal] = useState(false);
   const [publication, setPublication] = useState<CmsPublicationResult | null>(post.publication ?? null);
   const [lastCommit, setLastCommit] = useState<CmsPublicationResult | null>(post.publication?.status === 'committed' ? post.publication : null);
+  const publicationEpochRef = useRef(0);
   const operationRef = useRef<{ id: string; revision: number } | null>(post.publication ? { id: post.publication.operationId, revision: post.publication.draftRevision } : null);
   const draftRef = useRef<CmsDraftSummary | undefined>(post.draft);
   const publishedBaseRef = useRef<string | null>(post.sha || null);
@@ -313,21 +348,22 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
     return () => { active = false; };
   }, []);
   useEffect(() => {
-    // 页面刷新后按仓库文件身份找回最近一次发布操作；版本不一致则不能冒充当前文章的部署结果。
-    if (!/^[a-f0-9]{40}$/i.test(post.sha)) return;
+    // 恢复最近成功的发布记录；状态面板会明确区分历史成功与当前工作区修改。
+    if (!/^content\/(blog|stories)\/.+\.mdx?$/.test(post.path) || post.imported || post.newTarget) return;
     let active = true;
+    const epoch = publicationEpochRef.current;
     cmsDocumentClient.latestPublication(post.path)
       .then(result => {
-        if (active && result?.resultBlobSha === post.sha) setLastCommit(result);
+        if (active && publicationEpochRef.current === epoch) setLastCommit(result);
       })
       .catch(() => {
         // 查询失败不会阻止正文编辑；发布操作仍可通过其操作 ID 单独查询。
       });
     return () => { active = false; };
-  }, [post.path, post.sha]);
+  }, [post.path, post.sha, post.imported, post.newTarget]);
   const componentInspector = useComponentInspector();
   // 将修改状态通知宿主；详情卸载时清除保护，不将正文写入额外缓存。
-  useEffect(() => { onDirtyChange(isDirty || isSaving || publishing); }, [isDirty, isSaving, publishing, onDirtyChange]);
+  useEffect(() => { onDirtyChange(isDirty || isSaving || publishing || imagePending); }, [isDirty, isSaving, publishing, imagePending, onDirtyChange]);
   useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
 
   // 同步正文与集合类型至组件检查器，驱动「本文已用」导航与插入限制
@@ -363,7 +399,6 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
     : `/stories/${post.name.replace(/\.md$/, '')}`;
   // Updates specific to Detail View
   const updatePostFileInputRef = useRef<HTMLInputElement>(null);
-  const sourceImageInputRef = useRef<HTMLInputElement>(null);
   const coverImageInputRef = useRef<HTMLInputElement>(null);
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
@@ -404,6 +439,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   // Handle Input Changes
   const handleFrontmatterChange = (key: string, value: any) => {
       editSerialRef.current += 1;
+      resetSuccessStates();
       setPublication(previous => previous?.status === 'committed' ? null : previous);
       setEditableFrontmatter(prev => ({
           ...prev,
@@ -414,6 +450,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
   const handleBodyChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       editSerialRef.current += 1;
+      resetSuccessStates();
       setPublication(previous => previous?.status === 'committed' ? null : previous);
       setEditableBody(e.target.value);
       setIsDirty(true);
@@ -421,10 +458,11 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
   const handleEditorChange = useCallback((markdown: string) => {
       editSerialRef.current += 1;
+      resetSuccessStates();
       setPublication(previous => previous?.status === 'committed' ? null : previous);
       setEditableBody(markdown);
       setIsDirty(true);
-  }, []);
+  }, [resetSuccessStates]);
 
   const handleAddMissingField = (key: string) => {
       let defaultValue: any = "";
@@ -440,6 +478,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
   const handleSave = useCallback(async (): Promise<CmsDraftSummary | undefined> => {
       if (isSaving || (Boolean(draftRef.current) && !isDirty)) return;
+      resetSuccessStates();
       setIsSaving(true);
       setSaveMessage('');
       setSaveError(false);
@@ -447,7 +486,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       const submittedFields: Record<string, unknown> = { ...editableFrontmatter, ...(post.imported ? { lang: importLang } : {}) };
       try {
           let currentBody = editableBody;
-          if (activeTab === 'edit' && hasWysiwygPlugin && editorRef.current) {
+          if (activeTab === 'edit' && hasWysiwygPlugin && editorRef.current && editableBody !== savedBodyRef.current) {
               const latestMd = editorRef.current.getMarkdown();
               if (latestMd !== undefined && latestMd !== currentBody) {
                   currentBody = latestMd;
@@ -508,42 +547,38 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
           if (post.imported) setEditableFrontmatter(submittedFields);
           if (editSerialRef.current === editSerial) setIsDirty(false);
           setSaveMessage(`草稿已保存 · 修订 ${draft.revision}`);
+          setHistoryVersion(value => value + 1);
+          setSaveSuccess(true);
+          if (saveSuccessTimerRef.current) clearTimeout(saveSuccessTimerRef.current);
+          saveSuccessTimerRef.current = setTimeout(() => {
+              setSaveSuccess(false);
+              saveSuccessTimerRef.current = null;
+          }, 2500);
           return draft;
       } catch (error) {
+          setSaveSuccess(false);
           setSaveError(true);
+          setPropertiesOpen(true);
+          if (!(post.imported && !importSlug.trim())) componentInspector.setMode('status');
           setSaveMessage(error instanceof AdminApiError && error.status === 409
               ? '草稿版本冲突：当前输入仍在编辑台，请重新打开并比较后保存。'
               : error instanceof Error ? error.message : '草稿保存失败');
       } finally {
           setIsSaving(false);
       }
-  }, [isDirty, isSaving, post, editableFrontmatter, editableBody, activeTab, hasWysiwygPlugin, importSlug, importLang]);
+  }, [isDirty, isSaving, post, editableFrontmatter, editableBody, activeTab, hasWysiwygPlugin, importSlug, importLang, componentInspector, resetSuccessStates]);
 
-  const handleCmsImageUpload = useCallback(async (file: File): Promise<string> => {
+  const handleCmsImageUpload = useCallback(async (file: File, signal?: AbortSignal): Promise<string> => {
+      signal?.throwIfAborted();
       if (post.path.startsWith('content/stories/')) throw new Error('Stories 不支持图片');
       const draft = draftRef.current ?? await handleSave();
+      signal?.throwIfAborted();
       if (!draft) throw new Error('请先保存草稿，再上传图片');
-      const asset = await cmsDocumentClient.uploadAsset(draft.id, file);
-      setSaveMessage('图片已暂存；文章发布后公开地址才可匿名访问。');
+      const asset = await cmsDocumentClient.uploadAsset(draft.id, file, signal);
+      signal?.throwIfAborted();
+      setSaveMessage('图片已上传，请保存草稿或发布以保留引用。');
       return asset.publicUrl;
   }, [post.path, handleSave]);
-
-  const handleSourceImage = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      event.target.value = '';
-      if (!file) return;
-      try {
-          setIsUploading(true);
-          const url = await handleCmsImageUpload(file);
-          // 源码模式不经过 MDXEditor 序列化，保留文稿原有 JSX 和空白。
-          const alt = file.name.replace(/\.[^.]+$/, '').replace(/[^\p{L}\p{N} -]/gu, '').trim() || '图片';
-          handleEditorChange(`${editableBody.trimEnd()}\n\n![${alt}](${url})\n`);
-      } catch (error) {
-          setSaveMessage(error instanceof Error ? error.message : '图片上传失败');
-      } finally {
-          setIsUploading(false);
-      }
-  }, [handleCmsImageUpload, editableBody]);
 
   const handleCoverImage = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
@@ -561,6 +596,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   }, [handleCmsImageUpload]);
 
   useEffect(() => registerSaveDraft(async () => {
+    if (imagePendingRef.current) return false;
     const editSerial = editSerialRef.current;
     const draft = await handleSave();
     return Boolean(draft) && editSerialRef.current === editSerial;
@@ -568,8 +604,11 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
   const executePublish = useCallback(async () => {
       setShowPublishConfirmModal(false);
-      if (publishing || (publishMode !== 'github' && publishMode !== 'd1')) return;
+      if (imagePendingRef.current || publishing || (publishMode !== 'github' && publishMode !== 'd1')) return;
+      resetSuccessStates();
       setPublishing(true);
+      setPropertiesOpen(true);
+      componentInspector.setMode('status');
       setPublishMessage('');
       try {
           // 请求丢失回执时仍沿用原操作 ID；先对账，避免第二次 Git 提交。
@@ -582,37 +621,58 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
           operationRef.current = operation;
           const submittedSerial = editSerialRef.current;
           const result = await cmsDocumentClient.publish(draft.id, operation.revision, operation.id);
+          setHistoryVersion(value => value + 1);
           setPublication(result.status === 'committed' && editSerialRef.current !== submittedSerial ? null : result);
           if (['committed', 'conflict', 'failed'].includes(result.status)) operationRef.current = null;
           if (result.status === 'committed') {
+              publicationEpochRef.current += 1;
               setLastCommit(result);
+              setSaveMessage('');
+              setSaveError(false);
               publishedBaseRef.current = result.resultBlobSha;
               if (draftRef.current?.revision === result.draftRevision) draftRef.current = undefined;
               if (editSerialRef.current === submittedSerial) setIsDirty(false);
               const branchText = sessionInfo?.branch ? `【${sessionInfo.branch}】` : '';
               if (sessionInfo?.mode === 'd1' || publishMode === 'd1') {
-                  setPublishMessage('文章已成功发布至 D1 数据库！前台页面即时同步生效。');
+                  setPublishMessage('文章已写入 D1，无需等待构建；可打开线上版查看实际页面。', 'success');
               } else if (sessionInfo?.isTestBranch) {
-                  setPublishMessage(`已安全提交至本地调试分支 ${branchText}；内容已隔离，不会触发线上生产部署。`);
+                  setPublishMessage(`已提交至调试分支 ${branchText}；不会触发线上生产部署。`, 'success');
               } else {
-                  setPublishMessage(`Git 提交成功 ${branchText}；线上部署尚未核实。点击“检查部署”可核验上线状态。`);
+                  setPublishMessage(`Git 提交成功 ${branchText}；线上部署尚未核实。`, 'success');
               }
+              setPublishSuccess(true);
+              if (publishSuccessTimerRef.current) clearTimeout(publishSuccessTimerRef.current);
+              publishSuccessTimerRef.current = setTimeout(() => {
+                  setPublishSuccess(false);
+                  publishSuccessTimerRef.current = null;
+              }, 3000);
               onUpdate();
           }
-          else if (result.status === 'conflict') setPublishMessage(`仓库版本或目标地址冲突${result.errorCode ? `（${result.errorCode}）` : ''}；草稿已保留，请比较后处理。`);
-          else if (result.status === 'failed') setPublishMessage(`发布失败${result.errorCode ? `（${result.errorCode}）` : ''}；草稿仍在 D1，可修复后重新发起。`);
-          else setPublishMessage(`提交结果待对账${result.errorCode ? `（${result.errorCode}）` : ''}；请使用同一操作 ID 再次查询，勿创建新发布。`);
+          else if (result.status === 'conflict') {
+              setPublishSuccess(false);
+              setPublishMessage(`仓库版本或目标地址冲突${result.errorCode ? `（${result.errorCode}）` : ''}；草稿已保留，请比较后处理。`, 'error');
+          }
+          else if (result.status === 'failed') {
+              setPublishSuccess(false);
+              setPublishMessage(`发布失败${result.errorCode ? `（${result.errorCode}）` : ''}；草稿仍在 D1，可修复后重新发起。`, 'error');
+          }
+          else {
+              setPublishSuccess(false);
+              setPublishMessage(`提交结果待对账${result.errorCode ? `（${result.errorCode}）` : ''}；请使用同一操作 ID 再次查询，勿创建新发布。`, 'warning');
+          }
       } catch (error) {
+          setPublishSuccess(false);
           const details = error instanceof AdminApiError && Array.isArray(error.details)
               ? `：${error.details.filter(item => typeof item === 'string').join('；')}` : '';
-          setPublishMessage(`${error instanceof Error ? error.message : '发布失败'}${details}`);
+          const uncertain = error instanceof AdminApiError && (error.kind === 'network' || error.kind === 'invalid-response' || (error.status ?? 0) >= 500);
+          setPublishMessage(`${error instanceof Error ? error.message : '发布失败'}${details}${uncertain ? '；发布结果尚未确认，请使用同一操作继续对账。' : ''}`, uncertain ? 'warning' : 'error');
       } finally {
           setPublishing(false);
       }
-  }, [publishing, publishMode, publication, isDirty, handleSave, onUpdate, sessionInfo]);
+  }, [publishing, publishMode, publication, isDirty, handleSave, onUpdate, sessionInfo, componentInspector, setPublishMessage, resetSuccessStates]);
 
   const handlePublishClick = useCallback(() => {
-      if (publishing || (publishMode !== 'github' && publishMode !== 'd1')) return;
+      if (imagePendingRef.current || publishing || (publishMode !== 'github' && publishMode !== 'd1')) return;
       const pending = Boolean(operationRef.current) && (!publication || ['prepared', 'in_flight', 'unknown'].includes(publication.status));
       if (pending) {
           void executePublish();
@@ -621,18 +681,20 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       if (publicationIssues.length > 0) {
           setPropertiesOpen(true);
           componentInspector.setMode('article');
-          setPublishMessage(`发布前请先修正文章属性：${publicationIssues.map(i => i.message).join('；')}`);
+          setPublishMessage(`发布前请先修正文章属性：${publicationIssues.map(i => i.message).join('；')}`, 'warning');
           return;
       }
       setShowPublishConfirmModal(true);
-  }, [publishing, publishMode, publication, publicationIssues, componentInspector, executePublish]);
+  }, [publishing, publishMode, publication, publicationIssues, componentInspector, executePublish, setPublishMessage]);
 
   const handleVerifyDeployment = useCallback(async () => {
       if (!lastCommit || checkingDeployment) return;
       setCheckingDeployment(true);
       try {
           const result = await cmsDocumentClient.verifyDeployment(lastCommit.operationId);
+          publicationEpochRef.current += 1;
           setLastCommit(result);
+          setHistoryVersion(value => value + 1);
           setPublishMessage({
               verified: 'Deploy 工作流成功，且部署提交包含这篇文章的已发布版本。',
               pending: 'Deploy 工作流尚在排队。',
@@ -640,13 +702,13 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
               failed: '对应的 Deploy 工作流失败；Git 提交仍保留。',
               cancelled: '对应的 Deploy 工作流被取消；Git 提交仍保留。',
               unverified: '尚无足够证据确认此版本已部署。',
-          }[result.deploymentStatus]);
+          }[result.deploymentStatus], result.deploymentStatus === 'failed' || result.deploymentStatus === 'cancelled' ? 'error' : result.deploymentStatus === 'verified' ? 'success' : 'info');
       } catch (error) {
-          setPublishMessage(error instanceof Error ? error.message : '部署核验失败');
+          setPublishMessage(error instanceof Error ? error.message : '部署核验失败', 'error');
       } finally {
           setCheckingDeployment(false);
       }
-  }, [lastCommit, checkingDeployment]);
+  }, [lastCommit, checkingDeployment, setPublishMessage]);
 
   // --- External Actions (Update File / Image) ---
   
@@ -795,38 +857,18 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       }
   };
 
-  const processContentImages = (content: string) => {
-      if (!content) return '';
-      
-      const resolveUrl = (url: string) => {
-          if (url.startsWith('http') || url.startsWith('https') || url.startsWith('data:')) return url;
-          const staged = /^\/images\/blog\/(cma_[a-f0-9]{32})\.(?:png|jpe?g|webp)$/.exec(url);
-          if (staged) return `/api/v1/admin/cms/assets/${staged[1]}/preview`;
-          
-          // BUG-11: Use central utility for consistent image source resolution in markdown/HTML preview
-          return resolveImageSource(url, repo, projectType, domainUrl);
-      };
-
-      // 1. Replace Markdown images: ![alt](url "title")
-      let processed = content.replace(/(!\[.*?\])\(([^)\s]+)(.*?)\)/g, (match, prefix, url, suffix) => {
-          const newUrl = resolveUrl(url);
-          return `${prefix}(${newUrl}${suffix})`;
-      });
-
-      // 2. Replace HTML images: <img src="url">
-      processed = processed.replace(/(<img[^>]+src=["'])([^"']+)(["'][^>]*>)/gi, (match, prefix, url, suffix) => {
-          const newUrl = resolveUrl(url);
-          return `${prefix}${newUrl}${suffix}`;
-      });
-
-      return processed;
-  };
+  const resolvePreviewImageUrl = (url: string): string => cmsImagePreviewUrl(url)
+      ?? resolveImageSource(url, repo, projectType, domainUrl)
+      ?? url;
 
   const createMarkup = (markdownContent: string) => {
-    const processedContent = processContentImages(markdownContent);
-    const rawMarkup = marked.parse(processedContent) as string;
-    const sanitizedMarkup = DOMPurify.sanitize(rawMarkup);
-    return { __html: sanitizedMarkup };
+    const dom = DOMPurify.sanitize(marked.parse(markdownContent) as string, { RETURN_DOM: true });
+    if (!(dom instanceof HTMLElement)) return { __html: '' };
+    for (const image of dom.querySelectorAll('img')) {
+      const src = image.getAttribute('src');
+      if (src) image.setAttribute('src', resolvePreviewImageUrl(src));
+    }
+    return { __html: dom.innerHTML };
   };
   
   // --- Field Edit Modal State ---
@@ -1079,11 +1121,19 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       );
   };
 
+  const hasStatusAttention = saveError || publishNotice?.tone === 'error' || publishNotice?.tone === 'warning';
   const [propertiesOpen, setPropertiesOpen] = useState(true);
-  // 选中组件或切换至组件库自动展开右栏；宿主只关心选中状态，节点更新仍在编辑器内部进行。
+  // 选中组件、切换组件库或查看状态时展开右栏；宿主只关心选中状态，节点更新仍在编辑器内部进行。
   useEffect(() => {
     if (componentInspector.selected || componentInspector.mode !== 'article') {
       setPropertiesOpen(true);
+      // 窄屏属性区在正文之后；主动切换时滚动到侧栏，避免发布反馈被长正文埋住。
+      if (window.matchMedia('(max-width: 1023px)').matches) {
+        const frame = requestAnimationFrame(() => document.getElementById('cms-properties')?.scrollIntoView({
+          block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+        }));
+        return () => cancelAnimationFrame(frame);
+      }
     }
   }, [componentInspector.selected, componentInspector.mode]);
   const hasCoverImage = !!(editableFrontmatter.image || editableFrontmatter.cover || editableFrontmatter.thumbnail || editableFrontmatter.heroImage || post.thumbnailUrl);
@@ -1091,7 +1141,6 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   return (
     <div className="cms-post-detail h-full flex flex-col bg-notion-bg animate-fade-in relative">
       <input type="file" ref={updatePostFileInputRef} className="hidden" accept=".md,.mdx" onChange={confirmUpdateFile} />
-      <input type="file" ref={sourceImageInputRef} className="hidden" accept="image/png,image/jpeg,image/webp" onChange={handleSourceImage} />
       <input type="file" ref={coverImageInputRef} className="hidden" accept="image/png,image/jpeg,image/webp" onChange={handleCoverImage} />
       
       {isImageModalOpen && (
@@ -1272,7 +1321,8 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   variant="default"
                   size="sm"
                   icon={<ArrowLeft className="w-3.5 h-3.5 shrink-0" />}
-                  onClick={() => { void confirmLeave().then((allowed) => { if (allowed) onBack(); }); }}
+                  disabled={imagePending}
+                  onClick={() => { if (!imagePendingRef.current) void confirmLeave().then((allowed) => { if (allowed) onBack(); }); }}
                   className="gap-1.5 h-8 text-xs font-medium text-notion-text shrink-0 whitespace-nowrap select-none"
                 >
                   <span className="whitespace-nowrap">返回列表</span>
@@ -1295,7 +1345,8 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     {hasWysiwygPlugin && (
                         <button
                             type="button"
-                            onClick={() => handleTabChange('edit')}
+                            disabled={imagePending}
+                        onClick={() => handleTabChange('edit')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                                 activeTab === 'edit'
                                 ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
@@ -1308,6 +1359,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     )}
                     <button
                         type="button"
+                        disabled={imagePending}
                         onClick={() => handleTabChange('code')}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                             activeTab === 'code'
@@ -1320,6 +1372,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     </button>
                     <button
                         type="button"
+                        disabled={imagePending}
                         onClick={() => handleTabChange('preview')}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                             activeTab === 'preview'
@@ -1331,13 +1384,29 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                         <span className="whitespace-nowrap">{t('postPreview.tabPreview')}</span>
                     </button>
                 </div>
-                {!post.path.startsWith('content/stories/') && (activeTab === 'code' || !hasWysiwygPlugin) && (
-                    <button type="button" disabled={isUploading || isSaving} onClick={() => sourceImageInputRef.current?.click()} className="rounded-lg border border-notion-border px-2.5 py-1.5 text-xs text-notion-text disabled:opacity-50">
-                        {isUploading ? '上传中…' : '插入图片'}
-                    </button>
-                )}
 
-                {isDirty ? (
+
+                {isSaving ? (
+                  <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[11px] font-medium text-sky-600 dark:text-sky-400 whitespace-nowrap shrink-0 select-none animate-pulse">
+                    <span className="size-1.5 rounded-full bg-sky-500 shrink-0" />
+                    <span className="whitespace-nowrap">正在保存草稿…</span>
+                  </span>
+                ) : publishing ? (
+                  <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[11px] font-medium text-sky-600 dark:text-sky-400 whitespace-nowrap shrink-0 select-none animate-pulse">
+                    <span className="size-1.5 rounded-full bg-sky-500 shrink-0" />
+                    <span className="whitespace-nowrap">{publishedBaseRef.current || post.sha ? '正在更新发布…' : '正在提交发布…'}</span>
+                  </span>
+                ) : publishSuccess ? (
+                  <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap shrink-0 select-none">
+                    <Check className="size-3 text-emerald-500 shrink-0" />
+                    <span className="whitespace-nowrap">{publishedBaseRef.current || post.sha ? '文章更新成功 · 已即时生效' : '文章发布成功 · 已即时生效'}</span>
+                  </span>
+                ) : saveSuccess ? (
+                  <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap shrink-0 select-none">
+                    <Check className="size-3 text-emerald-500 shrink-0" />
+                    <span className="whitespace-nowrap">{draftRef.current ? `草稿保存成功 · 修订 ${draftRef.current.revision}` : '草稿保存成功'}</span>
+                  </span>
+                ) : isDirty ? (
                   <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap shrink-0 select-none">
                     <span className="size-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
                     <span className="whitespace-nowrap">有未保存修改</span>
@@ -1363,50 +1432,88 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   onClick={() => setPropertiesOpen(value => !value)}
                   className="gap-1.5 h-8 text-xs font-medium text-notion-text whitespace-nowrap shrink-0"
                 >
-                  <span className="whitespace-nowrap">{propertiesOpen ? '收起属性' : '文章属性'}</span>
+                  <span className="whitespace-nowrap">{propertiesOpen ? '收起侧栏' : '属性与状态'}</span>
+                  {hasStatusAttention && <span className="size-1.5 rounded-full bg-red-500"><span className="sr-only">有待处理的操作提示</span></span>}
                 </LiquidGlassButton>
                 <LiquidGlassButton
                   type="button"
-                  variant="default"
+                  variant={saveSuccess ? 'accent' : 'default'}
                   size="sm"
-                  disabled={isSaving || publishing || (Boolean(draftRef.current) && !isDirty)}
-                  icon={<Save className="w-3.5 h-3.5 shrink-0" />}
+                  loading={isSaving}
+                  disabled={
+                    !isSaving &&
+                    (imagePending ||
+                      publishing ||
+                      (Boolean(draftRef.current) && !isDirty && !saveSuccess))
+                  }
+                  icon={
+                    saveSuccess ? (
+                      <Check className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5 shrink-0" />
+                    )
+                  }
                   onClick={() => void handleSave()}
                   title="保存到 D1 工作草稿"
-                  className="gap-1.5 h-8 text-xs font-medium whitespace-nowrap shrink-0"
+                  className={cn(
+                    'gap-1.5 h-8 text-xs font-medium whitespace-nowrap shrink-0 transition-all duration-200',
+                    saveSuccess &&
+                      'border-emerald-500/40 text-emerald-700 dark:text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
+                  )}
                 >
-                  <span className="whitespace-nowrap">{isSaving ? '保存中…' : '保存草稿'}</span>
+                  <span className="whitespace-nowrap">
+                    {isSaving ? '保存中…' : saveSuccess ? '已保存' : '保存草稿'}
+                  </span>
                 </LiquidGlassButton>
                 <LiquidGlassButton
                   type="button"
-                  variant="blue"
+                  variant={publishSuccess ? 'accent' : 'blue'}
                   size="sm"
+                  loading={publishing}
+                  glow={publishSuccess}
                   disabled={
-                    (publishMode !== 'github' && publishMode !== 'd1') ||
-                    publishing ||
-                    isSaving ||
-                    (publication?.status === 'committed' && !isDirty && !draftRef.current)
+                    !publishing &&
+                    ((publishMode !== 'github' && publishMode !== 'd1') ||
+                      imagePending ||
+                      isSaving ||
+                      (publication?.status === 'committed' && !isDirty && !draftRef.current && !publishSuccess))
                   }
                   onClick={() => void handlePublishClick()}
-                  icon={<Send className="w-3.5 h-3.5 shrink-0" />}
+                  icon={
+                    publishSuccess ? (
+                      <Check className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-300" />
+                    ) : (
+                      <Send className="w-3.5 h-3.5 shrink-0" />
+                    )
+                  }
                   title={
                     publishMode === 'snapshot'
                       ? '只读快照模式：当前未配置发布通道，无法直接发布'
                       : isD1Mode
                       ? publishedBaseRef.current || post.sha
-                        ? '保存当前修改并即时更新全站文章'
-                        : '保存当前输入并即时发布至全站'
+                        ? '保存当前修改并发布至 D1'
+                        : '保存当前输入并发布至 D1'
                       : publication && ['prepared', 'in_flight', 'unknown'].includes(publication.status)
                       ? '使用当前操作 ID 对账 Git 提交状态'
                       : publishedBaseRef.current || post.sha
                       ? '保存当前修改并更新已发布文章'
                       : '保存当前输入并发布为新文章'
                   }
-                  className="gap-1.5 h-8 text-xs font-medium whitespace-nowrap shrink-0"
+                  className={cn(
+                    'gap-1.5 h-8 text-xs font-medium whitespace-nowrap shrink-0 transition-all duration-200',
+                    publishSuccess &&
+                      'border-emerald-500/40 text-emerald-700 dark:text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.35)]'
+                  )}
                 >
-                  <span>
+                  <span className="whitespace-nowrap">
                     {publishing
-                      ? '发布中…'
+                      ? publishedBaseRef.current || post.sha
+                        ? '更新中…'
+                        : '发布中…'
+                      : publishSuccess
+                      ? publishedBaseRef.current || post.sha
+                        ? '更新成功'
+                        : '发布成功'
                       : publication && ['prepared', 'in_flight', 'unknown'].includes(publication.status)
                       ? '对账'
                       : publishedBaseRef.current || post.sha
@@ -1417,16 +1524,8 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
             </div>
         </div>
       </header>
-      {saveMessage && <p role={saveError ? 'alert' : 'status'} className={`border-b px-6 py-2 text-xs ${saveError ? 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400' : 'border-notion-border text-notion-muted'}`}>{saveMessage}</p>}
-      {(publishMessage || lastCommit) && <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-notion-border px-6 py-2 text-xs text-notion-muted">
-        {publishMessage && <span>{publishMessage}</span>}
-        {lastCommit?.resultCommitSha && !lastCommit.resultCommitSha.startsWith('d1:') && <span className="font-mono">Git {lastCommit.resultCommitSha.slice(0, 12)}</span>}
-        {lastCommit && !isD1Mode && <span>部署：{{ unverified: '未核实', pending: '排队中', running: '运行中', verified: '已核实', failed: '失败', cancelled: '已取消' }[lastCommit.deploymentStatus]}</span>}
-        {lastCommit && !isD1Mode && <button type="button" disabled={checkingDeployment} onClick={() => void handleVerifyDeployment()} className="underline disabled:opacity-50">{checkingDeployment ? '检查中…' : '检查部署'}</button>}
-        {lastCommit?.deploymentRef && /^\d+$/.test(lastCommit.deploymentRef) && /^[\w.-]+\/[\w.-]+$/.test(repo.full_name) && <a className="underline" href={`https://github.com/${repo.full_name}/actions/runs/${lastCommit.deploymentRef}`} target="_blank" rel="noopener noreferrer">查看 Deploy 记录</a>}
-        {lastCommit && isD1Mode && <span className="text-emerald-600 dark:text-emerald-400 font-medium">✓ 已即时同步至全站</span>}
-        {lastCommit && <a className="underline hover:text-notion-text" href={lastCommit.publicPath} target="_blank" rel="noopener noreferrer">查看当前线上版 ↗</a>}
-      </div>}
+      <p role={saveError ? 'alert' : 'status'} className="sr-only" aria-atomic="true">{saveMessage}</p>
+      <p role={publishNotice?.tone === 'error' ? 'alert' : 'status'} className="sr-only" aria-atomic="true">{publishNotice?.message}</p>
 
       {/* Main Scrollable Content — 2-column WordPress-style layout */}
       <div id="post-detail-container" className="flex-grow overflow-y-auto bg-notion-bg custom-scrollbar">
@@ -1449,6 +1548,30 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                       placeholder="未命名文章" aria-label="文章标题"
                       rows={1}
                   />
+
+                  {/* 未发布草稿提示条：告知当前正在编辑本地草稿，并提供查看线上版本的快捷入口 */}
+                  {post.sha && draftRef.current && (
+                    <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 mb-6 leading-relaxed">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Info className="w-4 h-4 shrink-0 text-amber-500" />
+                        <span className="truncate sm:whitespace-normal">
+                          当前正在编辑未发布的本地工作草稿（修订 {draftRef.current.revision}）。发布前线上依然保持此前版本。
+                        </span>
+                      </div>
+                      {resolvedPublicPath && (
+                        <a
+                          href={resolvedPublicPath}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 dark:text-amber-200 transition-colors font-medium whitespace-nowrap shrink-0"
+                          title="在新标签页中打开当前线上已发布版本"
+                        >
+                          <span>查看线上版</span>
+                          <ExternalLink className="size-3" />
+                        </a>
+                      )}
+                    </div>
+                  )}
 
                   {/* JSX 文字与源码参数的分工提示，不宣称此视图是真实 Astro 预览。 */}
                   {activeTab === 'edit' && post.name.endsWith('.mdx') && (
@@ -1483,20 +1606,22 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                             gitService: editorGitService,
                             imagesPath,
                             locale: language,
-                            readOnly: false,
+                            readOnly: isSaving || publishing,
                             imageBaseUrl: "/",
                             editorRef,
                             externalMarkdown: editableBody,
                             externalMarkdownVersion,
                             onRequestImage: handleRequestImage,
                             onUploadImage: handleCmsImageUpload,
+                            imageDocumentKey: `${imageDocumentKey.current}:${post.path}`,
+                            onImagePendingChange,
                         } satisfies EditorProps as Record<string, unknown>}
                     />
                 ) : activeTab === 'code' || (activeTab === 'edit' && !hasWysiwygPlugin) ? (
-                    <NativePlainEditor
-                        value={editableBody}
-                        onChange={handleEditorChange}
-                    />
+                    <>
+                      <NativePlainEditor value={editableBody} onChange={handleEditorChange} readOnly={imagePending || isSaving || publishing} />
+                      {!post.path.startsWith('content/stories/') && <SourceImagePreview source={editableBody} mdx={post.name.endsWith('.mdx')} resolveUrl={resolvePreviewImageUrl} />}
+                    </>
                 ) : (
                     <>
                     {post.name.endsWith('.mdx') && (
@@ -1532,9 +1657,28 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
               </div>
 
               {/* RIGHT COLUMN — Settings Panel (WordPress-style) */}
-              <div id="cms-properties" role="region" aria-label="文章属性" tabIndex={0} hidden={!propertiesOpen} className="cms-properties w-full lg:w-80 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-notion-border bg-notion-sidebar/30 overflow-y-auto">
-                <ComponentInspector />
-                <div hidden={componentInspector.mode !== 'article'} className="p-5 space-y-5">
+              <div id="cms-properties" role="region" aria-label="文稿属性与状态" tabIndex={0} hidden={!propertiesOpen} className="cms-properties w-full lg:w-80 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-notion-border bg-notion-sidebar/30 overflow-y-auto">
+                <ComponentInspector
+                  statusAttention={hasStatusAttention}
+                  statusPanel={<DocumentStatusPanel
+                    key={draftRef.current?.targetPath ?? post.path}
+                    active={propertiesOpen && componentInspector.mode === 'status'}
+                    path={draftRef.current?.targetPath ?? (!post.imported && !post.newTarget && /^content\/(blog|stories)\/.+\.mdx?$/.test(post.path) ? post.path : null)}
+                    version={historyVersion}
+                    draft={draftRef.current}
+                    dirty={isDirty}
+                    saving={isSaving}
+                    publishing={publishing}
+                    saveNotice={saveMessage ? { message: saveMessage, tone: saveError ? 'error' : 'success' } : null}
+                    notice={publishNotice}
+                    publication={publication}
+                    lastCommit={lastCommit}
+                    checkingDeployment={checkingDeployment}
+                    onVerifyDeployment={() => void handleVerifyDeployment()}
+                    repoName={repo.full_name}
+                  />}
+                />
+                <div id="cms-inspector-panel-article" role="tabpanel" aria-labelledby="cms-inspector-tab-article" tabIndex={0} hidden={componentInspector.mode !== 'article'} className="p-5 space-y-5">
 
                   <section aria-label="发布前属性检查" className={`rounded-xl border p-3.5 text-xs space-y-2 shadow-2xs transition-colors ${
                     publicationIssues.length
@@ -1607,14 +1751,14 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     <div className="space-y-1.5 text-[11px] text-notion-muted">
                       <div className="flex justify-between items-center">
                         <span>存储后端：</span>
-                        <span className="font-mono text-notion-text font-medium truncate max-w-[150px]" title={isD1Mode ? 'Cloudflare D1 生产数据库' : sessionInfo?.repo || 'D1'}>
+                        <span className="font-mono text-notion-text font-medium truncate max-w-[150px]" title={isD1Mode ? '当前环境的 Cloudflare D1 数据库' : sessionInfo?.repo || 'D1'}>
                           {isD1Mode ? 'Cloudflare D1' : sessionInfo?.repo || (publishMode === 'snapshot' ? '本地快照' : '未配置')}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span>存储状态：</span>
                         <span className="font-mono font-semibold text-notion-text">
-                          {isD1Mode ? '即时同步 · 毫秒生效' : sessionInfo?.branch || 'local'}
+                          {isD1Mode ? '发布后无需构建' : sessionInfo?.branch || 'local'}
                         </span>
                       </div>
                     </div>
@@ -1622,10 +1766,10 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                       <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed space-y-0.5">
                         <p className="font-semibold flex items-center gap-1">
                           <ShieldCheck className="size-3 shrink-0" />
-                          <span>D1 原生存储运行正常</span>
+                          <span>D1 原生发布通道</span>
                         </p>
                         <p>
-                          文章发布直接写入生产数据库并即时同步全站前台，无需等待 Git 提交与远程构建。
+                          文章发布写入当前环境的 D1 数据库，无需 Git 提交与远程构建；实际页面可在发布后查看。
                         </p>
                       </div>
                     ) : publishMode === 'snapshot' ? (
@@ -1669,7 +1813,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                             className="w-full h-40 object-cover rounded-lg border border-notion-border"
                         />
                         <button
-                          disabled={isUploading || isSaving} title="上传新封面到当前草稿" onClick={() => coverImageInputRef.current?.click()}
+                          disabled={imagePending || isUploading || isSaving} title="上传新封面到当前草稿" onClick={() => coverImageInputRef.current?.click()}
                           className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center rounded-lg transition-all"
                         >
                           <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-medium bg-black/60 px-3 py-1.5 rounded-md transition-opacity">
@@ -1679,7 +1823,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                       </div>
                     ) : (
                       <button
-                        disabled={isUploading || isSaving} title="上传封面到当前草稿" onClick={() => coverImageInputRef.current?.click()}
+                        disabled={imagePending || isUploading || isSaving} title="上传封面到当前草稿" onClick={() => coverImageInputRef.current?.click()}
                         className="w-full h-28 rounded-xl border border-dashed border-notion-border/80 hover:border-notion-blue/50 bg-notion-sidebar/20 hover:bg-notion-sidebar/40 flex flex-col items-center justify-center gap-2 text-notion-muted hover:text-notion-blue transition-colors group disabled:opacity-50"
                       >
                         <ImageIcon className="w-5 h-5 opacity-40 group-hover:opacity-70 transition-opacity" />
@@ -1725,6 +1869,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                               spellCheck={false}
                               onChange={(e) => {
                                 editSerialRef.current += 1;
+                                resetSuccessStates();
                                 const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
                                 setImportSlug(val);
                                 setIsDirty(true);

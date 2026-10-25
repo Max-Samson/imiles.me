@@ -233,7 +233,7 @@ export const LiquidGlassButton = React.forwardRef<HTMLElement, LiquidGlassButton
     const [isHovered, setIsHovered] = React.useState(false);
 
     const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-      if (!interactive || disabled) return;
+      if (!interactive || disabled || loading) return;
       const rect = e.currentTarget.getBoundingClientRect();
       setMousePos({
         x: e.clientX - rect.left,
@@ -242,7 +242,7 @@ export const LiquidGlassButton = React.forwardRef<HTMLElement, LiquidGlassButton
     };
 
     const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
-      if (disabled) return;
+      if (disabled || loading) return;
       setIsHovered(true);
       handleMouseMove(e);
     };
@@ -254,7 +254,7 @@ export const LiquidGlassButton = React.forwardRef<HTMLElement, LiquidGlassButton
 
     // 动画弹性配置
     const springAnimation =
-      hapticScale && !disabled
+      hapticScale && !disabled && !loading
         ? {
             whileHover: { scale: 1.025, y: -1 },
             whileTap: { scale: 0.965, y: 0.5 },
@@ -348,9 +348,9 @@ export const LiquidGlassButton = React.forwardRef<HTMLElement, LiquidGlassButton
         {/* 7. 主体内容与图标 */}
         <span className="relative z-20 inline-flex items-center justify-center gap-[inherit]">
           {loading ? (
-            <span className="inline-flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5">
               <svg
-                className="size-4 animate-spin text-current opacity-80"
+                className="size-3.5 animate-spin text-current opacity-90 shrink-0"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -370,7 +370,7 @@ export const LiquidGlassButton = React.forwardRef<HTMLElement, LiquidGlassButton
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              {children && <span className="opacity-80">{children}</span>}
+              {children && <span className="opacity-90">{children}</span>}
             </span>
           ) : (
             <>
@@ -390,6 +390,7 @@ export const LiquidGlassButton = React.forwardRef<HTMLElement, LiquidGlassButton
     const combinedClassName = cn(
       liquidGlassVariants({ variant, size, shape }),
       disabled && 'opacity-45 pointer-events-none cursor-not-allowed',
+      loading && !disabled && 'cursor-wait select-none',
       className,
     );
 
