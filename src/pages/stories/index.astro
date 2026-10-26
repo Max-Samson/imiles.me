@@ -12,6 +12,7 @@ import {
 } from '@/lib/i18n';
 import { getServerEnv } from '@/server/env';
 import { contentReadRepository } from '@/server/content/read-repository';
+import { normalizeTags } from '@/lib/tags';
 
 const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
@@ -116,9 +117,9 @@ const sortedStories = Array.from(storiesMap.values()).sort(
                       </div>
                     )
                   }
-                  {story.data.tags.length > 0 && (
+                  {normalizeTags(story.data.tags).length > 0 && (
                     <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                      {story.data.tags.map((tag) => (
+                      {normalizeTags(story.data.tags).map((tag) => (
                         <span class="text-sm text-muted-foreground">
                           #{tag}
                         </span>

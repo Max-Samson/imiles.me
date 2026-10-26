@@ -6,6 +6,7 @@ import { ShineBorder } from '@/registry/magicui/shine-border';
 import HomeBlogReadMore from './HomeBlogReadMore';
 import { rainbowButtonVariants } from '@/registry/magicui/rainbow-button';
 import { cn } from '@/lib/utils';
+import { normalizeTags } from '@/lib/tags';
 
 interface Props { lang: Locale; posts: CollectionEntry<'blog'>[] }
 const { lang, posts } = Astro.props;
@@ -88,7 +89,7 @@ const hasStream = streamPosts.length > 0;
                 {/* Bottom Bar: Tags + Action Read Button */}
                 <div class="relative z-10 flex flex-col gap-3 pt-3.5 border-t border-border/40 sm:flex-row sm:items-center sm:justify-between">
                   <ul class="home-tags">
-                    {featuredPost.data.tags.slice(0, 3).map(tag => (
+                    {normalizeTags(featuredPost.data.tags).slice(0, 3).map(tag => (
                       <li class="transition-colors group-hover:border-sky-500/30 dark:group-hover:border-[#d4a958]/35 group-hover:text-foreground/90">
                         #{tag}
                       </li>
@@ -155,7 +156,7 @@ const hasStream = streamPosts.length > 0;
                     {/* Bottom Bar: Tags + Micro-arrow */}
                     <div class="relative z-10 flex items-center justify-between gap-3 pt-3 border-t border-border/40">
                       <ul class="home-tags">
-                        {post.data.tags.slice(0, 2).map(tag => (
+                        {normalizeTags(post.data.tags).slice(0, 2).map(tag => (
                           <li class="transition-colors group-hover:border-sky-500/30 dark:group-hover:border-[#d4a958]/35 group-hover:text-foreground/90">
                             #{tag}
                           </li>
@@ -227,7 +228,7 @@ const hasStream = streamPosts.length > 0;
                   </h3>
 
                   <ul class="home-tags mt-2">
-                    {featuredPost.data.tags.slice(0, 4).map(tag => (
+                    {normalizeTags(featuredPost.data.tags).slice(0, 4).map(tag => (
                       <li class="transition-colors group-hover:border-sky-500/30 dark:group-hover:border-[#d4a958]/35 group-hover:text-foreground/90">
                         #{tag}
                       </li>

@@ -1,4 +1,5 @@
 import { isMap, parseDocument } from 'yaml';
+import { normalizeTags } from './tags';
 
 export interface SourceDocument {
   fields: Record<string, unknown>;
@@ -30,7 +31,14 @@ export function parseSourceDocument(source: string): SourceDocument {
 
 /** 只替换指定顶层属性值，保留其他 YAML 字段、注释、顺序及正文原始字符。 */
 export function updateSourceFields(source: string, updates: Record<string, unknown>): string {
-  const entries = Object.entries(updates);
+  const normalizedUpdates = { ...updates };
+  if ('tags' in normalizedUpdates && normalizedUpdates.tags !== undefined) {
+    normalizedUpdates.tags = normalizeTags(normalizedUpdates.tags);
+  }
+  if ('tagsZh' in normalizedUpdates && normalizedUpdates.tagsZh !== undefined) {
+    normalizedUpdates.tagsZh = normalizeTags(normalizedUpdates.tagsZh);
+  }
+  const entries = Object.entries(normalizedUpdates);
   if (!entries.length) return source;
   for (const [key, value] of entries) {
     if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(key) || value === undefined) {

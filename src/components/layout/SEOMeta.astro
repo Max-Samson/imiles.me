@@ -2,6 +2,7 @@
 import { author as siteAuthor } from '@/data/author';
 import { getLocalizedAlternates, getLocaleFromPathname, stripLocaleFromPathname, type Locale } from '@/lib/i18n';
 import { siteSchemas } from '@/lib/seo';
+import { normalizeTags } from '@/lib/tags';
 
 interface Props {
   title: string;
@@ -32,6 +33,8 @@ const {
   articleTitle,
   noindex = false,
 } = Astro.props;
+
+const normalizedTags = normalizeTags(tags);
 
 const siteUrl = Astro.site?.toString().replace(/\/$/, '') || siteAuthor.site.url;
 const pathname = Astro.url.pathname;
@@ -80,7 +83,7 @@ const pageSchemas = type === 'article'
         datePublished: publishedTime?.toISOString(),
         dateModified: (updatedTime ?? publishedTime)?.toISOString(),
         articleSection,
-        keywords: tags.join(', '),
+        keywords: normalizedTags.join(', '),
         inLanguage: locale === 'zh' ? 'zh-CN' : 'en-US',
         isPartOf: { '@id': `${siteUrl}/#website` },
       },
@@ -151,7 +154,7 @@ const pageSchemas = type === 'article'
   )
 }
 {type === 'article' && updatedTime && <meta property="article:modified_time" content={updatedTime.toISOString()} />}
-{type === 'article' && tags.map((tag) => <meta property="article:tag" content={tag} />)}
+{type === 'article' && normalizedTags.map((tag) => <meta property="article:tag" content={tag} />)}
 {type === 'article' && articleSection && <meta property="article:section" content={articleSection} />}
 
 <script type="application/ld+json" set:html={JSON.stringify(siteSchemas.person).replaceAll('<', '\\u003c')} />

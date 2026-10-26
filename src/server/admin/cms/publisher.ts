@@ -1,6 +1,7 @@
 import type { CloudflareEnv } from '../../../env.d';
 import { resolveExistingContentTarget } from '../../../lib/content-routing';
 import { parseSourceDocument } from '../../../lib/content-source';
+import { normalizeTags } from '../../../lib/tags';
 import { AppError } from '../../errors';
 import { renderMarkdownToHtml } from './markdown';
 import { postRepository } from './post-repository';
@@ -197,7 +198,7 @@ export function d1PublicationWriter(env: CloudflareEnv): PublicationWriter {
         updatedDate: parsed.fields.updatedDate
           ? new Date(String(parsed.fields.updatedDate)).getTime()
           : null,
-        tags: JSON.stringify(Array.isArray(parsed.fields.tags) ? parsed.fields.tags : []),
+        tags: JSON.stringify(normalizeTags(parsed.fields.tags)),
         heroImage: typeof parsed.fields.heroImage === 'string' ? parsed.fields.heroImage : null,
         shareText: typeof parsed.fields.shareText === 'string' ? parsed.fields.shareText : null,
         llms: Boolean(parsed.fields.llms),

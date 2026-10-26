@@ -41,6 +41,7 @@ import type { EditorProps } from '@pageel/plugin-types';
 import { NativePlainEditor } from './editors/NativePlainEditor';
 import { SourceImagePreview } from '../../integration/components/SourceImagePreview';
 import { cmsImagePreviewUrl } from '../../../../src/lib/content-images';
+import { normalizeTags } from '../../../../src/lib/tags';
 
 
 
@@ -232,6 +233,154 @@ const GalleryThumbnail: React.FC<{
             </div>
         </div>
     );
+};
+
+interface TagListInputProps {
+  value: any;
+  onChange: (tags: string[]) => void;
+  onOpenModal: () => void;
+  isTagField?: boolean;
+}
+
+const TagListInput: React.FC<TagListInputProps> = ({
+  value,
+  onChange,
+  onOpenModal,
+  isTagField = true,
+}) => {
+  const [inputValue, setInputValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // 保证 value 为规范化的标签数组
+  const tags: string[] = useMemo(() => {
+    return normalizeTags(value);
+  }, [value]);
+
+  // 如果传入的值与规范化后的值不一致（例如包含了中英文逗号未拆开的旧格式），自动同步回父状态
+  useEffect(() => {
+    if (Array.isArray(value)) {
+      const isDifferent =
+        value.length !== tags.length ||
+        value.some((v, i) => v !== tags[i]);
+      if (isDifferent) {
+        onChange(tags);
+      }
+    }
+  }, [tags, value, onChange]);
+
+  const commitTags = useCallback(
+    (textToParse: string) => {
+      if (!textToParse.trim()) return;
+      const newItems = normalizeTags(textToParse);
+      if (newItems.length === 0) return;
+
+      const combined = normalizeTags([...tags, ...newItems]);
+      onChange(combined);
+      setInputValue('');
+    },
+    [tags, onChange],
+  );
+
+  const removeTag = useCallback(
+    (indexToRemove: number) => {
+      const updated = tags.filter((_, i) => i !== indexToRemove);
+      onChange(updated);
+    },
+    [tags, onChange],
+  );
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === 'Tab' || e.key === ';' || e.key === '；') {
+      e.preventDefault();
+      commitTags(inputValue);
+      return;
+    }
+
+    if (e.key === ',' || e.key === '，' || e.key === '、') {
+      e.preventDefault();
+      commitTags(inputValue);
+      return;
+    }
+
+    if (e.key === 'Backspace' && !inputValue && tags.length > 0) {
+      e.preventDefault();
+      removeTag(tags.length - 1);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (/[,，、;；\n]/.test(val)) {
+      commitTags(val);
+    } else {
+      setInputValue(val);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData('text');
+    if (pasted && /[,，、;；\n\s#＃]/.test(pasted)) {
+      e.preventDefault();
+      commitTags(pasted);
+    }
+  };
+
+  const handleBlur = () => {
+    if (inputValue.trim()) {
+      commitTags(inputValue);
+    }
+  };
+
+  return (
+    <div className="flex items-start w-full gap-1.5">
+      <div
+        onClick={() => inputRef.current?.focus()}
+        className="flex-grow min-w-0 flex flex-wrap items-center gap-1.5 p-1.5 bg-notion-bg border border-notion-border rounded-lg focus-within:ring-2 focus-within:ring-notion-blue/20 focus-within:border-notion-blue transition-all min-h-[32px] cursor-text shadow-2xs"
+      >
+        {tags.map((tag, idx) => (
+          <span
+            key={`${tag}-${idx}`}
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-notion-hover text-notion-text border border-notion-border/70 text-xs font-medium leading-none shrink-0"
+          >
+            {isTagField && (
+              <span className="text-notion-blue font-semibold select-none">#</span>
+            )}
+            <span className="max-w-[120px] truncate" title={tag}>{tag}</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeTag(idx);
+              }}
+              className="p-0.5 text-notion-muted hover:text-red-500 rounded transition-colors cursor-pointer"
+              title={`删除标签 ${tag}`}
+            >
+              <CloseIcon className="w-2.5 h-2.5" />
+            </button>
+          </span>
+        ))}
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          onPaste={handlePaste}
+          placeholder={tags.length === 0 ? "输入标签后回车或逗号分隔..." : "+ 标签"}
+          className="flex-grow min-w-[65px] bg-transparent text-xs py-0.5 px-1 text-notion-text focus:outline-none placeholder:text-notion-muted/50"
+        />
+      </div>
+      <button
+        type="button"
+        onClick={onOpenModal}
+        className="p-1.5 mt-0.5 text-notion-muted hover:text-notion-blue rounded-md border border-notion-border bg-notion-bg hover:bg-notion-hover transition-colors flex-shrink-0 cursor-pointer shadow-2xs"
+        title="展开编辑标签列表"
+      >
+        <EditIcon className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
 };
 
 const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete, gitService, repo, projectType, domainUrl, onUpdate, imagesPath, imageFileTypes, onAction }) => {
@@ -482,7 +631,12 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       setSaveMessage('');
       setSaveError(false);
       const editSerial = editSerialRef.current;
-      const submittedFields: Record<string, unknown> = { ...editableFrontmatter, ...(post.imported ? { lang: importLang } : {}) };
+      const normalizedFrontmatter = {
+        ...editableFrontmatter,
+        ...(editableFrontmatter.tags ? { tags: normalizeTags(editableFrontmatter.tags) } : {}),
+        ...(editableFrontmatter.tagsZh ? { tagsZh: normalizeTags(editableFrontmatter.tagsZh) } : {}),
+      };
+      const submittedFields: Record<string, unknown> = { ...normalizedFrontmatter, ...(post.imported ? { lang: importLang } : {}) };
       try {
           let currentBody = editableBody;
           if (activeTab === 'edit' && hasWysiwygPlugin && editorRef.current && editableBody !== savedBodyRef.current) {
@@ -908,7 +1062,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
           if (isComplex) {
               setFieldModalValue(JSON.stringify(value, null, 2));
           } else if (Array.isArray(value)) {
-              setFieldModalValue(value.join(', '));
+              setFieldModalValue(normalizeTags(value).join(', '));
           } else {
               setFieldModalValue(String(value || ''));
           }
@@ -929,7 +1083,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       } else {
           const originalValue = editableFrontmatter[fieldModalKey];
           if (Array.isArray(originalValue)) {
-              parsedValue = fieldModalValue.split(',').map((s: string) => s.trim()).filter((s: string) => s);
+              parsedValue = normalizeTags(fieldModalValue);
           } else {
               parsedValue = fieldModalValue;
           }
@@ -1020,26 +1174,15 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
           );
       }
 
-      // Simple arrays (tags, etc.) — inline edit + click to expand
+      // Simple arrays (tags, etc.) — interactive chip input + click to expand modal
       if (isArray) {
           return (
-              <div className="flex items-center w-full gap-1.5">
-                <input 
-                  type="text" 
-                  className="flex-grow bg-notion-bg border border-notion-border rounded-lg text-xs py-1.5 px-2.5 text-notion-text focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue transition-all min-w-0 shadow-2xs"
-                  value={value.join(', ')}
-                  placeholder="以逗号分隔，如 tag1, tag2"
-                  onChange={(e) => handleFrontmatterChange(key, e.target.value.split(',').map((s: string) => s.trim()).filter((s: string) => s))}
-                />
-                <button
-                  type="button"
-                  onClick={() => openFieldModal(key, value)}
-                  className="p-1 text-notion-muted hover:text-notion-blue rounded-md border border-notion-border bg-notion-bg hover:bg-notion-hover transition-colors flex-shrink-0 cursor-pointer shadow-2xs"
-                  title="展开编辑标签列表"
-                >
-                  <EditIcon className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              <TagListInput
+                value={value}
+                onChange={(newTags) => handleFrontmatterChange(key, newTags)}
+                onOpenModal={() => openFieldModal(key, value)}
+                isTagField={key === 'tags' || key === 'tagsZh'}
+              />
           );
       }
 

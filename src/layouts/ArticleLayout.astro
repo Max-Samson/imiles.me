@@ -4,6 +4,7 @@ import CopyMarkdownButton from '@/components/article/actions/CopyMarkdownButton'
 import ContentLightRaysBackground from '@/components/layout/ContentLightRaysBackground';
 import BackButton from '@/components/common/BackButton';
 import { formatDate, getLocaleFromPathname, useTranslations, localizePathname } from '@/lib/i18n';
+import { normalizeTags } from '@/lib/tags';
 import type { PostFrontmatter } from '@/lib/mdxToMarkdown';
 
 interface Props {
@@ -78,9 +79,9 @@ const resolvedBackLabel = backLabel ?? 'content/blog';
         </div>
       )
     }
-    {tags.length > 0 && (
+    {normalizeTags(tags).length > 0 && (
       <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-        {tags.map((tag) => (
+        {normalizeTags(tags).map((tag) => (
           <span class="text-sm text-muted-foreground">
             #{tag}
           </span>
