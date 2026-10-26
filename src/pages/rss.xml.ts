@@ -1,23 +1,42 @@
-import { getCollection } from 'astro:content';
 import rss from '@astrojs/rss';
 import type { APIContext } from 'astro';
-import { resolveContentPublicPath } from '../lib/content-routing';
+import { getCuratedContentEntries } from '../lib/curated-content';
+import { getPublicContentEntries } from '../server/content/public-index';
 
 export async function GET(context: APIContext) {
-  const posts = await getCollection('blog');
-  const sortedPosts = posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+  const [posts, stories] = await Promise.all([
+    getPublicContentEntries(context.locals, 'blog'),
+    getPublicContentEntries(context.locals, 'stories'),
+  ]);
+  const datedEntries = [...posts, ...stories].sort(
+    (a, b) => b.pubDate.valueOf() - a.pubDate.valueOf(),
+  );
 
-  return rss({
+  const response = await rss({
     title: 'imiles.me',
-    description: 'Personal website and blog of Miles',
+    description: 'Writing, stories, projects, and notes from Miles',
     site: context.site ?? 'https://imiles.me',
-    items: sortedPosts.map((post) => ({
-      title: post.data.title,
-      description: post.data.description,
-      pubDate: post.data.pubDate,
-      link: resolveContentPublicPath('blog', post.data.lang === 'zh' ? 'zh' : 'en', post.id),
-      categories: post.data.tags,
-    })),
-    customData: `<language>en-us</language>`,
+    trailingSlash: false,
+    xmlns: { dcterms: 'http://purl.org/dc/terms/' },
+    items: [
+      ...datedEntries.map((entry) => ({
+        title: entry.title,
+        description: entry.description,
+        pubDate: entry.pubDate,
+        link: entry.publicPath,
+        categories: entry.tags,
+        customData: entry.updatedDate
+          ? `<dcterms:modified>${entry.updatedDate.toISOString()}</dcterms:modified>`
+          : undefined,
+      })),
+      ...getCuratedContentEntries().map((entry) => ({
+        title: entry.title,
+        description: entry.description,
+        link: entry.path,
+        categories: [entry.kind, ...entry.tags],
+      })),
+    ],
   });
+  response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=300');
+  return response;
 }

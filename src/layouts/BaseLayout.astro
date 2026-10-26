@@ -24,6 +24,7 @@ interface Props {
   articleSection?: string;
   articleTitle?: string;
   noindex?: boolean;
+  structuredData?: Record<string, unknown>[];
   alternateLocales?: Locale[];
   loadKatex?: boolean;
 }
@@ -43,6 +44,7 @@ const {
   articleSection,
   articleTitle,
   noindex = false,
+  structuredData = [],
   alternateLocales,
   loadKatex = false,
 } = Astro.props;
@@ -72,6 +74,7 @@ const shouldHideLanguage =
       articleSection={articleSection}
       articleTitle={articleTitle}
       noindex={noindex}
+      structuredData={structuredData}
       alternateLocales={alternateLocales}
     />
     {

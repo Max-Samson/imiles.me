@@ -1,4 +1,6 @@
 import { author } from '@/data/author';
+import type { ResearchItem } from '@/data/notes';
+import type { Project } from '@/data/projects';
 import { socialLinks } from '@/data/socialLinks';
 import { type Locale, localizePathname } from '@/lib/i18n';
 
@@ -89,4 +91,37 @@ export function getAbsoluteUrl(pathname: string): string {
 
 export function getLocalizedArticleUrl(slug: string, locale: Locale): string {
   return getAbsoluteUrl(localizePathname(`/blog/${slug}`, locale));
+}
+
+export function getProjectSchema(project: Project, locale: Locale): Record<string, unknown> {
+  const url = getAbsoluteUrl(localizePathname(`/projects/${project.slug}`, locale));
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    '@id': `${url}#software`,
+    name: project.title,
+    description: project.description,
+    url,
+    inLanguage: locale === 'zh' ? 'zh-CN' : 'en-US',
+    creator: { '@id': `${siteUrl}/#person` },
+    isPartOf: { '@id': `${siteUrl}/#website` },
+    ...(project.coverImage ? { image: getAbsoluteUrl(project.coverImage) } : {}),
+  };
+}
+
+export function getNoteSchema(note: ResearchItem, locale: Locale): Record<string, unknown> {
+  const url = getAbsoluteUrl(localizePathname(`/notes/${note.slug}`, locale));
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CreativeWork',
+    '@id': `${url}#note`,
+    name: note.title,
+    description: note.description,
+    url,
+    inLanguage: 'zh-CN',
+    keywords: note.tags.join(', '),
+    author: { '@id': `${siteUrl}/#person` },
+    isPartOf: { '@id': `${siteUrl}/#website` },
+    ...(note.notePicItems?.[0]?.src ? { image: getAbsoluteUrl(note.notePicItems[0].src) } : {}),
+  };
 }

@@ -1,5 +1,4 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Hero from './Hero';
 import HomeProjectsSection from './HomeProjectsSection.astro';
@@ -12,6 +11,8 @@ import ContentLightRaysBackground from '@/components/layout/ContentLightRaysBack
 import TechSkillsCloud from '@/components/article/TechSkillsCloud';
 import SocialDock from '@/components/layout/SocialDock';
 import { getProjects } from '@/data/projects';
+import { getCuratedContentEntries } from '@/lib/curated-content';
+import { getPublicContentEntries } from '@/server/content/public-index';
 import { useTranslations, localizePathname, type Locale } from '@/lib/i18n';
 import { rainbowButtonVariants } from '@/registry/magicui/rainbow-button';
 import { cn } from '@/lib/utils';
@@ -22,14 +23,16 @@ const { lang } = Astro.props;
 const { t } = useTranslations(lang);
 const path = (url: string) => localizePathname(url, lang);
 const projects = getProjects(lang);
-const posts = (await getCollection('blog', ({ data }) => data.lang === lang))
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
-const stories = await getCollection('stories', ({ data }) => data.lang === lang);
+const [posts, stories] = await Promise.all([
+  getPublicContentEntries(Astro.locals, 'blog', lang),
+  getPublicContentEntries(Astro.locals, 'stories', lang),
+]);
 const searchItems = [
-  ...stories.map(story => ({ title: story.data.title, description: story.data.description, href: path(`/stories/${story.id.replace(/-zh$/, '')}`) })),
+  ...stories.map(story => ({ title: story.title, description: story.description, href: story.publicPath })),
   ...(['about', 'notes', 'projects', 'blog', 'stories'] as const).map(page => ({ title: t(`Header${page}`), description: '', href: path(`/${page}`) })),
-  ...posts.map(post => ({ title: post.data.title, description: post.data.description, href: path(`/blog/${post.id.replace(/-zh$/, '')}`) })),
+  ...posts.map(post => ({ title: post.title, description: post.description, href: post.publicPath })),
   ...projects.map(project => ({ title: project.title, description: project.tagline, href: project.hasDetailPage ? path(`/projects/${project.slug}`) : project.githubUrl })),
+  ...getCuratedContentEntries().filter(entry => entry.kind === 'note').map(entry => ({ title: entry.title, description: entry.description, href: entry.path })),
 ];
 const newsletter = import.meta.env.PUBLIC_BUTTONDOWN_USERNAME;
 ---

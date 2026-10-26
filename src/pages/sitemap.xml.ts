@@ -1,11 +1,7 @@
-import { getCollection } from 'astro:content';
-import { research as notes } from '@/data/notes';
+import type { APIContext } from 'astro';
 import { getAllPlaygroundItems } from '@/data/playgroundNav';
-import { projects } from '@/data/projects';
-
-export const prerender = true;
-
-const siteUrl = 'https://imiles.me';
+import { getCuratedContentEntries } from '@/lib/curated-content';
+import { getPublicContentEntries } from '@/server/content/public-index';
 
 type SitemapEntry = {
   path: string;
@@ -21,7 +17,7 @@ function escapeXml(value: string) {
     .replaceAll('>', '&gt;');
 }
 
-function toAbsoluteUrl(path: string) {
+function toAbsoluteUrl(path: string, siteUrl: string) {
   return new URL(path, siteUrl).toString();
 }
 
@@ -29,18 +25,22 @@ function formatUtcDateTime(date: Date) {
   return date.toISOString();
 }
 
-function renderUrl(entry: SitemapEntry) {
+function renderUrl(entry: SitemapEntry, siteUrl: string) {
   const lastmod = entry.lastmod
     ? `\n    <lastmod>${formatUtcDateTime(entry.lastmod)}</lastmod>`
     : '';
 
   return `  <url>
-    <loc>${escapeXml(toAbsoluteUrl(entry.path))}</loc>${lastmod}
+    <loc>${escapeXml(toAbsoluteUrl(entry.path, siteUrl))}</loc>${lastmod}
   </url>`;
 }
 
-export async function GET() {
-  const [blogPosts, stories] = await Promise.all([getCollection('blog'), getCollection('stories')]);
+export async function GET(context: APIContext) {
+  const siteUrl = context.site?.toString() ?? 'https://imiles.me';
+  const [blogPosts, stories] = await Promise.all([
+    getPublicContentEntries(context.locals, 'blog'),
+    getPublicContentEntries(context.locals, 'stories'),
+  ]);
 
   const entries: SitemapEntry[] = [
     { path: '/' },
@@ -59,23 +59,14 @@ export async function GET() {
     { path: '/zh/friends' },
     ...getAllPlaygroundItems().map((item) => ({ path: item.href })),
     ...blogPosts.map((post) => ({
-      path:
-        post.data.lang === 'zh' ? `/zh/blog/${post.id.replace(/-zh$/, '')}` : `/blog/${post.id}`,
-      lastmod: post.data.updatedDate ?? post.data.pubDate,
+      path: post.publicPath,
+      lastmod: post.updatedDate ?? post.pubDate,
     })),
     ...stories.map((story) => ({
-      path: story.data.lang === 'zh' ? `/zh/stories/${story.id}` : `/stories/${story.id}`,
-      lastmod: story.data.updatedDate ?? story.data.pubDate,
+      path: story.publicPath,
+      lastmod: story.updatedDate ?? story.pubDate,
     })),
-    ...projects
-      .filter((project) => project.hasDetailPage)
-      .flatMap((project) => [
-        { path: `/projects/${project.slug}` },
-        { path: `/zh/projects/${project.slug}` },
-      ]),
-    ...notes
-      .filter((item) => item.hasDetailPage)
-      .flatMap((item) => [{ path: `/notes/${item.slug}` }, { path: `/zh/notes/${item.slug}` }]),
+    ...getCuratedContentEntries().map((entry) => ({ path: entry.path })),
   ];
 
   const uniqueEntries = Array.from(
@@ -84,13 +75,14 @@ export async function GET() {
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${uniqueEntries.map(renderUrl).join('\n')}
+${uniqueEntries.map((entry) => renderUrl(entry, siteUrl)).join('\n')}
 </urlset>
 `;
 
   return new Response(body, {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=60, s-maxage=300',
     },
   });
 }

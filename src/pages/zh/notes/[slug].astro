@@ -8,6 +8,7 @@ import FeatureGrid from '@/components/common/FeatureGrid';
 import TechStackGrid from '@/components/common/TechStackGrid';
 import { research, getResearchItem } from '@/data/notes';
 import { localizePathname, resolveLocale, useTranslations, type Locale } from '@/lib/i18n';
+import { getNoteSchema } from '@/lib/seo';
 const lang = resolveLocale(Astro.currentLocale as Locale | undefined);
 const { t } = useTranslations(lang);
 export function getStaticPaths() {
@@ -24,7 +25,7 @@ if (!item) {
 }
 ---
 
-<BaseLayout title={`${item.title} - Miles`} description={item.tagline}>
+<BaseLayout title={`${item.title} - Miles`} description={item.tagline} ogImage={item.notePicItems?.[0]?.src} structuredData={[getNoteSchema(item, lang)]} alternateLocales={['zh']}>
   <main class="relative isolate min-h-screen overflow-hidden pb-16">
     <ContentLightRaysBackground client:only="react" />
 

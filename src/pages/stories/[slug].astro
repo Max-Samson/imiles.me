@@ -30,7 +30,7 @@ if (d1Post) {
     title: d1Post.title,
     description: d1Post.description ?? '',
     pubDate: new Date(d1Post.pubDate),
-    updatedDate: d1Post.updatedDate ? new Date(d1Post.updatedDate) : undefined,
+    updatedDate: new Date(d1Post.updatedDate ?? d1Post.updatedAt),
     tags: (() => {
       try {
         return JSON.parse(d1Post.tags);

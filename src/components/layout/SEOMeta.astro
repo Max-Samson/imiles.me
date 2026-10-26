@@ -17,6 +17,7 @@ interface Props {
   articleSection?: string;
   articleTitle?: string;
   noindex?: boolean;
+  structuredData?: Record<string, unknown>[];
 }
 
 const {
@@ -32,6 +33,7 @@ const {
   articleSection,
   articleTitle,
   noindex = false,
+  structuredData = [],
 } = Astro.props;
 
 const normalizedTags = normalizeTags(tags);
@@ -160,3 +162,4 @@ const pageSchemas = type === 'article'
 <script type="application/ld+json" set:html={JSON.stringify(siteSchemas.person).replaceAll('<', '\\u003c')} />
 <script type="application/ld+json" set:html={JSON.stringify(siteSchemas.website).replaceAll('<', '\\u003c')} />
 {pageSchemas.map((schema) => <script type="application/ld+json" set:html={JSON.stringify(schema).replaceAll('<', '\\u003c')} />)}
+{structuredData.map((schema) => <script type="application/ld+json" set:html={JSON.stringify(schema).replaceAll('<', '\\u003c')} />)}

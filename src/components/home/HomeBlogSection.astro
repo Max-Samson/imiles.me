@@ -1,5 +1,5 @@
 ---
-import type { CollectionEntry } from 'astro:content';
+import type { PublicContentEntry } from '@/server/content/public-index';
 import { type Locale, useTranslations, localizePathname, formatDate } from '@/lib/i18n';
 import { calculateReadTime } from '@/lib/readTime';
 import { ShineBorder } from '@/registry/magicui/shine-border';
@@ -8,7 +8,7 @@ import { rainbowButtonVariants } from '@/registry/magicui/rainbow-button';
 import { cn } from '@/lib/utils';
 import { normalizeTags } from '@/lib/tags';
 
-interface Props { lang: Locale; posts: CollectionEntry<'blog'>[] }
+interface Props { lang: Locale; posts: PublicContentEntry[] }
 const { lang, posts } = Astro.props;
 const { t } = useTranslations(lang);
 
@@ -32,7 +32,7 @@ const hasStream = streamPosts.length > 0;
               <a
                 class="home-card home-essay-card home-essay-lead group"
                 data-home-reveal
-                href={localizePathname(`/blog/${featuredPost.id.replace(/-zh$/, '')}`, lang)}
+                href={featuredPost.publicPath}
               >
                 <ShineBorder
                   className="rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-75 group-focus-visible:opacity-75"
@@ -66,12 +66,12 @@ const hasStream = streamPosts.length > 0;
                   <div class="flex items-center gap-2 text-xs text-muted-foreground font-mono">
                     <span class="inline-flex items-center gap-1.5">
                       <svg class="size-3.5 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-                      <time datetime={featuredPost.data.pubDate.toISOString()}>{formatDate(featuredPost.data.pubDate, lang)}</time>
+                      <time datetime={featuredPost.pubDate.toISOString()}>{formatDate(featuredPost.pubDate, lang)}</time>
                     </span>
                     <span aria-hidden="true" class="opacity-30">/</span>
                     <span class="inline-flex items-center gap-1.5">
                       <svg class="size-3.5 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      <span>{t('HomeReadTime', { minutes: calculateReadTime(featuredPost.body || '').minutes })}</span>
+                      <span>{t('HomeReadTime', { minutes: calculateReadTime(featuredPost.body).minutes })}</span>
                     </span>
                   </div>
                 </div>
@@ -79,17 +79,17 @@ const hasStream = streamPosts.length > 0;
                 {/* Center Content: Title + Long-form Excerpt */}
                 <div class="relative z-10 my-4 sm:my-6 flex-1">
                   <h3 class="text-xl sm:text-[1.75rem] lg:text-[1.95rem] font-semibold tracking-tight text-foreground text-balance leading-snug sm:leading-[1.3] transition-colors duration-200 group-hover:text-sky-600 dark:group-hover:text-amber-300">
-                    {featuredPost.data.title}
+                    {featuredPost.title}
                   </h3>
                   <p class="mt-2.5 sm:mt-3.5 text-xs sm:text-base text-muted-foreground leading-relaxed line-clamp-3 sm:line-clamp-4 font-normal">
-                    {featuredPost.data.description}
+                    {featuredPost.description}
                   </p>
                 </div>
 
                 {/* Bottom Bar: Tags + Action Read Button */}
                 <div class="relative z-10 flex flex-col gap-3 pt-3.5 border-t border-border/40 sm:flex-row sm:items-center sm:justify-between">
                   <ul class="home-tags">
-                    {normalizeTags(featuredPost.data.tags).slice(0, 3).map(tag => (
+                    {normalizeTags(featuredPost.tags).slice(0, 3).map(tag => (
                       <li class="transition-colors group-hover:border-sky-500/30 dark:group-hover:border-[#d4a958]/35 group-hover:text-foreground/90">
                         #{tag}
                       </li>
@@ -113,7 +113,7 @@ const hasStream = streamPosts.length > 0;
                   <a
                     class="home-card home-essay-card home-essay-stream-item group"
                     data-home-reveal
-                    href={localizePathname(`/blog/${post.id.replace(/-zh$/, '')}`, lang)}
+                    href={post.publicPath}
                   >
                     <ShineBorder
                       className="rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-75 group-focus-visible:opacity-75"
@@ -137,26 +137,26 @@ const hasStream = streamPosts.length > 0;
                       </span>
 
                       <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-muted-foreground">
-                        <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate, lang)}</time>
+                        <time datetime={post.pubDate.toISOString()}>{formatDate(post.pubDate, lang)}</time>
                         <span aria-hidden="true" class="opacity-30">·</span>
-                        <span class="shrink-0">{t('HomeReadTime', { minutes: calculateReadTime(post.body || '').minutes })}</span>
+                        <span class="shrink-0">{t('HomeReadTime', { minutes: calculateReadTime(post.body).minutes })}</span>
                       </div>
                     </div>
 
                     {/* Body: Title + Concise Summary */}
                     <div class="relative z-10 my-2.5 sm:my-3 flex-1">
                       <h3 class="text-base sm:text-lg font-semibold tracking-tight text-foreground text-balance leading-snug line-clamp-2 transition-colors duration-200 group-hover:text-sky-600 dark:group-hover:text-amber-300">
-                        {post.data.title}
+                        {post.title}
                       </h3>
                       <p class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                        {post.data.description}
+                        {post.description}
                       </p>
                     </div>
 
                     {/* Bottom Bar: Tags + Micro-arrow */}
                     <div class="relative z-10 flex items-center justify-between gap-3 pt-3 border-t border-border/40">
                       <ul class="home-tags">
-                        {normalizeTags(post.data.tags).slice(0, 2).map(tag => (
+                        {normalizeTags(post.tags).slice(0, 2).map(tag => (
                           <li class="transition-colors group-hover:border-sky-500/30 dark:group-hover:border-[#d4a958]/35 group-hover:text-foreground/90">
                             #{tag}
                           </li>
@@ -180,7 +180,7 @@ const hasStream = streamPosts.length > 0;
             <a
               class="home-card home-essay-card home-essay-single-item group"
               data-home-reveal
-              href={localizePathname(`/blog/${featuredPost.id.replace(/-zh$/, '')}`, lang)}
+              href={featuredPost.publicPath}
             >
               <ShineBorder
                 className="rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-75 group-focus-visible:opacity-75"
@@ -214,21 +214,21 @@ const hasStream = streamPosts.length > 0;
                     <div class="flex items-center gap-2 text-xs text-muted-foreground font-mono">
                       <span class="inline-flex items-center gap-1.5">
                         <svg class="size-3.5 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-                        <time datetime={featuredPost.data.pubDate.toISOString()}>{formatDate(featuredPost.data.pubDate, lang)}</time>
+                        <time datetime={featuredPost.pubDate.toISOString()}>{formatDate(featuredPost.pubDate, lang)}</time>
                       </span>
                       <span aria-hidden="true" class="opacity-30">/</span>
                       <span class="inline-flex items-center gap-1.5">
                         <svg class="size-3.5 opacity-70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        <span>{t('HomeReadTime', { minutes: calculateReadTime(featuredPost.body || '').minutes })}</span>
+                        <span>{t('HomeReadTime', { minutes: calculateReadTime(featuredPost.body).minutes })}</span>
                       </span>
                     </div>
                   </div>
                   <h3 class="my-4 text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground text-balance leading-[1.25] transition-colors duration-200 group-hover:text-sky-600 dark:group-hover:text-amber-300">
-                    {featuredPost.data.title}
+                    {featuredPost.title}
                   </h3>
 
                   <ul class="home-tags mt-2">
-                    {normalizeTags(featuredPost.data.tags).slice(0, 4).map(tag => (
+                    {normalizeTags(featuredPost.tags).slice(0, 4).map(tag => (
                       <li class="transition-colors group-hover:border-sky-500/30 dark:group-hover:border-[#d4a958]/35 group-hover:text-foreground/90">
                         #{tag}
                       </li>
@@ -239,7 +239,7 @@ const hasStream = streamPosts.length > 0;
                 {/* Right side: Excerpt & Action Callout */}
                 <div class="lg:col-span-5 flex flex-col justify-between border-t border-border/40 pt-5 sm:pt-6 lg:border-t-0 lg:border-l lg:border-border/40 lg:pl-10 lg:pt-0">
                   <p class="text-xs sm:text-base text-muted-foreground leading-relaxed font-normal">
-                    {featuredPost.data.description}
+                    {featuredPost.description}
                   </p>
 
                   <div class="mt-4 sm:mt-6">

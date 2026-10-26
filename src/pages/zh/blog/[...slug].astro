@@ -40,6 +40,13 @@ let postData: {
 let tocHeadings: Array<{ depth: number; slug: string; text: string }> = [];
 let ContentComponent: any = null;
 let alternateLocales: Array<'en' | 'zh'> = ['zh'];
+const alternatePath = pathname.replace(/^\/zh\/blog\//, '/blog/');
+if (
+  staticPosts.some((post) => post.data.lang === 'en' && resolveContentPublicPath('blog', 'en', post.id) === alternatePath) ||
+  (await postRepo.findByPath(alternatePath))
+) {
+  alternateLocales = ['en', 'zh'];
+}
 
 // 若静态存在且与 D1 源码相同（或属于 MDX 构建产物），优先使用完整的 Astro MDX 组件渲染流水线
 if (matchedStatic && (!d1Post || (d1Post.format === 'mdx' && d1Post.contentRaw === (matchedStatic.body ?? '')))) {
@@ -50,7 +57,7 @@ if (matchedStatic && (!d1Post || (d1Post.format === 'mdx' && d1Post.contentRaw =
     title: d1Post?.title ?? matchedStatic.data.title,
     description: d1Post?.description ?? matchedStatic.data.description,
     pubDate: d1Post ? new Date(d1Post.pubDate) : matchedStatic.data.pubDate,
-    updatedDate: d1Post?.updatedDate ? new Date(d1Post.updatedDate) : matchedStatic.data.updatedDate,
+    updatedDate: d1Post ? new Date(d1Post.updatedDate ?? d1Post.updatedAt) : matchedStatic.data.updatedDate,
     heroImage: d1Post?.heroImage ?? matchedStatic.data.heroImage,
     tags: d1Post
       ? (() => {
@@ -69,7 +76,7 @@ if (matchedStatic && (!d1Post || (d1Post.format === 'mdx' && d1Post.contentRaw =
     title: d1Post.title,
     description: d1Post.description ?? '',
     pubDate: new Date(d1Post.pubDate),
-    updatedDate: d1Post.updatedDate ? new Date(d1Post.updatedDate) : undefined,
+    updatedDate: new Date(d1Post.updatedDate ?? d1Post.updatedAt),
     heroImage: d1Post.heroImage ?? undefined,
     tags: (() => {
       try {

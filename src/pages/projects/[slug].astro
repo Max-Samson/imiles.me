@@ -10,6 +10,7 @@ import FeatureGrid from '@/components/common/FeatureGrid';
 import TechStackGrid from '@/components/common/TechStackGrid';
 import { projects, getProject } from '@/data/projects';
 import { getLocaleFromPathname, useTranslations, localizePathname } from '@/lib/i18n';
+import { getProjectSchema } from '@/lib/seo';
 
 const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
@@ -28,7 +29,7 @@ if (!project) {
 }
 ---
 
-<BaseLayout title={`${project.title} | Miles`} description={project.tagline}>
+<BaseLayout title={`${project.title} | Miles`} description={project.tagline} ogImage={project.coverImage} structuredData={[getProjectSchema(project, lang)]}>
   <main class="relative isolate min-h-screen overflow-x-clip pb-16">
     <ContentLightRaysBackground client:only="react" />
 
