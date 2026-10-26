@@ -122,7 +122,7 @@ async function loadBlogEntries() {
         const source = await readFile(filePath, 'utf8');
         const frontmatter = parseFrontmatter(source);
 
-        if (!frontmatter.title || !frontmatter.description || frontmatter.draft === true) {
+        if (!frontmatter.title || !frontmatter.description) {
           return null;
         }
 
@@ -157,7 +157,7 @@ async function loadStoryEntries() {
         const source = await readFile(filePath, 'utf8');
         const frontmatter = parseFrontmatter(source);
 
-        if (!frontmatter.title || !frontmatter.description || frontmatter.draft === true) {
+        if (!frontmatter.title || !frontmatter.description) {
           return null;
         }
 

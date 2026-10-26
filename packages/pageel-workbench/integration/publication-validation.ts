@@ -32,9 +32,6 @@ export function validatePublicationFields(fields: Record<string, unknown>, colle
   if (fields.lang !== undefined && fields.lang !== 'en' && fields.lang !== 'zh') {
     issues.push({ field: 'lang', message: '请选择中文 zh 或英文 en（lang）' });
   }
-  if (fields.draft !== undefined && typeof fields.draft !== 'boolean') {
-    issues.push({ field: 'draft', message: '草稿状态（draft）须为 true 或 false' });
-  }
   if (fields.llms !== undefined && typeof fields.llms !== 'boolean') {
     issues.push({ field: 'llms', message: 'AI 索引（llms）须为 true 或 false' });
   }

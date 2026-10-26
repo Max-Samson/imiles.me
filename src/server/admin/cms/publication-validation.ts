@@ -2,11 +2,7 @@ import remarkMdx from 'remark-mdx';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { collectContentImages } from '../../../lib/content-images';
-import {
-  parseSourceDocument,
-  type SourceDocument,
-  updateSourceFields,
-} from '../../../lib/content-source';
+import { parseSourceDocument, type SourceDocument } from '../../../lib/content-source';
 import type { CmsDraft } from '../../db/schema/cms';
 import { ValidationError } from '../../errors';
 
@@ -40,8 +36,6 @@ export function preparePublication(draft: CmsDraft): { source: string; assetPath
   if (fields.lang !== undefined && fields.lang !== draft.lang)
     issues.push('文章语言与目标地址不一致');
   if (draft.lang === 'zh' && fields.lang !== 'zh') issues.push('中文文章必须设置 lang: zh');
-  if (fields.draft !== undefined && typeof fields.draft !== 'boolean')
-    issues.push('draft 必须是布尔值');
   if (fields.llms !== undefined && typeof fields.llms !== 'boolean')
     issues.push('llms 必须是布尔值');
   if (fields.heroImage !== undefined && typeof fields.heroImage !== 'string')
@@ -108,8 +102,7 @@ export function preparePublication(draft: CmsDraft): { source: string; assetPath
   if (references.issues.length) throw new ValidationError('图片引用无效', references.issues);
   for (const image of references.images) checkAsset(image.url);
   if (typeof fields.heroImage === 'string' && fields.heroImage) checkAsset(fields.heroImage);
-  // draft 字段由服务端决定，浏览器传来的值不能改变发布意图。
-  const source = updateSourceFields(draft.source, { draft: false });
+  const source = draft.source;
   if (new TextEncoder().encode(source).length > 1024 * 1024)
     throw new ValidationError('发布文本超过 1 MiB');
   return { source, assetPaths: [...assets] };

@@ -41,9 +41,10 @@ export function inspectImportedContent(name: string, content: string, collection
   const originalFields = (data ?? {}) as Record<string, unknown>;
   // 默认值仅用于编辑台表单；不修改导入的原始文件，也不伪造发布日期。
   const fm: Record<string, unknown> = {
-    title: name.replace(/\.mdx?$/, ''), description: '', pubDate: '', tags: [], draft: true,
+    title: name.replace(/\.mdx?$/, ''), description: '', pubDate: '', tags: [],
     ...originalFields,
   };
+  delete fm.draft;
   // 可修正的属性问题只产生提示，不阻止打开；文件类型、语法与集合限制仍抛错。
   const warnings = [
     ...(!match ? ['文件未包含 YAML 文章属性，已使用文件名作为初始标题，可在右侧补充。'] : []),

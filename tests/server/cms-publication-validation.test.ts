@@ -1,9 +1,24 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { validatePublicationFields } from '../../packages/pageel-workbench/integration/publication-validation';
+import { preparePublication } from '../../src/server/admin/cms/publication-validation';
+import type { CmsDraft } from '../../src/server/db/schema/cms';
+
+test('发布保留文章源文，不写入站点隐藏字段', () => {
+  const source =
+    '---\ntitle: 示例\ndescription: 摘要\npubDate: 2026-10-26\ntags: []\nlang: zh\n---\n\n正文';
+  const draft = {
+    source,
+    collection: 'blog',
+    format: 'md',
+    lang: 'zh',
+    baseBlobSha: null,
+  } as CmsDraft;
+  assert.equal(preparePublication(draft).source, source);
+});
 
 test('发布前一次列出待补充字段，补齐后消除提示', () => {
-  const fields: Record<string, unknown> = { title: '', draft: true, tags: [] };
+  const fields: Record<string, unknown> = { title: '', tags: [] };
   assert.deepEqual(
     validatePublicationFields(fields, 'blog').map((issue) => issue.field),
     ['title', 'description', 'pubDate'],

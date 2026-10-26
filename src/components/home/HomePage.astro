@@ -22,9 +22,9 @@ const { lang } = Astro.props;
 const { t } = useTranslations(lang);
 const path = (url: string) => localizePathname(url, lang);
 const projects = getProjects(lang);
-const posts = (await getCollection('blog', ({ data }) => !data.draft && data.lang === lang))
+const posts = (await getCollection('blog', ({ data }) => data.lang === lang))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
-const stories = await getCollection('stories', ({ data }) => !data.draft && data.lang === lang);
+const stories = await getCollection('stories', ({ data }) => data.lang === lang);
 const searchItems = [
   ...stories.map(story => ({ title: story.data.title, description: story.data.description, href: path(`/stories/${story.id.replace(/-zh$/, '')}`) })),
   ...(['about', 'notes', 'projects', 'blog', 'stories'] as const).map(page => ({ title: t(`Header${page}`), description: '', href: path(`/${page}`) })),

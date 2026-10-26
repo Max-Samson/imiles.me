@@ -60,9 +60,9 @@ test('真实 MDX 打开关闭逐字保真，更新属性保留正文和未改 YA
   assert.equal(parsed.fields.title, "Hi, I'm Miles");
   assert.equal(updateSourceFields(source, {}), source);
   assert.equal(updateSourceFields(source, { title: parsed.fields.title }), source);
-  const updated = updateSourceFields(source, { title: '新的标题', draft: true });
+  const updated = updateSourceFields(source, { title: '新的标题', shareText: '新的分享文案' });
   assert.equal(parseSourceDocument(updated).fields.title, '新的标题');
-  assert.equal(parseSourceDocument(updated).fields.draft, true);
+  assert.equal(parseSourceDocument(updated).fields.shareText, '新的分享文案');
   assert.equal(parseSourceDocument(updated).body, parsed.body);
   assert.ok(updated.includes('tags: ["introduction", "fullstack", "engineering", "ai"]'));
 });

@@ -36,7 +36,7 @@ before(async () => {
 after(async () => platform?.dispose());
 
 const source =
-  '---\ntitle: "草稿"\ndescription: "摘要"\npubDate: "2026-10-23"\ntags: ["blog"]\nlang: "zh"\ndraft: true\n---\n\n正文\n';
+  '---\ntitle: "草稿"\ndescription: "摘要"\npubDate: "2026-10-23"\ntags: ["blog"]\nlang: "zh"\n---\n\n正文\n';
 
 test('发布固定快照、幂等复用操作 ID，Git 已提交后关闭本轮草稿', async () => {
   const content = snapshotRepository({});
@@ -49,7 +49,7 @@ test('发布固定快照、幂等复用操作 ID，Git 已提交后关闭本轮�
     async write(input) {
       writes++;
       assert.equal(input.expectedBlobSha, null);
-      assert.match(input.source, /draft: false/);
+      assert.equal(input.source, source);
       return { kind: 'committed', blobSha: 'blob-ok', commitSha: 'commit-ok' };
     },
     async reconcile() {
@@ -64,7 +64,7 @@ test('发布固定快照、幂等复用操作 ID，Git 已提交后关闭本轮�
   assert.equal((await service.publish(draft.id, 1, operationId, 'user:test')).status, 'committed');
   assert.equal(writes, 1);
   const persisted = await publicationRepository(platform.env).get(operationId);
-  assert.match(persisted.sourceSnapshot ?? '', /draft: false/);
+  assert.equal(persisted.sourceSnapshot, source);
   const operations = publicationRepository(platform.env);
   const verified = await operations.recordDeployment(operationId, {
     status: 'verified',
@@ -364,7 +364,7 @@ test('D1 发布写入支持 KaTeX 公式预渲染，更新时保留创建审计�
   const posts = postRepository(platform.env);
   const op1 = crypto.randomUUID();
   const sourceWithMath =
-    '---\ntitle: "公式测试"\ndescription: "数学摘要"\npubDate: "2026-10-24"\ntags: ["math"]\nlang: "zh"\ndraft: false\n---\n\n行内公式 $E=mc^2$ 与块级公式：\n\n$$\\sum_{i=1}^n i$$\n';
+    '---\ntitle: "公式测试"\ndescription: "数学摘要"\npubDate: "2026-10-24"\ntags: ["math"]\nlang: "zh"\n---\n\n行内公式 $E=mc^2$ 与块级公式：\n\n$$\\sum_{i=1}^n i$$\n';
 
   const res1 = await writer.write({
     path: 'content/blog/math-test.md',
@@ -447,7 +447,7 @@ test('D1 删除与归档语义正确对账，未曾存在的文章不误报成�
 test('公开只读仓库保持发布列表、路径和归档过滤语义，不暴露写方法', async () => {
   const result = await d1PublicationWriter(platform.env).write({
     path: 'content/blog/read-boundary.md',
-    source: source.replace('draft: true', 'draft: false'),
+    source,
     expectedBlobSha: null,
     operationId: crypto.randomUUID(),
     actorId: 'user:read-boundary',

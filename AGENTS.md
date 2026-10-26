@@ -9,8 +9,8 @@ Personal website and blog at [imiles.me](https://imiles.me). Built with Astro, R
 ## Architecture
 
 content/
-  blog/           # MDX blog posts (schema: title, description, pubDate, tags, draft, heroImage)
-  stories/        # Markdown stories (schema: title, description, pubDate, tags, draft)
+  blog/           # MDX blog posts (schema: title, description, pubDate, tags, heroImage)
+  stories/        # Markdown stories (schema: title, description, pubDate, tags)
   experience/     # Bilingual MDX experience timeline entries
 src/
   pages/          # Astro routes (index, blog, stories, projects, notes, about, rss, og)
@@ -140,8 +140,8 @@ Import individually or via barrel export from `../components`:
 
 ### Blog posts
 
-- Frontmatter requires: `title`, `description`, `pubDate`, `tags`. Optional: `heroImage`, `updatedDate`, `draft`, `shareText`.
-- Set `draft: true` to hide content from production.
+- Frontmatter requires: `title`, `description`, `pubDate`, `tags`. Optional: `heroImage`, `updatedDate`, `shareText`.
+- In the CMS, save an unpublished working copy with **Save draft** and make it public with **Publish**.
 - Tags are arrays of lowercase strings.
 - Can import and use React components with `client:load` or `client:visible` hydration.
 - Support KaTeX math via `remark-math` + `rehype-katex` (`$$` for display, `$` for inline).
@@ -150,7 +150,7 @@ Import individually or via barrel export from `../components`:
 
 Stories are **text-only Markdown** (`.md`) in `content/stories/`. They use no React components, no images, and no MDX.
 
-**Frontmatter requires:** `title`, `description`, `pubDate`, `tags`. Optional: `updatedDate`, `draft`.
+**Frontmatter requires:** `title`, `description`, `pubDate`, `tags`. Optional: `updatedDate`.
 
 **Writing style:**
 - **First-person, present-tense narration** — immediate, visceral, stream-of-consciousness.

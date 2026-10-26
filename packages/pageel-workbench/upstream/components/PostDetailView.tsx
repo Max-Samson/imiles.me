@@ -468,7 +468,6 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       let defaultValue: any = "";
       if (key === 'date' || key === 'publishDate' || key === 'pubDate' || key === 'updatedDate') defaultValue = new Date().toISOString().split('T')[0];
       if (key === 'tags') defaultValue = [];
-      if (key === 'draft') defaultValue = !publishedBaseRef.current;
       if (key === 'llms') defaultValue = false;
       if (key === 'lang') defaultValue = 'en';
       
@@ -1044,7 +1043,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
           );
       }
 
-      // Boolean switch (draft, llms, etc.)
+      // Boolean switch for optional metadata such as llms.
       if (typeof value === 'boolean') {
           return (
               <div className="flex items-center gap-2 py-1">
@@ -1953,7 +1952,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                       </div>
 
                       {/* 3. 其它 frontmatter 属性 */}
-                      {Object.entries(editableFrontmatter).filter(([k]) => k !== 'title' && k !== 'lang' && k !== 'slug').map(([key, value]) => (
+                      {Object.entries(editableFrontmatter).filter(([k]) => k !== 'title' && k !== 'lang' && k !== 'slug' && k !== 'draft').map(([key, value]) => (
                           <div key={key} className="flex py-1.5 group items-start">
                               <div className="w-24 flex-shrink-0 flex items-center text-notion-muted pt-1">
                                   <div className="flex items-center px-1 py-0.5 rounded-sm transition-colors cursor-default">

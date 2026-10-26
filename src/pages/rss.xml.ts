@@ -4,7 +4,7 @@ import type { APIContext } from 'astro';
 import { resolveContentPublicPath } from '../lib/content-routing';
 
 export async function GET(context: APIContext) {
-  const posts = await getCollection('blog', ({ data }) => data.draft !== true);
+  const posts = await getCollection('blog');
   const sortedPosts = posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 
   return rss({

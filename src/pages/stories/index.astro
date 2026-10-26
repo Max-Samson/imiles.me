@@ -33,7 +33,7 @@ const storiesMap = new Map<
 >();
 
 try {
-  const staticStories = await getCollection('stories', ({ data }) => data.draft !== true && data.lang === lang);
+  const staticStories = await getCollection('stories', ({ data }) => data.lang === lang);
   for (const s of staticStories) {
     const publicPath = resolveContentPublicPath('stories', lang, s.id);
     storiesMap.set(publicPath, {

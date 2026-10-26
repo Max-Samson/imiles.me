@@ -202,11 +202,10 @@ const PostList: React.FC<PostListProps> = ({
           description: '',
           pubDate: new Date().toISOString().split('T')[0],
           tags: [],
-          draft: true,
           lang: newLang,
       };
 
-      const source = `---\ntitle: ""\ndescription: ""\npubDate: "${defaultFrontmatter.pubDate}"\ntags: []\ndraft: true\nlang: "${newLang}"\n---\n\n`;
+      const source = `---\ntitle: ""\ndescription: ""\npubDate: "${defaultFrontmatter.pubDate}"\ntags: []\nlang: "${newLang}"\n---\n\n`;
       const mockNewPost: PostData = {
           name: target.path.split('/').pop() ?? '',
           path: target.path,
@@ -341,7 +340,7 @@ const PostList: React.FC<PostListProps> = ({
               sha: '',
               body: '',
               rawContent: '',
-              frontmatter: { title: draft.titleCache ?? draft.slug, draft: true, lang: draft.lang },
+              frontmatter: { title: draft.titleCache ?? draft.slug, lang: draft.lang },
               thumbnailUrl: null,
               html_url: '',
               draft,
@@ -481,8 +480,7 @@ const PostList: React.FC<PostListProps> = ({
               if (p.publication && ['prepared', 'in_flight', 'unknown'].includes(p.publication.status)) return 2;
               if (p.draft && !p.sha) return 3;
               if (p.draft) return 4;
-              if (p.frontmatter.draft === true) return 5;
-              return 6;
+              return 5;
             };
             const diff = getStatusRank(a) - getStatusRank(b);
             return sortOption === 'status-asc' ? diff : -diff;
@@ -532,9 +530,6 @@ const PostList: React.FC<PostListProps> = ({
   };
 
   const renderDynamicCell = (post: PostData, field: string) => {
-      if (field === 'draft') {
-          return <span className="text-notion-text text-xs">{post.frontmatter.draft === true ? '是' : '否'}</span>;
-      }
       // Date handling
       if (field.toLowerCase().includes('date')) {
           let dateVal = post.frontmatter[field];
@@ -595,7 +590,7 @@ const PostList: React.FC<PostListProps> = ({
 
   const getPostStatus = (post: PostData): {
     label: string;
-    variant: 'published' | 'draft' | 'pending' | 'warning' | 'danger';
+    variant: 'published' | 'pending' | 'warning' | 'danger';
     tooltip?: string;
     pulse?: boolean;
   } => {
@@ -621,14 +616,7 @@ const PostList: React.FC<PostListProps> = ({
         return {
           label: '未发布草稿',
           variant: 'warning',
-          tooltip: '仅保存在 D1 本地草稿，尚未提交至 Git 仓库',
-        };
-      }
-      if (post.frontmatter.draft === true) {
-        return {
-          label: '仓库草稿 · 有修改',
-          variant: 'warning',
-          tooltip: '仓库文章为草稿，本地有未提交的工作草稿',
+          tooltip: '仅保存在 D1 工作草稿，尚未发布',
         };
       }
       return {
@@ -638,18 +626,10 @@ const PostList: React.FC<PostListProps> = ({
       };
     }
 
-    if (post.frontmatter.draft === true) {
-      return {
-        label: '草稿 (未公开)',
-        variant: 'draft',
-        tooltip: '已提交仓库，但站点隐藏 (draft: true)',
-      };
-    }
-
     return {
       label: '已发布',
       variant: 'published',
-      tooltip: '已提交仓库并在线公开',
+      tooltip: '当前版本已发布并在线公开',
     };
   };
 
@@ -658,7 +638,6 @@ const PostList: React.FC<PostListProps> = ({
 
     const variantStyles = {
       published: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-      draft: 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/20',
       warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
       pending: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
       danger: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
@@ -666,7 +645,6 @@ const PostList: React.FC<PostListProps> = ({
 
     const dotStyles = {
       published: 'bg-emerald-500',
-      draft: 'bg-zinc-400',
       warning: 'bg-amber-500',
       pending: 'bg-blue-500',
       danger: 'bg-red-500',
@@ -1055,7 +1033,7 @@ const PostList: React.FC<PostListProps> = ({
                                               >
                                                   <EditIcon className="w-3.5 h-3.5" />
                                               </button>
-                                              {publicUrl && post.sha && !post.frontmatter.draft ? (
+                                              {publicUrl && post.sha ? (
                                                   <a
                                                       href={publicUrl}
                                                       target="_blank"
@@ -1071,7 +1049,7 @@ const PostList: React.FC<PostListProps> = ({
                                                       type="button"
                                                       disabled
                                                       className="p-1.5 text-notion-muted/30 cursor-not-allowed rounded-md inline-flex items-center"
-                                                      title={post.frontmatter.draft ? '草稿尚未公开' : '未发布到线上'}
+                                                      title="未发布到线上"
                                                   >
                                                       <EyeIcon className="w-3.5 h-3.5" />
                                                   </button>

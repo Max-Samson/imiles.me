@@ -8,8 +8,7 @@ import {
 } from '../../packages/pageel-workbench/integration/insertion';
 import { contentComponents } from '../../src/config/content-components';
 
-const header =
-  '---\ntitle: 测试\ndescription: 简介\npubDate: 2026-10-23\ntags: []\ndraft: true\n---\n';
+const header = '---\ntitle: 测试\ndescription: 简介\npubDate: 2026-10-23\ntags: []\n---\n';
 test('MDX AST 忽略围栏与行内代码，准确识别同名嵌套和对象表达式', () => {
   const source =
     '```mdx\n<ExploreCard />\n```\n\n`<ExploreCard />`\n\n<ExploreCard title="outer"><ExploreCard title="inner">文字</ExploreCard></ExploreCard>\n\n<TechStackTerminal profile={{ role: ">" }} />';
@@ -55,7 +54,7 @@ test('无 YAML 或属性不完整仍可导入，缺项留到发布前提示', ()
   assert.equal(imported.body, plain);
   assert.equal(imported.rawContent, plain);
   assert.equal(imported.frontmatter.title, '待配置文章');
-  assert.equal(imported.frontmatter.draft, true);
+  assert.equal(Object.hasOwn(imported.frontmatter, 'draft'), false);
   assert.ok(imported.warnings.some((message) => message.includes('摘要')));
   assert.ok(imported.warnings.some((message) => message.includes('发布日期')));
   const incomplete = '---\ntitle: 自定义标题\ntags: wrong\npubDate: invalid\n---\n正文';

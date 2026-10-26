@@ -40,10 +40,7 @@ function renderUrl(entry: SitemapEntry) {
 }
 
 export async function GET() {
-  const [blogPosts, stories] = await Promise.all([
-    getCollection('blog', ({ data }) => data.draft !== true),
-    getCollection('stories', ({ data }) => data.draft !== true),
-  ]);
+  const [blogPosts, stories] = await Promise.all([getCollection('blog'), getCollection('stories')]);
 
   const entries: SitemapEntry[] = [
     { path: '/' },

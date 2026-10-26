@@ -19,7 +19,7 @@ const postRepo = contentReadRepository(env);
 const d1Post = await postRepo.findByPath(pathname);
 
 // 2. 检索是否有同路径的静态 Content Collection 文章
-const staticPosts = await getCollection('blog', ({ data }) => data.draft !== true);
+const staticPosts = await getCollection('blog');
 const matchedStatic = staticPosts.find((p) => resolveContentPublicPath('blog', 'zh', p.id) === pathname);
 
 if (!d1Post && !matchedStatic) {

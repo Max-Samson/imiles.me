@@ -42,7 +42,7 @@ if (d1Post) {
     contentHtml: d1Post.contentHtml,
   };
 } else {
-  const stories = await getCollection('stories', ({ data }) => data.draft !== true);
+  const stories = await getCollection('stories');
   const matched = stories.find((s) => resolveContentPublicPath('stories', 'zh', s.id) === pathname);
   if (!matched) {
     return new Response(null, { status: 404, statusText: 'Not Found' });

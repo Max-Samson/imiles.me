@@ -16,8 +16,8 @@ const interBold = readFileSync(join(process.cwd(), 'public/fonts/Inter-Bold.ttf'
 const notoSansSc = readFileSync(join(process.cwd(), 'src/assets/fonts/NotoSansSC-Regular.ttf'));
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const posts = await getCollection('blog', ({ data }) => data.draft !== true);
-  const stories = await getCollection('stories', ({ data }) => data.draft !== true);
+  const posts = await getCollection('blog');
+  const stories = await getCollection('stories');
 
   const blogPaths = posts.map((post) => ({
     params: {

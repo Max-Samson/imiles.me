@@ -17,7 +17,6 @@ export const cmsConfig = {
         { name: 'updatedDate', type: 'date' },
         { name: 'tags', type: 'array', defaultValue: [] },
         { name: 'lang', type: 'string', defaultValue: 'en' },
-        { name: 'draft', type: 'boolean', defaultValue: true },
         { name: 'llms', type: 'boolean', defaultValue: false },
         ...(id === 'blog'
           ? [

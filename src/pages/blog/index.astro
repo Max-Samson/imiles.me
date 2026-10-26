@@ -36,7 +36,7 @@ const postsMap = new Map<
 >();
 
 try {
-  const staticPosts = await getCollection('blog', ({ data }) => data.draft !== true && data.lang === lang);
+  const staticPosts = await getCollection('blog', ({ data }) => data.lang === lang);
   for (const p of staticPosts) {
     const publicPath = resolveContentPublicPath('blog', lang, p.id);
     postsMap.set(publicPath, {
