@@ -39,9 +39,9 @@ export function CollectionToolbar({ className = '' }: CollectionToolbarProps) {
   }, []);
 
   return (
-    <div className={`cms-collection-toolbar flex flex-wrap items-center gap-2.5 ${className}`}>
-      <div className="flex items-center gap-2 rounded-xl border border-notion-border bg-notion-sidebar/60 px-3 py-1.5 shadow-2xs backdrop-blur-md">
-        <FolderGit2 className="size-4 text-notion-muted" />
+    <div className={`cms-collection-toolbar flex flex-wrap items-center justify-end gap-2 ${className}`}>
+      <div className="flex h-9 items-center gap-2 rounded-lg border border-notion-border bg-notion-sidebar/60 px-3 shadow-2xs">
+        <FolderGit2 className="size-4 shrink-0 text-notion-muted" />
         <label
           htmlFor="cms-collection"
           className="text-xs font-medium text-notion-muted whitespace-nowrap"
@@ -57,7 +57,7 @@ export function CollectionToolbar({ className = '' }: CollectionToolbarProps) {
               if (allowed) setActiveCollection(nextCollection);
             });
           }}
-          className="rounded-lg border border-notion-border bg-notion-bg px-2.5 py-1 text-xs font-semibold text-notion-text focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue transition-all cursor-pointer shadow-2xs"
+          className="h-7 rounded-md border border-notion-border bg-notion-bg px-2.5 text-xs font-semibold text-notion-text focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue transition-all cursor-pointer shadow-2xs"
         >
           {workspace?.collections.map((collection) => (
             <option
@@ -75,7 +75,7 @@ export function CollectionToolbar({ className = '' }: CollectionToolbarProps) {
         <div className="flex items-center">
           {session.mode === 'd1' ? (
             <span
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shadow-2xs whitespace-nowrap"
+              className="inline-flex h-9 items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 whitespace-nowrap"
               title="Cloudflare D1 存储模式：文章直接存取于生产 D1 数据库，发布即时同步全站前台，无需等待构建"
             >
               <Database className="size-3.5 text-emerald-500 shrink-0" />
@@ -83,7 +83,7 @@ export function CollectionToolbar({ className = '' }: CollectionToolbarProps) {
             </span>
           ) : session.mode === 'snapshot' ? (
             <span
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20 shadow-2xs whitespace-nowrap"
+              className="inline-flex h-9 items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20 whitespace-nowrap"
               title="本地开发快照模式：未配置远程 GitHub Token，无法发布到远程，调试不会影响线上"
             >
               <GitBranch className="size-3.5 text-zinc-400 shrink-0" />
@@ -91,7 +91,7 @@ export function CollectionToolbar({ className = '' }: CollectionToolbarProps) {
             </span>
           ) : session.isTestBranch ? (
             <span
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs whitespace-nowrap"
+              className="inline-flex h-9 items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 whitespace-nowrap"
               title={`目标仓库: ${session.repo} | 本地调试分支: ${session.branch}。此分支不会触发 GitHub Actions 生产部署，本地调试内容与线上生产完全隔离。`}
             >
               <ShieldCheck className="size-3.5 text-emerald-500 shrink-0" />
@@ -99,7 +99,7 @@ export function CollectionToolbar({ className = '' }: CollectionToolbarProps) {
             </span>
           ) : (
             <span
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-2xs whitespace-nowrap"
+              className="inline-flex h-9 items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 whitespace-nowrap"
               title={`目标仓库: ${session.repo} | 生产主分支: ${session.branch}。⚠️ 警告：在此分支发布将触发 GitHub Actions 全站自动构建并上线生产环境！`}
             >
               <AlertTriangle className="size-3.5 text-rose-500 shrink-0" />
@@ -111,14 +111,14 @@ export function CollectionToolbar({ className = '' }: CollectionToolbarProps) {
 
       {session?.mode === 'd1' ? (
         <div className="flex items-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 shadow-2xs whitespace-nowrap">
+          <span className="inline-flex h-9 items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 whitespace-nowrap">
             <span className="size-1.5 rounded-full bg-blue-500" />
             草稿自动暂存 · 发布即时生效
           </span>
         </div>
       ) : (
         <div className="flex items-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-2xs whitespace-nowrap">
+          <span className="inline-flex h-9 items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 whitespace-nowrap">
             <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
             草稿保存在 D1 · Git 提交与部署分别确认
           </span>

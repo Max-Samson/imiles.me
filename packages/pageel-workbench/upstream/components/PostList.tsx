@@ -573,6 +573,21 @@ const PostList: React.FC<PostListProps> = ({
     return visibleFields.filter(f => f !== 'draft');
   }, [visibleFields]);
 
+  const tableColumnWeights = useMemo(() => {
+    const name = Math.max(columnWidths['__name__'] || 35, 50);
+    const fields = tableFields.map(field => columnWidths[field] || (field === 'lang' ? 10 : 18));
+    const status = 14;
+    const actions = 12;
+    const total = name + fields.reduce((sum, width) => sum + width, 0) + status + actions;
+    const percentage = (weight: number) => `${(weight / total) * 100}%`;
+    return {
+      name: percentage(name),
+      fields: fields.map(percentage),
+      status: percentage(status),
+      actions: percentage(actions),
+    };
+  }, [columnWidths, tableFields]);
+
   const resolvePostPublicUrl = useCallback((post: PostData): string | null => {
     if (post.deletion) return null;
     if (post.draft?.publicPath) return post.draft.publicPath;
@@ -653,7 +668,7 @@ const PostList: React.FC<PostListProps> = ({
     return (
       <span
         title={status.tooltip}
-        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border select-none ${
+        className={`inline-flex min-h-5 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] leading-none font-medium whitespace-nowrap select-none ${
           status.pulse
             ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 animate-pulse'
             : variantStyles[status.variant]
@@ -732,7 +747,7 @@ const PostList: React.FC<PostListProps> = ({
 
       {/* Toolbar */}
       {deleteNotice && <p role="status" className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-notion-text">{deleteNotice}</p>}
-      <div className="mb-4 flex flex-col sm:flex-row gap-2 justify-between items-center z-10 relative">
+      <div className="relative z-10 mb-4 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-grow w-full sm:w-auto max-w-md">
             <input
             type="text"
@@ -742,19 +757,19 @@ const PostList: React.FC<PostListProps> = ({
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
             }}
-            className="w-full pl-8 pr-4 py-1.5 bg-notion-bg border border-notion-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue transition-all text-notion-text placeholder-notion-muted/70 shadow-2xs"
+            className="h-8 w-full rounded-lg border border-notion-border bg-notion-bg pl-8 pr-4 text-xs text-notion-text shadow-2xs transition-all placeholder-notion-muted/70 focus:border-notion-blue focus:outline-none focus:ring-2 focus:ring-notion-blue/20"
             />
             <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
             <SearchIcon className="h-3.5 w-3.5 text-notion-muted" />
             </div>
         </div>
         
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
             {/* WF-08: Filter toggle */}
             {activeTemplate && (
               <LiquidGlassButton
                 type="button"
-                size="xs"
+                size="sm"
                 shape="rounded"
                 variant={isFilterOpen || Object.keys(activeFilters).length > 0 ? 'blue' : 'default'}
                 glow={isFilterOpen || Object.keys(activeFilters).length > 0}
@@ -777,7 +792,7 @@ const PostList: React.FC<PostListProps> = ({
                 <select 
                     value={sortOption}
                     onChange={(e) => setSortOption(e.target.value as SortOption)}
-                    className="appearance-none pl-2.5 pr-7 py-1 bg-notion-bg border border-notion-border rounded-lg text-xs font-medium text-notion-text focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue shadow-2xs cursor-pointer hover:bg-notion-hover transition-all"
+                    className="h-8 appearance-none rounded-lg border border-notion-border bg-notion-bg pl-2.5 pr-7 text-xs font-medium text-notion-text shadow-2xs transition-all hover:bg-notion-hover focus:border-notion-blue focus:outline-none focus:ring-2 focus:ring-notion-blue/20 cursor-pointer"
                 >
                     {dynamicSortOptions.map(opt => (
                       <option key={opt.value} value={opt.value} className="bg-notion-bg text-notion-text">{opt.label}</option>
@@ -788,7 +803,7 @@ const PostList: React.FC<PostListProps> = ({
                 </div>
             </div>
 
-            <div className="flex bg-notion-sidebar p-0.5 rounded-lg border border-notion-border shadow-2xs">
+            <div className="flex h-8 items-center rounded-lg border border-notion-border bg-notion-sidebar p-0.5 shadow-2xs">
                 <button 
                     type="button"
                     onClick={() => setViewMode('table')}
@@ -810,7 +825,7 @@ const PostList: React.FC<PostListProps> = ({
             {/* @para-doc [#csa-post-creation-trigger] */}
             <LiquidGlassButton
                 type="button"
-                size="xs"
+                size="sm"
                 shape="rounded"
                 variant="default"
                 onClick={() => setNewPostOpen(value => !value)}
@@ -823,7 +838,7 @@ const PostList: React.FC<PostListProps> = ({
 
             <LiquidGlassButton
                 type="button"
-                size="xs"
+                size="sm"
                 shape="rounded"
                 variant="blue"
                 onClick={() => uploadPostInputRef.current?.click()}
@@ -858,9 +873,9 @@ const PostList: React.FC<PostListProps> = ({
         </form>
       )}
 
-      <div className="flex items-center justify-between px-2 pb-2 text-xs text-notion-muted">
-        <span>列表读取当前数据源；直接添加文件后点击刷新。公开页面需等待构建部署。</span>
-        <button type="button" disabled={isLoading} onClick={() => fetchPosts()} className="text-notion-muted hover:text-notion-text transition-colors hover:underline cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-medium">刷新文件列表</button>
+      <div className="flex flex-wrap items-center justify-between gap-2 px-2 pb-2 text-xs text-notion-muted">
+        <span>列表读取当前数据源；新建或发布文章后可刷新列表。</span>
+        <button type="button" disabled={isLoading} onClick={() => fetchPosts()} className="inline-flex h-7 items-center rounded-md px-2 font-medium text-notion-muted transition-colors hover:bg-notion-hover hover:text-notion-text cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">刷新文件列表</button>
       </div>
       {/* WF-08: FilterBar */}
       {isFilterOpen && activeTemplate && (
@@ -932,14 +947,14 @@ const PostList: React.FC<PostListProps> = ({
                   </div>
               ) : (
                   <div className="border border-notion-border rounded-xl overflow-x-auto bg-notion-bg shadow-2xs">
-                      <table className="w-full divide-y divide-notion-border text-sm table-fixed">
+                      <table className="w-full min-w-[1200px] divide-y divide-notion-border text-sm table-fixed">
                           <colgroup>
-                              <col style={{ width: `${columnWidths['__name__'] || 36}%` }} />
-                              {tableFields.map(field => (
-                                  <col key={field} style={{ width: `${columnWidths[field] || (field === 'lang' ? 10 : 16)}%` }} />
+                              <col style={{ width: tableColumnWeights.name }} />
+                              {tableFields.map((field, index) => (
+                                  <col key={field} style={{ width: tableColumnWeights.fields[index] }} />
                               ))}
-                              <col style={{ width: '150px' }} />
-                              <col style={{ width: '110px' }} />
+                              <col style={{ width: tableColumnWeights.status }} />
+                              <col style={{ width: tableColumnWeights.actions }} />
                           </colgroup>
                           <thead className="bg-notion-sidebar/60 text-notion-muted font-medium">
                               <tr>
@@ -947,7 +962,7 @@ const PostList: React.FC<PostListProps> = ({
                                     className="px-4 py-2.5 text-left text-xs font-medium border-r border-notion-border select-none truncate cursor-pointer hover:bg-notion-hover transition-colors"
                                     onClick={() => handleColumnSort('title')}
                                   >
-                                    <span className="flex items-center gap-1">
+                                    <span className="inline-flex items-center gap-1 align-middle">
                                       文章
                                       {getSortIndicator('title') && <span className="text-notion-blue text-[10px]">{getSortIndicator('title')}</span>}
                                     </span>
@@ -958,7 +973,7 @@ const PostList: React.FC<PostListProps> = ({
                                         className="px-4 py-2.5 text-left text-xs font-medium border-r border-notion-border select-none truncate cursor-pointer hover:bg-notion-hover transition-colors"
                                         onClick={() => handleColumnSort(field)}
                                       >
-                                        <span className="flex items-center gap-1">
+                                        <span className="inline-flex items-center gap-1 align-middle">
                                           {fieldLabel(field)}
                                           {getSortIndicator(field) && <span className="text-notion-blue text-[10px]">{getSortIndicator(field)}</span>}
                                         </span>
@@ -968,7 +983,7 @@ const PostList: React.FC<PostListProps> = ({
                                     className="px-4 py-2.5 text-left text-xs font-medium border-r border-notion-border select-none truncate cursor-pointer hover:bg-notion-hover transition-colors"
                                     onClick={() => handleColumnSort('status')}
                                   >
-                                    <span className="flex items-center gap-1">
+                                    <span className="inline-flex items-center gap-1 align-middle">
                                       状态
                                       {getSortIndicator('status') && <span className="text-notion-blue text-[10px]">{getSortIndicator('status')}</span>}
                                     </span>
@@ -983,10 +998,10 @@ const PostList: React.FC<PostListProps> = ({
                                   const publicUrl = resolvePostPublicUrl(post);
                                   return (
                                   <tr key={post.path} onClick={() => post.deletion ? setPostToDelete(post) : void openPost(post)} className="hover:bg-notion-hover/50 cursor-pointer group transition-colors">
-                                      <td className="px-4 py-2.5 border-r border-notion-border overflow-hidden">
-                                          <div className="flex items-start gap-3">
+                                      <td className="px-4 py-2.5 border-r border-notion-border align-middle overflow-hidden">
+                                          <div className="flex min-w-0 items-center gap-3">
                                               {/* Mini Thumbnail */}
-                                              <div className="w-8 h-8 flex-shrink-0 mt-0.5 bg-notion-sidebar rounded-md border border-notion-border overflow-hidden">
+                                              <div className="flex size-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-notion-border bg-notion-sidebar">
                                                   {projectType === 'github' && repo.private && post.thumbnailUrl ? (
                                                       <ThumbnailWithAuth gitService={gitService} imagePath={post.thumbnailUrl} className="w-full h-full object-cover" />
                                                   ) : (() => {
@@ -1001,8 +1016,8 @@ const PostList: React.FC<PostListProps> = ({
                                                   })()}
                                               </div>
                                               
-                                              <div className="min-w-0 flex-1">
-                                                  <span className="font-medium text-notion-text block truncate" title={post.frontmatter.title || post.name}>
+                                              <div className="flex min-w-0 flex-1 items-center">
+                                                  <span className="block truncate font-medium leading-5 text-notion-text" title={post.frontmatter.title || post.name}>
                                                       {post.frontmatter.title || post.name}
                                                   </span>
                                               </div>
@@ -1020,7 +1035,7 @@ const PostList: React.FC<PostListProps> = ({
                                       </td>
 
                                       <td className="px-4 py-2.5 text-right align-middle whitespace-nowrap">
-                                          <div className="flex justify-end items-center gap-1">
+                                          <div className="flex items-center justify-end gap-1">
                                               <button
                                                   type="button"
                                                   onClick={(e) => {
@@ -1028,7 +1043,8 @@ const PostList: React.FC<PostListProps> = ({
                                                       if (post.deletion) setPostToDelete(post);
                                                       else void openPost(post);
                                                   }}
-                                                  className="p-1.5 text-notion-muted hover:text-notion-text hover:bg-notion-hover rounded-md transition-colors cursor-pointer"
+                                                  className="inline-flex size-8 items-center justify-center rounded-lg text-notion-muted transition-colors hover:bg-notion-hover hover:text-notion-text cursor-pointer"
+                                                  aria-label={post.deletion ? '核对删除结果' : '编辑文章'}
                                                   title={post.deletion ? '核对删除结果' : '编辑文章'}
                                               >
                                                   <EditIcon className="w-3.5 h-3.5" />
@@ -1039,7 +1055,8 @@ const PostList: React.FC<PostListProps> = ({
                                                       target="_blank"
                                                       rel="noopener noreferrer"
                                                       onClick={(e) => e.stopPropagation()}
-                                                      className="p-1.5 text-notion-muted hover:text-notion-blue hover:bg-notion-hover rounded-md transition-colors inline-flex items-center"
+                                                      className="inline-flex size-8 items-center justify-center rounded-lg text-notion-muted transition-colors hover:bg-notion-hover hover:text-notion-blue"
+                                                      aria-label="在新标签页打开线上文章"
                                                       title="在新标签页打开线上文章"
                                                   >
                                                       <EyeIcon className="w-3.5 h-3.5" />
@@ -1048,7 +1065,8 @@ const PostList: React.FC<PostListProps> = ({
                                                   <button
                                                       type="button"
                                                       disabled
-                                                      className="p-1.5 text-notion-muted/30 cursor-not-allowed rounded-md inline-flex items-center"
+                                                      className="inline-flex size-8 items-center justify-center rounded-lg text-notion-muted/30 cursor-not-allowed"
+                                                      aria-label="未发布到线上"
                                                       title="未发布到线上"
                                                   >
                                                       <EyeIcon className="w-3.5 h-3.5" />
@@ -1060,7 +1078,8 @@ const PostList: React.FC<PostListProps> = ({
                                                       e.stopPropagation();
                                                       setPostToDelete(post);
                                                   }}
-                                                  className="p-1.5 text-notion-muted hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors cursor-pointer"
+                                                  className="inline-flex size-8 items-center justify-center rounded-lg text-notion-muted transition-colors hover:bg-red-500/10 hover:text-red-500 cursor-pointer"
+                                                  aria-label={post.draft ? '放弃工作草稿' : post.deletion ? '核对删除结果' : '删除已发布文章'}
                                                   title={post.draft ? '放弃工作草稿' : post.deletion ? '核对删除结果' : '删除已发布文章'}
                                               >
                                                   <TrashIcon className="w-3.5 h-3.5" />

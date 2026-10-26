@@ -221,15 +221,15 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const getPageIcon = () => {
     const icons: Record<string, React.ReactNode> = {
-      dashboard: <DatabaseIcon className="w-8 h-8 text-notion-text mr-3" />,
-      images: <ImageIcon className="w-8 h-8 text-notion-text mr-3" />,
-      template: <TemplateIcon className="w-8 h-8 text-notion-text mr-3" />,
-      workflows: <BoardIcon className="w-8 h-8 text-notion-text mr-3" />,
-      plugins: <PuzzleIcon className="w-8 h-8 text-notion-text mr-3" />,
-      backup: <DownloadIcon className="w-8 h-8 text-notion-text mr-3" />,
-      settings: <SettingsIcon className="w-8 h-8 text-notion-text mr-3" />,
+      dashboard: <DatabaseIcon className="cms-page-heading-icon text-notion-text" />,
+      images: <ImageIcon className="cms-page-heading-icon text-notion-text" />,
+      template: <TemplateIcon className="cms-page-heading-icon text-notion-text" />,
+      workflows: <BoardIcon className="cms-page-heading-icon text-notion-text" />,
+      plugins: <PuzzleIcon className="cms-page-heading-icon text-notion-text" />,
+      backup: <DownloadIcon className="cms-page-heading-icon text-notion-text" />,
+      settings: <SettingsIcon className="cms-page-heading-icon text-notion-text" />,
     };
-    return icons[activeView] || <DocumentIcon className="w-8 h-8 text-notion-text mr-3" />;
+    return icons[activeView] || <DocumentIcon className="cms-page-heading-icon text-notion-text" />;
   };
 
   const getPageTitle = () => {
