@@ -1,7 +1,7 @@
 import { ComponentEditingProvider } from '../../integration/components/InspectorContext';
 import { fieldLabel } from '../../integration/labels';
 import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
-import { Filter, ChevronDown, Plus, Upload } from 'lucide-react';
+import { Filter, ChevronDown, Plus, Upload, ArrowUpDown, Check, X } from 'lucide-react';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { IGitService, GithubRepo, ProjectType } from '../types';
@@ -41,6 +41,77 @@ interface PostListProps {
 }
 
 type SortOption = string;
+
+const SortDropdown: React.FC<{
+  value: SortOption;
+  onChange: (val: SortOption) => void;
+  options: Array<{ value: string; label: string }>;
+}> = ({ value, onChange, options }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleOutside);
+      return () => document.removeEventListener('mousedown', handleOutside);
+    }
+  }, [isOpen]);
+
+  const currentLabel = options.find((o) => o.value === value)?.label || '排序';
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-notion-border bg-notion-bg text-xs font-medium text-notion-text shadow-2xs transition-all hover:bg-notion-hover focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue cursor-pointer"
+        aria-expanded={isOpen}
+      >
+        <ArrowUpDown className="size-3 text-notion-muted shrink-0" />
+        <span className="truncate max-w-[90px] sm:max-w-none">{currentLabel}</span>
+        <ChevronDown
+          className={`size-3 text-notion-muted shrink-0 transition-transform duration-200 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1.5 z-50 w-44 rounded-xl border border-notion-border bg-notion-bg p-1 shadow-xl animate-in fade-in-0 zoom-in-95">
+          <div className="py-1 px-2 text-[10px] font-semibold text-notion-muted/80 uppercase tracking-wider">
+            排序方式
+          </div>
+          {options.map((opt) => {
+            const isSelected = opt.value === value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value as SortOption);
+                  setIsOpen(false);
+                }}
+                className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
+                  isSelected
+                    ? 'bg-notion-blue/10 text-notion-blue font-semibold'
+                    : 'text-notion-text hover:bg-notion-hover'
+                }`}
+              >
+                <span>{opt.label}</span>
+                {isSelected && <Check className="size-3.5 text-notion-blue shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Component to handle authenticated image loading for private repos
 const ThumbnailWithAuth: React.FC<{ gitService: IGitService, imagePath: string, className?: string }> = ({ gitService, imagePath, className = "h-full w-full object-cover" }) => {
@@ -430,14 +501,14 @@ const PostList: React.FC<PostListProps> = ({
       { value: 'status-asc', label: '状态优先' },
     ];
     if (activeTemplate?.fields) {
-      const extraFields = activeTemplate.fields.filter(
-        f => !['title', 'image', 'cover', 'thumbnail', 'heroImage', 'date'].includes(f.name) &&
-             f.type !== 'object' && f.type !== 'array'
+      const meaningfulSortFields = ['updatedDate'];
+      const extraFields = activeTemplate.fields.filter((f) =>
+        meaningfulSortFields.includes(f.name)
       );
-      extraFields.forEach(f => {
+      extraFields.forEach((f) => {
         baseOptions.push(
-          { value: `${f.name}-asc`, label: `${fieldLabel(f.name)}（升序）` },
-          { value: `${f.name}-desc`, label: `${fieldLabel(f.name)}（降序）` },
+          { value: `${f.name}-desc`, label: `${fieldLabel(f.name)}从新到旧` },
+          { value: `${f.name}-asc`, label: `${fieldLabel(f.name)}从旧到新` },
         );
       });
     }
@@ -747,8 +818,8 @@ const PostList: React.FC<PostListProps> = ({
 
       {/* Toolbar */}
       {deleteNotice && <p role="status" className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-notion-text">{deleteNotice}</p>}
-      <div className="relative z-10 mb-4 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-grow w-full sm:w-auto max-w-md">
+      <div className="relative z-10 mb-4 flex flex-col gap-2.5">
+        <div className="relative w-full">
             <input
             type="text"
             placeholder={t('postList.searchPlaceholder')}
@@ -757,119 +828,208 @@ const PostList: React.FC<PostListProps> = ({
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
             }}
-            className="h-8 w-full rounded-lg border border-notion-border bg-notion-bg pl-8 pr-4 text-xs text-notion-text shadow-2xs transition-all placeholder-notion-muted/70 focus:border-notion-blue focus:outline-none focus:ring-2 focus:ring-notion-blue/20"
+            className="h-8 w-full rounded-lg border border-notion-border bg-notion-bg pl-8 pr-7 text-xs text-notion-text shadow-2xs transition-all placeholder-notion-muted/70 focus:border-notion-blue focus:outline-none focus:ring-2 focus:ring-notion-blue/20"
             />
             <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
             <SearchIcon className="h-3.5 w-3.5 text-notion-muted" />
             </div>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setCurrentPage(1);
+                }}
+                className="absolute inset-y-0 right-0 pr-2 flex items-center text-notion-muted hover:text-notion-text transition-colors cursor-pointer"
+                title="清空搜索"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
         </div>
         
-        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-            {/* WF-08: Filter toggle */}
-            {activeTemplate && (
+        <div className="flex w-full items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
+            {/* Left action group: Sort + View Mode (+ Filter if active) */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <SortDropdown
+                value={sortOption}
+                onChange={(val) => setSortOption(val)}
+                options={dynamicSortOptions}
+              />
+
+              {activeTemplate && (
+                <LiquidGlassButton
+                  type="button"
+                  size="sm"
+                  shape="rounded"
+                  variant={isFilterOpen || Object.keys(activeFilters).length > 0 ? 'blue' : 'default'}
+                  glow={isFilterOpen || Object.keys(activeFilters).length > 0}
+                  icon={<Filter className="size-3.5" />}
+                  onClick={() => setIsFilterOpen((prev) => !prev)}
+                  className="font-medium h-8"
+                  title={isFilterOpen ? '收起筛选面板' : '展开筛选面板'}
+                >
+                  <span className="hidden sm:inline">筛选</span>
+                  {Object.keys(activeFilters).length > 0 && (
+                    <span className="ml-0.5 inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full text-[10px] font-bold bg-blue-500 text-white dark:bg-blue-400 dark:text-blue-950 shadow-2xs">
+                      {Object.keys(activeFilters).length}
+                    </span>
+                  )}
+                </LiquidGlassButton>
+              )}
+
+              <div className="flex h-8 items-center rounded-lg border border-notion-border bg-notion-sidebar p-0.5 shadow-2xs">
+                  <button 
+                      type="button"
+                      onClick={() => setViewMode('table')}
+                      className={`p-1 rounded-md transition-all ${viewMode === 'table' ? 'bg-notion-bg shadow-xs text-notion-text' : 'text-notion-muted hover:text-notion-text'}`}
+                      title={t('postList.viewMode.table')}
+                  >
+                      <ViewListIcon className="w-3.5 h-3.5" />
+                  </button>
+                  <button 
+                      type="button"
+                      onClick={() => setViewMode('grid')}
+                      className={`p-1 rounded-md transition-all ${viewMode === 'grid' ? 'bg-notion-bg shadow-xs text-notion-text' : 'text-notion-muted hover:text-notion-text'}`}
+                      title={t('postList.viewMode.grid')}
+                  >
+                      <ViewGridIcon className="w-3.5 h-3.5" />
+                  </button>
+              </div>
+            </div>
+
+            {/* Right action group: Import + Create new */}
+            <div className="flex items-center gap-1.5 shrink-0 ml-auto">
               <LiquidGlassButton
-                type="button"
-                size="sm"
-                shape="rounded"
-                variant={isFilterOpen || Object.keys(activeFilters).length > 0 ? 'blue' : 'default'}
-                glow={isFilterOpen || Object.keys(activeFilters).length > 0}
-                icon={<Filter className="size-3.5" />}
-                onClick={() => setIsFilterOpen((prev) => !prev)}
-                className="font-medium"
-                title={isFilterOpen ? '收起筛选面板' : '展开筛选面板'}
+                  type="button"
+                  size="sm"
+                  shape="rounded"
+                  variant="blue"
+                  onClick={() => uploadPostInputRef.current?.click()}
+                  icon={<Upload className="size-3.5" />}
+                  className="font-medium h-8"
+                  title="导入本地 MD/MDX 文件，可保存到 D1 草稿；不会提交仓库"
               >
-                <span>筛选</span>
-                {Object.keys(activeFilters).length > 0 && (
-                  <span className="ml-0.5 inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full text-[10px] font-bold bg-blue-500 text-white dark:bg-blue-400 dark:text-blue-950 shadow-2xs">
-                    {Object.keys(activeFilters).length}
-                  </span>
-                )}
+                  <span className="hidden sm:inline">导入文件</span>
+                  <span className="sm:hidden">导入</span>
               </LiquidGlassButton>
-            )}
 
-            {/* Sort Dropdown (WF-08: dynamic options from template) */}
-            <div className="relative">
-                <select 
-                    value={sortOption}
-                    onChange={(e) => setSortOption(e.target.value as SortOption)}
-                    className="h-8 appearance-none rounded-lg border border-notion-border bg-notion-bg pl-2.5 pr-7 text-xs font-medium text-notion-text shadow-2xs transition-all hover:bg-notion-hover focus:border-notion-blue focus:outline-none focus:ring-2 focus:ring-notion-blue/20 cursor-pointer"
-                >
-                    {dynamicSortOptions.map(opt => (
-                      <option key={opt.value} value={opt.value} className="bg-notion-bg text-notion-text">{opt.label}</option>
-                    ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-notion-muted">
-                    <ChevronDown className="h-3 w-3" />
-                </div>
+              {/* @para-doc [#csa-post-creation-trigger] */}
+              <LiquidGlassButton
+                  type="button"
+                  size="sm"
+                  shape="rounded"
+                  variant="default"
+                  onClick={() => setNewPostOpen(value => !value)}
+                  icon={<Plus className="size-3.5" />}
+                  className="font-medium h-8"
+                  title="新建工作草稿"
+              >
+                  <span className="hidden sm:inline">{t('postList.createButton')}</span>
+                  <span className="sm:hidden">新建</span>
+              </LiquidGlassButton>
             </div>
-
-            <div className="flex h-8 items-center rounded-lg border border-notion-border bg-notion-sidebar p-0.5 shadow-2xs">
-                <button 
-                    type="button"
-                    onClick={() => setViewMode('table')}
-                    className={`p-1 rounded-md transition-all ${viewMode === 'table' ? 'bg-notion-bg shadow-xs text-notion-text' : 'text-notion-muted hover:text-notion-text'}`}
-                    title={t('postList.viewMode.table')}
-                >
-                    <ViewListIcon className="w-3.5 h-3.5" />
-                </button>
-                <button 
-                    type="button"
-                    onClick={() => setViewMode('grid')}
-                    className={`p-1 rounded-md transition-all ${viewMode === 'grid' ? 'bg-notion-bg shadow-xs text-notion-text' : 'text-notion-muted hover:text-notion-text'}`}
-                    title={t('postList.viewMode.grid')}
-                >
-                    <ViewGridIcon className="w-3.5 h-3.5" />
-                </button>
-            </div>
-
-            {/* @para-doc [#csa-post-creation-trigger] */}
-            <LiquidGlassButton
-                type="button"
-                size="sm"
-                shape="rounded"
-                variant="default"
-                onClick={() => setNewPostOpen(value => !value)}
-                icon={<Plus className="size-3.5" />}
-                className="font-medium"
-                title="新建工作草稿"
-            >
-                {t('postList.createButton')}
-            </LiquidGlassButton>
-
-            <LiquidGlassButton
-                type="button"
-                size="sm"
-                shape="rounded"
-                variant="blue"
-                onClick={() => uploadPostInputRef.current?.click()}
-                icon={<Upload className="size-3.5" />}
-                className="font-medium"
-                title="导入本地 MD/MDX 文件，可保存到 D1 草稿；不会提交仓库"
-            >
-                导入文件
-            </LiquidGlassButton>
         </div>
       </div>
 
       {newPostOpen && (
-        <form className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-notion-border bg-notion-sidebar/40 p-3.5 text-xs shadow-2xs transition-all" onSubmit={event => { event.preventDefault(); handleCreateNewPost(); }}>
-          <label className="flex items-center gap-2 text-notion-text font-medium">
-            <span>语言</span>
-            <select className="rounded-lg border border-notion-border bg-notion-bg px-2.5 py-1 text-xs text-notion-text shadow-2xs focus:outline-none focus:ring-2 focus:ring-notion-blue/20 cursor-pointer" value={newLang} onChange={event => setNewLang(event.target.value as 'en' | 'zh')}><option value="en">English</option><option value="zh">中文</option></select>
+        <form
+          className="mb-4 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 rounded-xl border border-notion-border bg-notion-sidebar/40 p-3 sm:p-3.5 text-xs shadow-2xs transition-all animate-in fade-in-0 duration-150"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleCreateNewPost();
+          }}
+        >
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5 text-notion-text font-medium">
+              <span className="text-notion-muted text-xs">语言</span>
+              <div className="inline-flex rounded-lg border border-notion-border bg-notion-bg p-0.5 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setNewLang('zh')}
+                  className={`px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                    newLang === 'zh'
+                      ? 'bg-notion-sidebar text-notion-text font-semibold shadow-xs'
+                      : 'text-notion-muted hover:text-notion-text'
+                  }`}
+                >
+                  中文
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewLang('en')}
+                  className={`px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                    newLang === 'en'
+                      ? 'bg-notion-sidebar text-notion-text font-semibold shadow-xs'
+                      : 'text-notion-muted hover:text-notion-text'
+                  }`}
+                >
+                  English
+                </button>
+              </div>
+            </div>
+
+            {path !== 'content/stories' && (
+              <div className="flex items-center gap-1.5 text-notion-text font-medium">
+                <span className="text-notion-muted text-xs">格式</span>
+                <div className="inline-flex rounded-lg border border-notion-border bg-notion-bg p-0.5 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setNewFormat('mdx')}
+                    className={`px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                      newFormat === 'mdx'
+                        ? 'bg-notion-sidebar text-notion-text font-semibold shadow-xs'
+                        : 'text-notion-muted hover:text-notion-text'
+                    }`}
+                  >
+                    MDX
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewFormat('md')}
+                    className={`px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                      newFormat === 'md'
+                        ? 'bg-notion-sidebar text-notion-text font-semibold shadow-xs'
+                        : 'text-notion-muted hover:text-notion-text'
+                    }`}
+                  >
+                    Markdown
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <label className="flex flex-1 min-w-[160px] items-center gap-2 text-notion-text font-medium">
+            <span className="text-notion-muted whitespace-nowrap">标识</span>
+            <input
+              className="flex-1 rounded-lg border border-notion-border bg-notion-bg px-2.5 py-1 text-xs text-notion-text shadow-2xs focus:outline-none focus:ring-2 focus:ring-notion-blue/20 font-mono"
+              value={newSlug}
+              onChange={(event) => setNewSlug(event.target.value)}
+              placeholder="my-article"
+              required
+              pattern="[a-z0-9]+(-[a-z0-9]+)*"
+            />
           </label>
-          <label className="flex items-center gap-2 text-notion-text font-medium">
-            <span>地址标识</span>
-            <input className="rounded-lg border border-notion-border bg-notion-bg px-2.5 py-1 text-xs text-notion-text shadow-2xs focus:outline-none focus:ring-2 focus:ring-notion-blue/20 font-mono" value={newSlug} onChange={event => setNewSlug(event.target.value)} placeholder="my-article" required pattern="[a-z0-9]+(-[a-z0-9]+)*" />
-          </label>
-          {path !== 'content/stories' && (
-            <label className="flex items-center gap-2 text-notion-text font-medium">
-              <span>格式</span>
-              <select className="rounded-lg border border-notion-border bg-notion-bg px-2.5 py-1 text-xs text-notion-text shadow-2xs focus:outline-none focus:ring-2 focus:ring-notion-blue/20 cursor-pointer" value={newFormat} onChange={event => setNewFormat(event.target.value as 'md' | 'mdx')}><option value="mdx">MDX</option><option value="md">Markdown</option></select>
-            </label>
-          )}
-          <button type="submit" className="rounded-lg bg-notion-blue hover:opacity-90 px-3.5 py-1 text-xs font-semibold text-white shadow-2xs transition-all cursor-pointer">进入编辑</button>
-          <button type="button" onClick={() => setNewPostOpen(false)} className="rounded-lg border border-notion-border bg-notion-bg px-3 py-1 text-xs text-notion-muted hover:text-notion-text shadow-2xs transition-colors cursor-pointer">取消</button>
-          <span className="text-notion-muted basis-full text-[11px] mt-0.5">候选地址：/{newLang === 'zh' ? 'zh/' : ''}{path === 'content/stories' ? 'stories' : 'blog'}/{newSlug || '…'}；保存后才写入 D1。</span>
+
+          <div className="flex items-center gap-2 pt-0.5 sm:pt-0">
+            <button
+              type="submit"
+              className="rounded-lg bg-notion-blue hover:opacity-90 px-3.5 py-1 text-xs font-semibold text-white shadow-2xs transition-all cursor-pointer"
+            >
+              进入编辑
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewPostOpen(false)}
+              className="rounded-lg border border-notion-border bg-notion-bg px-3 py-1 text-xs text-notion-muted hover:text-notion-text shadow-2xs transition-colors cursor-pointer"
+            >
+              取消
+            </button>
+          </div>
+          <span className="text-notion-muted basis-full text-[11px] truncate">
+            候选地址：/{newLang === 'zh' ? 'zh/' : ''}{path === 'content/stories' ? 'stories' : 'blog'}/{newSlug || '…'}；保存后才写入 D1。
+          </span>
         </form>
       )}
 
@@ -946,7 +1106,53 @@ const PostList: React.FC<PostListProps> = ({
                       ))}
                   </div>
               ) : (
-                  <div className="border border-notion-border rounded-xl overflow-x-auto bg-notion-bg shadow-2xs">
+                  <>
+                    <div className="space-y-3 lg:hidden">
+                      {currentPosts.map(post => {
+                        const publicUrl = resolvePostPublicUrl(post);
+                        const title = post.frontmatter.title || post.name;
+                        const open = () => post.deletion ? setPostToDelete(post) : void openPost(post);
+                        return (
+                          <article key={post.path} className="rounded-xl border border-notion-border bg-notion-bg p-3.5 shadow-2xs">
+                            <button type="button" onClick={open} className="flex w-full min-w-0 items-center gap-3 text-left">
+                              <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-notion-border bg-notion-sidebar">
+                                {projectType === 'github' && repo.private && post.thumbnailUrl ? (
+                                  <ThumbnailWithAuth gitService={gitService} imagePath={post.thumbnailUrl} className="size-full object-cover" />
+                                ) : (() => {
+                                  const url = resolveImageUrl(post.thumbnailUrl);
+                                  return url && url !== 'needs-domain'
+                                    ? <img src={url} alt="" className="size-full object-cover" />
+                                    : <DocumentIcon className="size-4 text-notion-muted" />;
+                                })()}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block line-clamp-2 text-sm font-medium leading-5 text-notion-text">{title}</span>
+                                <span className="mt-1 block text-[11px] text-notion-muted">
+                                  {post.frontmatter.lang === 'en' ? 'English' : '中文'} · {post.frontmatter.pubDate ? renderDynamicCell(post, 'pubDate') : '未设置发布日期'}
+                                </span>
+                              </span>
+                            </button>
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-notion-border pt-3">
+                              {renderPostStatusBadge(post)}
+                              <div className="flex items-center gap-1">
+                                <button type="button" onClick={open} className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-notion-text hover:bg-notion-hover" aria-label={`${post.deletion ? '核对删除' : '编辑'} ${title}`}>
+                                  <EditIcon className="size-4" />{post.deletion ? '核对' : '编辑'}
+                                </button>
+                                {publicUrl && post.sha && (
+                                  <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex size-9 items-center justify-center rounded-lg text-notion-muted hover:bg-notion-hover hover:text-notion-blue" aria-label={`查看线上文章 ${title}`}>
+                                    <EyeIcon className="size-4" />
+                                  </a>
+                                )}
+                                <button type="button" onClick={() => setPostToDelete(post)} className="inline-flex size-9 items-center justify-center rounded-lg text-notion-muted hover:bg-red-500/10 hover:text-red-500" aria-label={`${post.draft ? '放弃草稿' : post.deletion ? '核对删除' : '删除文章'} ${title}`}>
+                                  <TrashIcon className="size-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  <div className="hidden rounded-xl border border-notion-border bg-notion-bg shadow-2xs lg:block lg:overflow-x-auto">
                       <table className="w-full min-w-[1200px] divide-y divide-notion-border text-sm table-fixed">
                           <colgroup>
                               <col style={{ width: tableColumnWeights.name }} />
@@ -1092,6 +1298,7 @@ const PostList: React.FC<PostListProps> = ({
                           </tbody>
                       </table>
                   </div>
+                  </>
               )}
 
               {/* Pagination */}

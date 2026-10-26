@@ -73,6 +73,7 @@ export function AdminHeader({
     () => resolveCurrentTab(section, friendLinkId),
     [section, friendLinkId],
   );
+  const CurrentTabIcon = currentTab.icon ?? LayoutDashboard;
 
   // 维护当前已开启的所有标签列表，初始值采用当前标签避免初次渲染白屏
   const [tabs, setTabs] = useState<AdminTab[]>([currentTab]);
@@ -241,11 +242,16 @@ export function AdminHeader({
   };
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur md:gap-3 md:px-6">
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-2 backdrop-blur sm:px-3 md:h-16 md:gap-3 md:px-6">
       <AdminMobileNavigation section={section} />
 
+      <div className="flex min-w-0 flex-1 items-center gap-2 lg:hidden">
+        <CurrentTabIcon className="size-4 shrink-0 text-primary" aria-hidden="true" />
+        <span className="truncate text-sm font-semibold">{currentTab.title}</span>
+      </div>
+
       {/* 多功能标签页导航区 */}
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
+      <div className="hidden min-w-0 flex-1 items-center gap-1.5 lg:flex">
         <nav
           aria-label="后台功能标签页"
           className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
@@ -380,7 +386,11 @@ export function AdminHeader({
       <ModeToggle />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-10 max-w-[15rem] gap-2 px-2" aria-label="管理员菜单">
+          <Button
+            variant="ghost"
+            className="size-9 gap-2 px-1 sm:h-10 sm:w-auto sm:max-w-[15rem] sm:px-2"
+            aria-label="管理员菜单"
+          >
             <Avatar className="size-7.5 border border-border/60 bg-muted/30">
               <img
                 src="/assets/botme5.png"

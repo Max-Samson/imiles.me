@@ -29,8 +29,8 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="bg-notion-bg text-notion-text rounded-xl shadow-2xl border border-notion-border w-full max-w-sm overflow-hidden transform transition-all animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in-0 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-notion-bg text-notion-text rounded-t-2xl sm:rounded-xl shadow-2xl border border-notion-border w-full max-w-sm overflow-hidden transform transition-all">
                 <div className="p-5">
                     <div className="flex items-start">
                         <div className={`flex-shrink-0 mr-3 mt-0.5`}>

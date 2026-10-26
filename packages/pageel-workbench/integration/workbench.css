@@ -1,5 +1,8 @@
 /* Host presentation only. Editing and serialization remain upstream-owned. */
-.cms-workbench {
+:root,
+.cms-workbench,
+.cms-properties-portal,
+#cms-properties {
   --color-notion-bg: #ffffff;
   --color-notion-text: #0f172a;
   --color-notion-muted: #64748b;
@@ -7,8 +10,21 @@
   --color-notion-sidebar: #f8fafc;
   --color-notion-hover: #f1f5f9;
   --color-notion-blue: #2563eb;
+}
+
+.cms-workbench {
   height: calc(100dvh - 40px);
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.cms-properties-portal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 990 !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  height: 100% !important;
+  width: 100% !important;
 }
 .cms-workbench button:disabled { cursor: not-allowed; opacity: .4; box-shadow: none; }
 .cms-workbench button:focus-visible, .cms-workbench a:focus-visible { outline: 2px solid #5276be; outline-offset: 3px; }
@@ -35,7 +51,7 @@
 }
 @media (max-width: 1023px) {
   .pageel-host #post-detail-container > div { height: auto; min-height: 100%; }
-  .cms-writing-column, .cms-properties { height: auto; overflow: visible; }
+  .cms-writing-column { height: auto; overflow: visible; }
 }
 .cms-writing-column { padding: 40px clamp(20px, 4vw, 64px); }
 .cms-writing-column > * { max-width: 820px; width: 100%; margin-left: auto; margin-right: auto; }
@@ -62,6 +78,116 @@
   .cms-properties { max-width: none; }
   .cms-memory-status { display: none; }
   .cms-writing-column { padding: 24px 18px; }
+  .cms-editor-header {
+    height: auto !important;
+    min-height: 3.5rem;
+  }
+  .cms-editor-header-inner {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+  }
+  .cms-properties-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 990;
+    width: 100%;
+    height: 100%;
+    background: rgb(0 0 0 / 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s;
+  }
+  .cms-properties-backdrop.cms-backdrop-closed {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .cms-properties-backdrop.cms-backdrop-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  #cms-properties {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    z-index: 1000 !important;
+    width: 100% !important;
+    max-height: min(88dvh, 760px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y;
+    border-top: 1px solid var(--color-notion-border) !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    border-radius: 20px 20px 0 0 !important;
+    background-color: #ffffff !important;
+    background-color: var(--color-notion-bg) !important;
+    box-shadow: 0 -12px 48px -6px rgb(0 0 0 / 0.35), 0 -2px 10px rgb(0 0 0 / 0.1) !important;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, visibility 0.35s;
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
+    will-change: transform;
+  }
+  #cms-properties.cms-sheet-closed {
+    transform: translate3d(0, 100%, 0) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+  #cms-properties.cms-sheet-open {
+    transform: translate3d(0, 0, 0);
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+  .cms-properties-sheet-header {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 16px 6px;
+    background-color: #ffffff;
+    background-color: var(--color-notion-bg);
+  }
+  .cms-properties-sheet-handle {
+    width: 36px;
+    height: 4.5px;
+    border-radius: 9999px;
+    background: #cbd5e1;
+    background: var(--color-notion-border);
+    margin: 2px auto 8px;
+    opacity: 0.9;
+    cursor: grab;
+    touch-action: none;
+  }
+}
+@media (min-width: 1024px) {
+  #cms-properties {
+    position: static !important;
+    transform: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    max-height: none !important;
+    padding-bottom: 0 !important;
+  }
+  .cms-properties-backdrop {
+    display: none !important;
+  }
+}
+@media (max-width: 639px) {
+  .cms-editor-back-label { display: none; }
+  .cms-editor-view-switcher button { padding: 4px 7px; font-size: 11px; gap: 4px; }
+  .cms-editor-view-switcher button span { display: inline-block; font-size: 11px; }
+  .cms-editor-view-switcher button svg { width: 13px; height: 13px; }
+  .cms-editor-properties-trigger { padding-inline: 8px; font-size: 11px; }
+  .cms-writing-column { padding: 16px 12px; }
 }
 @media (max-width: 600px) {
   .cms-workbench { height: calc(100dvh - 60px); }
@@ -74,7 +200,10 @@
 .cms-properties .space-y-0 > div { flex-direction: column; gap: 4px; padding: 10px 0; }
 .cms-properties .space-y-0 > div > div { width: 100%; }
 .cms-properties .space-y-0 input { width: 100%; }
-html.dark .cms-workbench {
+html.dark,
+html.dark .cms-workbench,
+html.dark .cms-properties-portal,
+html.dark #cms-properties {
   --color-notion-text: #f1f5f9;
   --color-notion-muted: #94a3b8;
   --color-notion-border: rgba(255, 255, 255, 0.08);
@@ -82,8 +211,29 @@ html.dark .cms-workbench {
   --color-notion-sidebar: #131722;
   --color-notion-hover: #1c2232;
   --color-notion-blue: #38bdf8;
+}
+
+html.dark .cms-workbench {
   background: #0b0f17;
   color-scheme: dark;
+}
+
+html.dark #cms-properties {
+  background-color: #0b0f17 !important;
+  background-color: var(--color-notion-bg) !important;
+}
+
+html.dark .cms-properties-sheet-header {
+  background-color: #0b0f17;
+  background-color: var(--color-notion-bg);
+}
+
+html.dark .cms-properties-sheet-handle {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+html.dark .cms-properties-portal {
+  background: transparent !important;
 }
 
 html.dark .cms-workbench .bg-white:not(button):not([role="button"]),

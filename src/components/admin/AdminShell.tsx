@@ -655,7 +655,7 @@ function DashboardView({ session }: { session: AdminSession }) {
       </div>
 
       {/* ── 四格概览卡片 ── */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {summaryCards.map((c) => (
           <Card key={c.id} className="shadow-xs">
             <CardHeader className="pb-2">
@@ -719,7 +719,7 @@ function DashboardView({ session }: { session: AdminSession }) {
           </span>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {infraLoading
             ? // 骨架屏：与真实卡片等数量
               Array.from({ length: 7 }).map((_, i) => (
@@ -752,7 +752,7 @@ function DashboardView({ session }: { session: AdminSession }) {
                 </Card>
               ))
             : services.map((svc) => (
-                <Card key={svc.id} className="flex flex-col justify-between shadow-xs">
+                <Card key={svc.id} className="flex min-w-0 flex-col justify-between shadow-xs">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-3">
                       {/* 图标 + 名称 */}
@@ -859,7 +859,7 @@ function DashboardView({ session }: { session: AdminSession }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {session.capabilities.map((cap) => {
               const info = CAPABILITY_INFO[cap] ?? {
                 label: cap,
@@ -908,7 +908,7 @@ export function AdminShell({
   friendLinkId?: string;
 }) {
   return (
-    <div className="flex h-dvh min-h-[32rem] bg-muted/20">
+    <div className="flex h-dvh min-h-0 bg-muted/20">
       <AdminSidebar section={section} />
       <div className="flex min-w-0 flex-1 flex-col">
         <AdminHeader actor={session.actor} section={section} />
@@ -916,7 +916,9 @@ export function AdminShell({
           id="admin-main"
           className={cn(
             'min-w-0 min-h-0 flex-1',
-            section === 'articles' ? 'overflow-hidden' : 'overflow-y-auto p-4 md:p-6 lg:p-8',
+            section === 'articles'
+              ? 'overflow-hidden'
+              : 'overflow-y-auto overscroll-contain p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-4 md:p-6 lg:p-8',
           )}
         >
           {section === 'articles' ? (

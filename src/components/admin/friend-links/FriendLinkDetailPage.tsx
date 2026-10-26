@@ -485,7 +485,10 @@ export function FriendLinkDetailPage({ id, session }: { id: string; session: Adm
                 <div>
                   <h3 className="text-sm font-semibold">预览与操作</h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    左侧为公开页面实际渲染效果，右侧可执行审核操作。
+                    <span className="lg:hidden">下方可查看公开页面效果并处理审核。</span>
+                    <span className="hidden lg:inline">
+                      左侧为公开页面实际渲染效果，右侧可执行审核操作。
+                    </span>
                   </p>
                 </div>
                 {detail.screenshotUrl && (

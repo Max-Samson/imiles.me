@@ -12,9 +12,10 @@ import { parseSourceDocument } from '../../../../src/lib/content-source';
 import { fieldLabel } from '../../integration/labels';
 import { cn } from '../../../../src/lib/utils';
 import { LiquidGlassButton } from '@/components/ui/liquid-glass-button';
-import { ArrowLeft, SlidersHorizontal, Save, Info, Send, Globe, Copy, Check, ExternalLink, GitBranch, ShieldCheck, AlertTriangle, Database } from 'lucide-react';
+import { ArrowLeft, SlidersHorizontal, Save, Info, Send, Globe, Copy, Check, ExternalLink, GitBranch, ShieldCheck, AlertTriangle, Database, X } from 'lucide-react';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { TrashIcon } from './icons/TrashIcon';
@@ -381,6 +382,21 @@ const TagListInput: React.FC<TagListInputProps> = ({
       </button>
     </div>
   );
+};
+
+const MobilePortalWrapper: React.FC<{
+  isNarrow: boolean;
+  children: React.ReactNode;
+}> = ({ isNarrow, children }) => {
+  if (isNarrow && typeof document !== 'undefined') {
+    return createPortal(
+      <div className="pageel-host cms-workbench cms-properties-portal">
+        {children}
+      </div>,
+      document.body,
+    );
+  }
+  return <>{children}</>;
 };
 
 const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete, gitService, repo, projectType, domainUrl, onUpdate, imagesPath, imageFileTypes, onAction }) => {
@@ -1264,18 +1280,90 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
   };
 
   const hasStatusAttention = saveError || publishNotice?.tone === 'error' || publishNotice?.tone === 'warning';
-  const [propertiesOpen, setPropertiesOpen] = useState(true);
+  const [isNarrowEditor, setIsNarrowEditor] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches);
+  const [propertiesOpen, setPropertiesOpen] = useState(() => typeof window === 'undefined' || !window.matchMedia('(max-width: 1023px)').matches);
+
+  // 移动端底部抽屉平滑手势拖拽状态
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    const delta = e.touches[0].clientY - touchStartY.current;
+    if (delta > 0) {
+      setDragY(delta);
+    } else {
+      setDragY(0);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (dragY > 70) {
+      setPropertiesOpen(false);
+    }
+    setDragY(0);
+    setIsDragging(false);
+    touchStartY.current = null;
+  };
+
+  // 移动端底部抽屉展开时锁住背景页面滚动，杜绝背景穿透滑动
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (isNarrowEditor && propertiesOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isNarrowEditor, propertiesOpen]);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1023px)');
+    const syncLayout = () => {
+      setIsNarrowEditor(media.matches);
+      setPropertiesOpen(!media.matches);
+    };
+    media.addEventListener('change', syncLayout);
+    return () => media.removeEventListener('change', syncLayout);
+  }, []);
+  useEffect(() => {
+    if (!isNarrowEditor || !propertiesOpen) return;
+    const frame = requestAnimationFrame(() => document.getElementById('cms-properties')?.focus());
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPropertiesOpen(false);
+      if (event.key !== 'Tab') return;
+      const panel = document.getElementById('cms-properties');
+      if (!panel) return;
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+        .filter(element => element.getClientRects().length > 0);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === panel)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('keydown', closeOnEscape);
+      document.getElementById('cms-properties-trigger')?.focus();
+    };
+  }, [isNarrowEditor, propertiesOpen]);
   // 选中组件、切换组件库或查看状态时展开右栏；宿主只关心选中状态，节点更新仍在编辑器内部进行。
   useEffect(() => {
     if (componentInspector.selected || componentInspector.mode !== 'article') {
       setPropertiesOpen(true);
-      // 窄屏属性区在正文之后；主动切换时滚动到侧栏，避免发布反馈被长正文埋住。
-      if (window.matchMedia('(max-width: 1023px)').matches) {
-        const frame = requestAnimationFrame(() => document.getElementById('cms-properties')?.scrollIntoView({
-          block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
-        }));
-        return () => cancelAnimationFrame(frame);
-      }
     }
   }, [componentInspector.selected, componentInspector.mode]);
   const hasCoverImage = !!(editableFrontmatter.image || editableFrontmatter.cover || editableFrontmatter.thumbnail || editableFrontmatter.heroImage || post.thumbnailUrl);
@@ -1318,9 +1406,9 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
       {/* Frontmatter Field Edit Modal */}
       {fieldModalKey && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className={`bg-notion-bg text-notion-text rounded-xl shadow-2xl w-full flex flex-col border border-notion-border overflow-hidden ${
-            fieldModalIsGallery ? 'max-w-2xl max-h-[85vh]' : 'max-w-lg max-h-[80vh]'
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4 animate-in fade-in-0 duration-200">
+          <div className={`bg-notion-bg text-notion-text rounded-t-2xl sm:rounded-xl shadow-2xl w-full flex flex-col border border-notion-border overflow-hidden ${
+            fieldModalIsGallery ? 'max-w-2xl max-h-[88vh] sm:max-h-[85vh]' : 'max-w-lg max-h-[88vh] sm:max-h-[80vh]'
           }`}>
             <header className="px-5 py-3.5 border-b border-notion-border flex items-center justify-between bg-notion-sidebar/40 flex-shrink-0">
               <div className="flex items-center gap-2">
@@ -1454,20 +1542,178 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
       )}
 
       {/* Sticky Header - Aligned to System Console & LiquidGlass styling */}
-      <header className="h-14 border-b border-notion-border bg-notion-bg/90 sticky top-0 z-30 flex-shrink-0 backdrop-blur-md">
-        <div className="px-4 sm:px-6 h-full flex justify-between items-center w-full gap-4">
-            {/* Left: Return + Breadcrumb Title (flex-1 min-w-0 for auto truncation) */}
-            <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden justify-start">
+      <header className="cms-editor-header min-h-14 border-b border-notion-border bg-notion-bg/95 sticky top-0 z-30 flex-shrink-0 backdrop-blur-md">
+        <div className="cms-editor-header-inner h-full w-full gap-2 lg:gap-4 px-3 sm:px-4 lg:px-6">
+          {/* Mobile View: Two clean rows */}
+          <div className="flex flex-col gap-2 w-full lg:hidden py-1.5">
+            {/* Mobile Row 1: Back + Title on left, Save & Publish on right */}
+            <div className="flex items-center justify-between w-full min-w-0 gap-2">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
                 <LiquidGlassButton
                   type="button"
                   variant="default"
                   size="sm"
                   icon={<ArrowLeft className="w-3.5 h-3.5 shrink-0" />}
+                  aria-label="返回列表"
+                  disabled={imagePending}
+                  onClick={() => { if (!imagePendingRef.current) void confirmLeave().then((allowed) => { if (allowed) onBack(); }); }}
+                  className="h-8 text-xs font-medium text-notion-text shrink-0 whitespace-nowrap px-2"
+                >
+                  <span className="hidden sm:inline">返回</span>
+                </LiquidGlassButton>
+                <span className="text-notion-border text-xs font-light shrink-0 select-none">/</span>
+                <span
+                  className="truncate font-semibold text-notion-text text-xs whitespace-nowrap min-w-0"
+                  title={post.sha === "" && !post.imported ? t('postList.createButton') : (editableFrontmatter.title || post.name)}
+                >
+                  {post.sha === "" && !post.imported ? t('postList.createButton') : (editableFrontmatter.title || post.name)}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <LiquidGlassButton
+                  type="button"
+                  variant={saveSuccess ? 'accent' : 'default'}
+                  size="sm"
+                  loading={isSaving}
+                  disabled={
+                    !isSaving &&
+                    (imagePending ||
+                      publishing ||
+                      (Boolean(draftRef.current) && !isDirty && !saveSuccess))
+                  }
+                  icon={
+                    saveSuccess ? (
+                      <Check className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5 shrink-0" />
+                    )
+                  }
+                  onClick={() => void handleSave()}
+                  title="保存到 D1 工作草稿"
+                  className={cn(
+                    'h-8 text-xs font-medium whitespace-nowrap shrink-0 transition-all duration-200 px-2.5',
+                    saveSuccess &&
+                      'border-emerald-500/40 text-emerald-700 dark:text-emerald-300'
+                  )}
+                >
+                  <span>{isSaving ? '保存中' : saveSuccess ? '已存' : '草稿'}</span>
+                </LiquidGlassButton>
+
+                <LiquidGlassButton
+                  type="button"
+                  variant={publishSuccess ? 'accent' : 'blue'}
+                  size="sm"
+                  loading={publishing}
+                  glow={publishSuccess}
+                  disabled={
+                    !publishing &&
+                    ((publishMode !== 'github' && publishMode !== 'd1') ||
+                      imagePending ||
+                      isSaving ||
+                      (publication?.status === 'committed' && !isDirty && !draftRef.current && !publishSuccess))
+                  }
+                  onClick={() => void handlePublishClick()}
+                  icon={
+                    publishSuccess ? (
+                      <Check className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-300" />
+                    ) : (
+                      <Send className="w-3.5 h-3.5 shrink-0" />
+                    )
+                  }
+                  title="发布文章"
+                  className={cn(
+                    'h-8 text-xs font-medium whitespace-nowrap shrink-0 transition-all duration-200 px-2.5',
+                    publishSuccess &&
+                      'border-emerald-500/40 text-emerald-700 dark:text-emerald-300'
+                  )}
+                >
+                  <span>{publishing ? '发布中' : publishSuccess ? '已发布' : '发布'}</span>
+                </LiquidGlassButton>
+              </div>
+            </div>
+
+            {/* Mobile Row 2: View Switcher on left, Properties Trigger on right */}
+            <div className="flex items-center justify-between w-full min-w-0 gap-2">
+              <div className="cms-editor-view-switcher inline-flex items-center p-0.5 rounded-lg bg-notion-sidebar border border-notion-border shadow-2xs whitespace-nowrap shrink-0">
+                {hasWysiwygPlugin && (
+                  <button
+                    type="button"
+                    aria-label="可视化编辑"
+                    disabled={imagePending}
+                    onClick={() => handleTabChange('edit')}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      activeTab === 'edit'
+                        ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
+                        : 'text-notion-muted hover:text-notion-text'
+                    }`}
+                  >
+                    <EditIcon className="w-3 h-3 shrink-0" />
+                    <span>编辑</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  aria-label="源码编辑"
+                  disabled={imagePending}
+                  onClick={() => handleTabChange('code')}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                    activeTab === 'code'
+                      ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
+                      : 'text-notion-muted hover:text-notion-text'
+                  }`}
+                >
+                  <CodeIcon className="w-3 h-3 shrink-0" />
+                  <span>源码</span>
+                </button>
+                <button
+                  type="button"
+                  aria-label="预览文章"
+                  disabled={imagePending}
+                  onClick={() => handleTabChange('preview')}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                    activeTab === 'preview'
+                      ? 'bg-notion-bg text-notion-text shadow-xs font-semibold'
+                      : 'text-notion-muted hover:text-notion-text'
+                  }`}
+                >
+                  <EyeIcon className="w-3 h-3 shrink-0" />
+                  <span>预览</span>
+                </button>
+              </div>
+
+              <LiquidGlassButton
+                id="cms-properties-trigger"
+                type="button"
+                variant={propertiesOpen ? 'blue' : 'default'}
+                size="sm"
+                icon={<SlidersHorizontal className="w-3.5 h-3.5 shrink-0" />}
+                aria-expanded={propertiesOpen}
+                aria-controls="cms-properties"
+                onClick={() => setPropertiesOpen(value => !value)}
+                className="gap-1.5 h-8 text-xs font-medium whitespace-nowrap shrink-0 px-2.5"
+              >
+                <span>文章属性</span>
+                {hasStatusAttention && <span className="size-1.5 rounded-full bg-red-500" />}
+              </LiquidGlassButton>
+            </div>
+          </div>
+
+          {/* Desktop View: Single clean flex row */}
+          <div className="hidden lg:flex lg:items-center lg:justify-between w-full h-full">
+            {/* Left: Return + Breadcrumb Title (flex-1 min-w-0 for auto truncation) */}
+            <div className="cms-editor-breadcrumb flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden justify-start">
+                <LiquidGlassButton
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  icon={<ArrowLeft className="w-3.5 h-3.5 shrink-0" />}
+                  aria-label="返回列表"
                   disabled={imagePending}
                   onClick={() => { if (!imagePendingRef.current) void confirmLeave().then((allowed) => { if (allowed) onBack(); }); }}
                   className="gap-1.5 h-8 text-xs font-medium text-notion-text shrink-0 whitespace-nowrap select-none"
                 >
-                  <span className="whitespace-nowrap">返回列表</span>
+                  <span className="cms-editor-back-label whitespace-nowrap">返回列表</span>
                 </LiquidGlassButton>
                 <span className="text-notion-border text-xs font-light shrink-0 select-none">/</span>
                 <div className="flex items-center min-w-0 truncate text-xs text-notion-muted">
@@ -1481,12 +1727,13 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
             </div>
 
             {/* Right: Fixed Action Controls & Tabs (Position fixed to right, unaffected by title changes) */}
-            <div className="flex items-center justify-end gap-2 sm:gap-2.5 shrink-0">
+            <div className="cms-editor-actions gap-2 sm:gap-2.5 lg:flex lg:shrink-0 lg:items-center lg:justify-end">
                 {/* View Switcher: Segmented Pill Control */}
-                <div className="inline-flex items-center p-1 rounded-xl bg-notion-sidebar border border-notion-border shadow-2xs whitespace-nowrap shrink-0">
+                <div className="cms-editor-view-switcher inline-flex items-center p-1 rounded-xl bg-notion-sidebar border border-notion-border shadow-2xs whitespace-nowrap shrink-0">
                     {hasWysiwygPlugin && (
                         <button
                             type="button"
+                            aria-label="可视化编辑"
                             disabled={imagePending}
                         onClick={() => handleTabChange('edit')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
@@ -1501,6 +1748,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     )}
                     <button
                         type="button"
+                        aria-label="源码编辑"
                         disabled={imagePending}
                         onClick={() => handleTabChange('code')}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
@@ -1514,6 +1762,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                     </button>
                     <button
                         type="button"
+                        aria-label="预览文章"
                         disabled={imagePending}
                         onClick={() => handleTabChange('preview')}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
@@ -1565,6 +1814,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   </span>
                 )}
                 <LiquidGlassButton
+                  id="cms-properties-trigger"
                   type="button"
                   variant="default"
                   size="sm"
@@ -1572,9 +1822,9 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   aria-expanded={propertiesOpen}
                   aria-controls="cms-properties"
                   onClick={() => setPropertiesOpen(value => !value)}
-                  className="gap-1.5 h-8 text-xs font-medium text-notion-text whitespace-nowrap shrink-0"
+                  className="cms-editor-properties-trigger gap-1.5 h-8 text-xs font-medium text-notion-text whitespace-nowrap shrink-0"
                 >
-                  <span className="whitespace-nowrap">{propertiesOpen ? '收起侧栏' : '属性与状态'}</span>
+                  <span className="whitespace-nowrap">{isNarrowEditor ? '文章属性' : propertiesOpen ? '收起侧栏' : '属性与状态'}</span>
                   {hasStatusAttention && <span className="size-1.5 rounded-full bg-red-500"><span className="sr-only">有待处理的操作提示</span></span>}
                 </LiquidGlassButton>
                 <LiquidGlassButton
@@ -1598,7 +1848,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   onClick={() => void handleSave()}
                   title="保存到 D1 工作草稿"
                   className={cn(
-                    'gap-1.5 h-8 text-xs font-medium whitespace-nowrap shrink-0 transition-all duration-200',
+                    'cms-editor-save-button gap-1.5 h-8 text-xs font-medium whitespace-nowrap shrink-0 transition-all duration-200',
                     saveSuccess &&
                       'border-emerald-500/40 text-emerald-700 dark:text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
                   )}
@@ -1642,7 +1892,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                       : '保存当前输入并发布为新文章'
                   }
                   className={cn(
-                    'gap-1.5 h-8 text-xs font-medium whitespace-nowrap shrink-0 transition-all duration-200',
+                    'cms-editor-publish-button gap-1.5 h-8 text-xs font-medium whitespace-nowrap shrink-0 transition-all duration-200',
                     publishSuccess &&
                       'border-emerald-500/40 text-emerald-700 dark:text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.35)]'
                   )}
@@ -1664,6 +1914,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   </span>
                 </LiquidGlassButton>
             </div>
+          </div>
         </div>
       </header>
       <p role={saveError ? 'alert' : 'status'} className="sr-only" aria-atomic="true">{saveMessage}</p>
@@ -1679,7 +1930,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                   {/* Title - Auto Resizing Textarea */}
                   <textarea
                       ref={titleTextareaRef}
-                      className="text-3xl lg:text-4xl font-bold text-notion-text mb-6 break-words leading-tight tracking-tight w-full border-none focus:ring-0 p-0 placeholder:text-notion-muted/40 resize-none overflow-hidden bg-transparent"
+                      className="text-2xl sm:text-3xl lg:text-4xl font-bold text-notion-text mb-4 sm:mb-6 break-words leading-tight tracking-tight w-full border-none focus:ring-0 p-0 placeholder:text-notion-muted/40 resize-none overflow-hidden bg-transparent"
                       value={editableFrontmatter.title || ''}
                       onChange={(e) => {
                           handleFrontmatterChange('title', e.target.value);
@@ -1798,10 +2049,72 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                 </div>
               </div>
 
-              {/* RIGHT COLUMN — Settings Panel (WordPress-style) */}
-              <div id="cms-properties" role="region" aria-label="文稿属性与状态" tabIndex={0} hidden={!propertiesOpen} className="cms-properties w-full lg:w-80 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-notion-border bg-notion-sidebar/30 overflow-y-auto">
+              {/* RIGHT COLUMN — Settings Panel (WordPress-style / Mobile Bottom Sheet) */}
+              <MobilePortalWrapper isNarrow={isNarrowEditor}>
+                {isNarrowEditor && (
+                  <div
+                    className={`cms-properties-backdrop ${
+                      propertiesOpen ? 'cms-backdrop-open' : 'cms-backdrop-closed'
+                    }`}
+                    aria-hidden="true"
+                    onClick={() => setPropertiesOpen(false)}
+                  />
+                )}
+                <div
+                  id="cms-properties"
+                role={isNarrowEditor ? 'dialog' : 'region'}
+                aria-modal={isNarrowEditor ? true : undefined}
+                aria-label="文稿属性与状态"
+                tabIndex={-1}
+                hidden={!isNarrowEditor && !propertiesOpen}
+                style={
+                  isNarrowEditor
+                    ? {
+                        transform: !propertiesOpen
+                          ? 'translate3d(0, 100%, 0)'
+                          : isDragging && dragY > 0
+                          ? `translate3d(0, ${dragY}px, 0)`
+                          : 'translate3d(0, 0, 0)',
+                        transition: isDragging
+                          ? 'none'
+                          : 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease',
+                      }
+                    : undefined
+                }
+                className={`cms-properties w-full lg:w-80 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-notion-border bg-white dark:bg-[#0b0f17] bg-notion-bg lg:bg-notion-sidebar/30 overflow-y-auto ${
+                  isNarrowEditor
+                    ? propertiesOpen
+                      ? 'cms-sheet-open'
+                      : 'cms-sheet-closed'
+                    : ''
+                }`}
+              >
                 <ComponentInspector
                   statusAttention={hasStatusAttention}
+                  headerPrefix={
+                    <div
+                      className="cms-properties-sheet-header lg:hidden select-none"
+                      onTouchStart={handleTouchStart}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                    >
+                      <div className="cms-properties-sheet-handle" />
+                      <div className="flex items-center justify-between w-full">
+                        <div>
+                          <p className="text-sm font-semibold text-notion-text">文章属性与状态</p>
+                          <p className="text-[11px] text-notion-muted">管理发布信息、组件与文稿状态</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setPropertiesOpen(false)}
+                          className="flex size-8 items-center justify-center rounded-lg text-notion-muted hover:bg-notion-hover hover:text-notion-text transition-colors"
+                          aria-label="关闭文章属性"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                    </div>
+                  }
                   statusPanel={<DocumentStatusPanel
                     key={draftRef.current?.targetPath ?? post.path}
                     active={propertiesOpen && componentInspector.mode === 'status'}
@@ -2079,18 +2392,36 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
                           </div>
                         </div>
                         <div className="flex-grow min-w-0 flex items-center">
-                          <select
-                            value={String(editableFrontmatter.lang || importLang || 'zh')}
-                            onChange={(e) => {
-                              const newLang = e.target.value as 'en' | 'zh';
-                              handleFrontmatterChange('lang', newLang);
-                              if (post.imported) setImportLang(newLang);
-                            }}
-                            className="w-full bg-notion-bg border border-notion-border rounded-lg text-xs py-1.5 px-2.5 text-notion-text focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue transition-all cursor-pointer shadow-2xs"
-                          >
-                            <option value="zh">中文 (zh)</option>
-                            <option value="en">English (en)</option>
-                          </select>
+                          <div className="inline-flex w-full rounded-lg border border-notion-border bg-notion-bg p-0.5 shadow-2xs">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleFrontmatterChange('lang', 'zh');
+                                if (post.imported) setImportLang('zh');
+                              }}
+                              className={`flex-1 py-1 px-2.5 rounded-md text-xs font-medium transition-all text-center select-none cursor-pointer ${
+                                (editableFrontmatter.lang || importLang || 'zh') === 'zh'
+                                  ? 'bg-notion-sidebar text-notion-text font-semibold shadow-xs'
+                                  : 'text-notion-muted hover:text-notion-text'
+                              }`}
+                            >
+                              中文 (zh)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleFrontmatterChange('lang', 'en');
+                                if (post.imported) setImportLang('en');
+                              }}
+                              className={`flex-1 py-1 px-2.5 rounded-md text-xs font-medium transition-all text-center select-none cursor-pointer ${
+                                (editableFrontmatter.lang || importLang) === 'en'
+                                  ? 'bg-notion-sidebar text-notion-text font-semibold shadow-xs'
+                                  : 'text-notion-muted hover:text-notion-text'
+                              }`}
+                            >
+                              English (en)
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -2159,6 +2490,7 @@ const PostDetailView: React.FC<PostDetailViewProps> = ({ post, onBack, onDelete,
 
                 </div>
               </div>
+              </MobilePortalWrapper>
 
             </div>
       </div>

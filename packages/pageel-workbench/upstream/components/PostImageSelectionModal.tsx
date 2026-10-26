@@ -179,8 +179,8 @@ const PostImageSelectionModal: React.FC<PostImageSelectionModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-            <div className="bg-notion-bg text-notion-text rounded-xl shadow-2xl border border-notion-border w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[70] p-0 sm:p-4 animate-in fade-in-0 duration-200">
+            <div className="bg-notion-bg text-notion-text rounded-t-2xl sm:rounded-xl shadow-2xl border border-notion-border w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden">
                 <header className="px-5 py-3.5 border-b border-notion-border flex justify-between items-center bg-notion-sidebar/40 flex-shrink-0">
                     <div className="flex items-center gap-2">
                         <ImageIcon className="w-5 h-5 text-notion-blue" />

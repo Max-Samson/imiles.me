@@ -328,15 +328,15 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         }
         <main className={`flex-1 ${isEditingPost ? 'overflow-hidden' : 'overflow-y-auto'} bg-notion-bg text-notion-text transition-colors`}>
-          <div className={isEditingPost ? 'w-full h-full' : 'w-full mx-auto py-8 px-4 sm:px-6 lg:px-6'}>
+          <div className={isEditingPost ? 'w-full h-full' : 'w-full mx-auto py-4 sm:py-8 px-3 sm:px-6 lg:px-6'}>
             {/* Unified Page Header matching Admin Console */}
             {!isEditingPost && (
-              <div className="cms-page-heading mb-8 group">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
+              <div className="cms-page-heading mb-3 sm:mb-6 group">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     {getPageIcon()}
                     <div>
-                      <h1 className="text-2xl font-bold text-notion-text tracking-tight md:text-3xl flex items-center gap-2.5">
+                      <h1 className="text-lg sm:text-2xl font-bold text-notion-text tracking-tight flex items-center gap-2">
                         <span>{getPageTitle()}</span>
                         <span className="flex size-2 animate-pulse rounded-full bg-emerald-500 shrink-0" title="服务已就绪" />
                       </h1>

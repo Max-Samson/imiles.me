@@ -307,9 +307,11 @@ export function useOptionalComponentInspector() {
 export function ComponentInspector({
   statusPanel,
   statusAttention = false,
+  headerPrefix,
 }: {
   statusPanel: ReactNode;
   statusAttention?: boolean;
+  headerPrefix?: ReactNode;
 }) {
   const state = useComponentInspector();
   const tabs: { mode: InspectorMode; label: string }[] = [
@@ -321,12 +323,14 @@ export function ComponentInspector({
 
   return (
     <>
-      <div className="sticky top-0 z-10 border-b border-notion-border bg-notion-sidebar p-2 backdrop-blur-md">
-        <div
-          className="grid grid-cols-4 gap-0.5 rounded-lg border border-notion-border bg-notion-bg p-1 shadow-2xs"
-          role="tablist"
-          aria-label="右栏属性面板切换"
-        >
+      <div className="sticky top-0 z-20 border-b border-notion-border bg-white dark:bg-[#0b0f17] bg-notion-bg">
+        {headerPrefix}
+        <div className="p-2 pt-1 lg:pt-2">
+          <div
+            className="grid grid-cols-4 gap-0.5 rounded-lg border border-notion-border bg-notion-bg p-1 shadow-2xs"
+            role="tablist"
+            aria-label="右栏属性面板切换"
+          >
           {tabs.map((tab, index) => (
             <button
               key={tab.mode}
@@ -369,6 +373,7 @@ export function ComponentInspector({
             </button>
           ))}
         </div>
+      </div>
       </div>
       <div
         id="cms-inspector-panel-status"

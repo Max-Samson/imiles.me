@@ -1,8 +1,93 @@
 
-import React, { useMemo } from 'react';
-import { Filter, RotateCcw } from 'lucide-react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { Filter, RotateCcw, ChevronDown, Check } from 'lucide-react';
 import { type CollectionTemplate, type TemplateField } from '../features/collections';
 import { useI18n } from '../i18n/I18nContext';
+
+const FilterDropdown: React.FC<{
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (val: string) => void;
+}> = ({ label, value, options, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleOutside);
+      return () => document.removeEventListener('mousedown', handleOutside);
+    }
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`flex items-center justify-between gap-1.5 w-full text-xs px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-notion-blue/20 shadow-2xs ${
+          value
+            ? 'bg-blue-500/10 border-blue-500/40 text-notion-blue font-medium'
+            : 'bg-notion-bg text-notion-text border-notion-border hover:bg-notion-hover'
+        }`}
+        aria-expanded={isOpen}
+      >
+        <span className="truncate">{value || `全部 (${label})`}</span>
+        <ChevronDown
+          className={`size-3 shrink-0 text-notion-muted transition-transform duration-200 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[150px] max-w-[240px] max-h-56 overflow-y-auto rounded-xl border border-notion-border bg-notion-bg p-1 shadow-xl animate-in fade-in-0 zoom-in-95">
+          <button
+            type="button"
+            onClick={() => {
+              onChange('');
+              setIsOpen(false);
+            }}
+            className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
+              !value
+                ? 'bg-notion-blue/10 text-notion-blue font-semibold'
+                : 'text-notion-text hover:bg-notion-hover'
+            }`}
+          >
+            <span>全部 ({label})</span>
+            {!value && <Check className="size-3.5 text-notion-blue shrink-0" />}
+          </button>
+          {options.map((opt) => {
+            const isSelected = opt === value;
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => {
+                  onChange(opt);
+                  setIsOpen(false);
+                }}
+                className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
+                  isSelected
+                    ? 'bg-notion-blue/10 text-notion-blue font-semibold'
+                    : 'text-notion-text hover:bg-notion-hover'
+                }`}
+              >
+                <span className="truncate">{opt}</span>
+                {isSelected && <Check className="size-3.5 text-notion-blue shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface PostData {
   frontmatter: Record<string, any>;
@@ -107,31 +192,18 @@ const FilterBar: React.FC<FilterBarProps> = ({
             <label className="text-xs font-medium text-notion-muted">
               {field.name}
             </label>
-            <select
+            <FilterDropdown
+              label={field.name}
               value={currentFilter?.value || ''}
-              onChange={(e) => {
-                const val = e.target.value;
+              options={uniqueValues}
+              onChange={(val) => {
                 if (val === '') {
                   onFilterChange(field.name, null);
                 } else {
                   onFilterChange(field.name, { type: 'string', value: val });
                 }
               }}
-              className={`text-xs px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-notion-blue/20 focus:border-notion-blue shadow-2xs ${
-                currentFilter
-                  ? 'bg-blue-500/10 border-blue-500/40 text-notion-blue font-medium'
-                  : 'bg-notion-bg text-notion-text border-notion-border hover:bg-notion-hover'
-              }`}
-            >
-              <option value="" className="bg-notion-bg text-notion-text">
-                全部 ({field.name})
-              </option>
-              {uniqueValues.map((v) => (
-                <option key={v} value={v} className="bg-notion-bg text-notion-text">
-                  {v}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         );
       }
