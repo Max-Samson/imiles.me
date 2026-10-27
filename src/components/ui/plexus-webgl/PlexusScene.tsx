@@ -62,11 +62,22 @@ function CursorTracker({ cursorRef }: { cursorRef: React.MutableRefObject<Cursor
 
   useEffect(() => {
     const canvas = gl.domElement;
+    let cachedRect = canvas.getBoundingClientRect();
+    let rafId = 0;
+    let pendingX = 0;
+    let pendingY = 0;
+    let hasPending = false;
 
-    const updatePosition = (clientX: number, clientY: number) => {
-      const rect = canvas.getBoundingClientRect();
-      _pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-      _pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    const updateRect = () => {
+      cachedRect = canvas.getBoundingClientRect();
+    };
+
+    const processPosition = () => {
+      hasPending = false;
+      const rect = cachedRect;
+      if (!rect.width || !rect.height) return;
+      _pointer.x = ((pendingX - rect.left) / rect.width) * 2 - 1;
+      _pointer.y = -((pendingY - rect.top) / rect.height) * 2 + 1;
       _raycaster.setFromCamera(_pointer, camera);
       if (_raycaster.ray.intersectPlane(_plane, _intersection)) {
         cursorRef.current.x = _intersection.x;
@@ -75,38 +86,56 @@ function CursorTracker({ cursorRef }: { cursorRef: React.MutableRefObject<Cursor
       }
     };
 
-    const onPointerMove = (e: PointerEvent) => updatePosition(e.clientX, e.clientY);
+    const schedulePosition = (clientX: number, clientY: number) => {
+      pendingX = clientX;
+      pendingY = clientY;
+      if (!hasPending) {
+        hasPending = true;
+        rafId = requestAnimationFrame(processPosition);
+      }
+    };
+
+    const onPointerMove = (e: PointerEvent) => schedulePosition(e.clientX, e.clientY);
     const onPointerLeave = () => {
       cursorRef.current.active = false;
+      hasPending = false;
+      cancelAnimationFrame(rafId);
     };
     const onClick = () => {
       cursorRef.current.mode = cursorRef.current.mode === -1 ? 1 : -1;
     };
 
     const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length > 0) updatePosition(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.touches.length > 0) schedulePosition(e.touches[0].clientX, e.touches[0].clientY);
     };
     const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length > 0) updatePosition(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.touches.length > 0) schedulePosition(e.touches[0].clientX, e.touches[0].clientY);
     };
     const onTouchEnd = () => {
       cursorRef.current.active = false;
+      hasPending = false;
+      cancelAnimationFrame(rafId);
     };
 
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerleave', onPointerLeave);
-    window.addEventListener('click', onClick);
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerleave', onPointerLeave, { passive: true });
+    window.addEventListener('click', onClick, { passive: true });
     window.addEventListener('touchstart', onTouchStart, { passive: true });
     window.addEventListener('touchmove', onTouchMove, { passive: true });
-    window.addEventListener('touchend', onTouchEnd);
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    window.addEventListener('resize', updateRect, { passive: true });
+    window.addEventListener('scroll', updateRect, { passive: true });
 
     return () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerleave', onPointerLeave);
       window.removeEventListener('click', onClick);
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('resize', updateRect);
+      window.removeEventListener('scroll', updateRect);
     };
   }, [camera, gl, cursorRef]);
 

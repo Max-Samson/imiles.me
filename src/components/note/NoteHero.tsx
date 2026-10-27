@@ -46,11 +46,11 @@ export default function ResearchHero({ item, backHref, backLabel }: ResearchHero
           <motion.span
             key={`${i}-${char}`}
             className="inline-block"
-            initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{
-              duration: 0.4,
-              delay: 0.2 + i * 0.03,
+              duration: 0.3,
+              delay: i * 0.02,
               ease: [0.25, 0.46, 0.45, 0.94],
             }}
           >

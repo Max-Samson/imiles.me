@@ -35,8 +35,22 @@ const searchItems = [
   ...getCuratedContentEntries().filter(entry => entry.kind === 'note').map(entry => ({ title: entry.title, description: entry.description, href: entry.path })),
 ];
 const newsletter = import.meta.env.PUBLIC_BUTTONDOWN_USERNAME;
+
+Astro.response.headers.set(
+  'Cache-Control',
+  'public, max-age=60, s-maxage=300, stale-while-revalidate=1800',
+);
 ---
 <BaseLayout title={t('PageHomeTitle', { site: 'Miles' })} description={t('PageHomeDescription')}>
+  <Fragment slot="head">
+    <link
+      rel="preload"
+      href="/fonts/google/rock-salt-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  </Fragment>
   <div class="home-page relative isolate [--ray-c:rgba(14,165,233,0.35)] dark:[--ray-c:rgba(251,191,36,0.15)]">
     <!-- Screens 1-4: 统一环境光界域（包含首屏至第四屏，单实例全局光芒，彻底消除实例重叠与横向割裂） -->
     <div class="home-ambient-realm relative isolate">

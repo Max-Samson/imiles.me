@@ -190,14 +190,15 @@ export function Floating3DParticles({
       }
     };
 
+    const resumeLoop = () => {
+      if (!s.mounted || s.paused || s.rafId !== null) return;
+      s.rafId = requestAnimationFrame(tick);
+    };
+
     // Animation loop: continuous 3D field rotation and buoyant drift
     const tick = () => {
-      if (!s.mounted) return;
-
-      if (s.paused) {
-        s.rafId = requestAnimationFrame(tick);
-        return;
-      }
+      s.rafId = null;
+      if (!s.mounted || s.paused) return;
 
       // Reduced motion: paint one static frame, then idle until something
       // invalidates it (resize, or the motion preference being turned off).
@@ -206,7 +207,6 @@ export function Floating3DParticles({
           staticDirty = false;
           staticFrame();
         }
-        s.rafId = requestAnimationFrame(tick);
         return;
       }
 
@@ -268,10 +268,13 @@ export function Floating3DParticles({
 
       // Canvas was cleared by the width/height reassignment above.
       staticDirty = true;
+      resumeLoop();
     };
 
     const onVisibilityChange = () => {
+      const wasPaused = s.paused;
       s.paused = document.hidden;
+      if (wasPaused && !s.paused) resumeLoop();
     };
 
     // ResizeObserver
@@ -286,7 +289,9 @@ export function Floating3DParticles({
     if (typeof IntersectionObserver !== 'undefined') {
       ioRef.current = new IntersectionObserver(
         ([entry]) => {
-          if (entry) s.paused = document.hidden || !entry.isIntersecting;
+          const wasPaused = s.paused;
+          s.paused = document.hidden || !entry?.isIntersecting;
+          if (wasPaused && !s.paused) resumeLoop();
         },
         { threshold: 0 },
       );
@@ -297,7 +302,6 @@ export function Floating3DParticles({
     mq.addEventListener('change', syncReducedMotion);
 
     resize();
-    s.rafId = requestAnimationFrame(tick);
 
     return () => {
       s.mounted = false;

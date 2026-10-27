@@ -14,11 +14,16 @@ const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
 
 const sortedStories = await getPublicContentEntries(Astro.locals, 'stories', lang);
+
+Astro.response.headers.set(
+  'Cache-Control',
+  'public, max-age=60, s-maxage=300, stale-while-revalidate=1800',
+);
 ---
 
 <BaseLayout title={t('PagestoriesTitle', { site: 'Miles' })} description={t('PageStoriesDescription')}>
   <div class="relative min-h-screen isolate overflow-hidden">
-    <ContentFlickeringBackground client:only="react" />
+    <ContentFlickeringBackground client:idle />
 
     <main class="container mx-auto px-4 pt-24 pb-16 relative z-10">
       <h1 class="mb-2 text-4xl font-bold tracking-tight text-foreground/90">{t('Headerstories')}</h1>
@@ -28,7 +33,7 @@ const sortedStories = await getPublicContentEntries(Astro.locals, 'stories', lan
           sortedStories.map((story) => (
             <article class="group relative overflow-hidden rounded-lg border border-border bg-white/5 dark:bg-black/5 backdrop-blur-md p-6 transition-all duration-300 ease-out hover:scale-[0.98] hover:border-primary/50">
               <ShineBorder
-                client:load
+                client:visible={{ rootMargin: '200px' }}
                 className="rounded-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                 shineColor={['#A07CFE', '#FE8FB5', '#FFBE7B']}
               />

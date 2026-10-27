@@ -47,8 +47,12 @@ self.addEventListener('fetch', (event) => {
   // An offline fallback must never replace a valid site navigation.
   if (request.mode === 'navigate' || request.destination === 'document') return;
 
-  // Hashed Astro assets are immutable and safe to serve cache-first.
-  if (url.pathname.startsWith('/_astro/')) {
+  // Hashed Astro assets and static fonts are immutable and safe to serve cache-first.
+  if (
+    url.pathname.startsWith('/_astro/') ||
+    url.pathname.startsWith('/fonts/') ||
+    request.destination === 'font'
+  ) {
     event.respondWith(
       caches.open(STATIC_CACHE).then(async (cache) => {
         const cached = await cache.match(request);

@@ -27,7 +27,7 @@ if (!item) {
 
 <BaseLayout title={`${item.title} - Miles`} description={item.tagline} ogImage={item.notePicItems?.[0]?.src} structuredData={[getNoteSchema(item, lang)]} alternateLocales={['zh']}>
   <main class="relative isolate min-h-screen overflow-hidden pb-16">
-    <ContentLightRaysBackground client:only="react" />
+    <ContentLightRaysBackground client:idle />
 
     <div class="relative z-10">
       <NoteHero

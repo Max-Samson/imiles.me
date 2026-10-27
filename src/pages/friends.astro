@@ -8,6 +8,11 @@ import { getServerEnv } from '@/server/env';
 const lang = getLocaleFromPathname(Astro.url.pathname);
 const { t } = useTranslations(lang);
 const turnstileSiteKey = getServerEnv(Astro.locals).TURNSTILE_SITE_KEY ?? '';
+
+Astro.response.headers.set(
+  'Cache-Control',
+  'public, max-age=60, s-maxage=300, stale-while-revalidate=1800',
+);
 ---
 
 <BaseLayout
@@ -15,7 +20,7 @@ const turnstileSiteKey = getServerEnv(Astro.locals).TURNSTILE_SITE_KEY ?? '';
   description={t('PageFriendsDescription')}
 >
   <div class="relative min-h-screen isolate overflow-hidden">
-    <ContentFlickeringBackground client:only="react" />
+    <ContentFlickeringBackground client:idle />
 
     <main class="relative z-10 pt-20 pb-16">
       <FriendsContainer client:load lang={lang} turnstileSiteKey={turnstileSiteKey} />

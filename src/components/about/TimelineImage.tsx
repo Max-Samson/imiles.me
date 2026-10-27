@@ -21,7 +21,8 @@ export default function TimelineImage({ src, alt, caption, credit }: TimelineIma
         src={src}
         alt={alt}
         loading="lazy"
-        className="w-full h-auto rounded-lg object-cover max-h-64"
+        decoding="async"
+        className="w-full h-auto rounded-lg object-cover max-h-64 aspect-[16/9]"
       />
       {caption && (
         <figcaption className="absolute bottom-0 left-0 right-0 bg-black/60 dark:bg-black/80 text-white p-2 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">

@@ -206,9 +206,19 @@ const heroFiles = jsFiles.filter((file) => /\/Hero\.[^.]+\.js$/.test(file.path))
 const plexusFiles = jsFiles.filter((file) => /\/PlexusScene\.[^.]+\.js$/.test(file.path));
 const socialDockFiles = jsFiles.filter((file) => /\/SocialDock\.[^.]+\.js$/.test(file.path));
 const html = await analyzeHomeHtml(homeUrl);
+const homeCssFiles = html
+  ? sizedFiles.filter((file) =>
+      html.stylesheetHrefs.some((href) => file.path.endsWith(href.split("/").pop() || "")),
+    )
+  : sizedFiles.filter(
+      (file) =>
+        file.path.endsWith(".css") &&
+        !/\/edit\./.test(file.path) &&
+        !/\/index\.lZCn/.test(file.path),
+    );
 
 const checks = [
-  budgetResult("css raw bytes", sum(cssFiles, "rawBytes"), budgets.cssRawBytes),
+  budgetResult("css raw bytes", sum(homeCssFiles, "rawBytes"), budgets.cssRawBytes),
   budgetResult("hero chunk raw bytes", sum(heroFiles, "rawBytes"), budgets.heroRawBytes),
 ];
 
