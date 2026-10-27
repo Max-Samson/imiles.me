@@ -1,7 +1,8 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { CODEX, type Point3D, type ShapeConfig } from '../plexus-shapes';
+import type { HeroPatternId, ParticlePattern } from '../hero-pattern-adapters';
+import type { Point3D, ShapeConfig } from '../plexus-shapes';
 import type { CursorState } from './PlexusScene';
 import { particleFragmentShader, particleVertexShader } from './shaders';
 import type { PlexusTheme } from './usePlexusTheme';
@@ -22,21 +23,23 @@ const CURSOR_SOFTENING = 0.5;
 const CURSOR_MAX_FORCE = 2.0;
 
 interface ParticleFieldProps {
+  adapter: ParticlePattern;
   count: number;
   theme: PlexusTheme;
   positionsBufferRef: React.MutableRefObject<Float32Array | null>;
   cursorRef: React.MutableRefObject<CursorState>;
   reducedMotion: boolean;
-  onCodexChange?: (index: number) => void;
+  onEntryChange?: (pattern: HeroPatternId, index: number) => void;
 }
 
 export function ParticleField({
+  adapter,
   count,
   theme,
   positionsBufferRef,
   cursorRef,
   reducedMotion,
-  onCodexChange,
+  onEntryChange,
 }: ParticleFieldProps) {
   const pointsRef = useRef<THREE.Points>(null);
   const { viewport } = useThree();
@@ -54,44 +57,43 @@ export function ParticleField({
 
   // Shape state refs
   const shapeTargetsRef = useRef<Point3D[]>([]);
-  const currentShapeRef = useRef<ShapeConfig>(CODEX[0].shape);
+  const currentShapeRef = useRef<ShapeConfig>(adapter.entries[0].shape);
   const angleRef = useRef({ x: 0, y: 0, z: 0 });
 
-  // Codex cycling refs
-  const codexIndexRef = useRef(0);
+  // Pattern entry cycling refs
+  const entryIndexRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const onCodexChangeRef = useRef(onCodexChange);
-  onCodexChangeRef.current = onCodexChange;
+  const onEntryChangeRef = useRef(onEntryChange);
+  onEntryChangeRef.current = onEntryChange;
 
-  // Codex cycling via setTimeout chain
+  // Every adapter uses the same transition path; multi-entry adapters may cycle.
   useEffect(() => {
     const setEntry = (idx: number) => {
-      const entry = CODEX[idx];
+      const entry = adapter.entries[idx];
       currentShapeRef.current = entry.shape;
       shapeTargetsRef.current = entry.shape.generate(count);
       angleRef.current = { x: 0, y: 0, z: 0 };
-      onCodexChangeRef.current?.(idx);
+      onEntryChangeRef.current?.(adapter.id, idx);
     };
 
-    // Initialize first entry
-    codexIndexRef.current = 0;
+    entryIndexRef.current = 0;
     setEntry(0);
 
-    if (reducedMotion) return;
+    if (reducedMotion || adapter.entries.length < 2) return;
 
     const advance = () => {
-      codexIndexRef.current = (codexIndexRef.current + 1) % CODEX.length;
-      const idx = codexIndexRef.current;
+      entryIndexRef.current = (entryIndexRef.current + 1) % adapter.entries.length;
+      const idx = entryIndexRef.current;
       setEntry(idx);
-      timerRef.current = setTimeout(advance, CODEX[idx].holdMs);
+      timerRef.current = setTimeout(advance, adapter.entries[idx].holdMs);
     };
 
-    timerRef.current = setTimeout(advance, CODEX[0].holdMs);
+    timerRef.current = setTimeout(advance, adapter.entries[0].holdMs);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [count, reducedMotion]);
+  }, [adapter, count, reducedMotion]);
 
   // Build geometry buffers
   const { geometry, positions } = useMemo(() => {
@@ -133,16 +135,8 @@ export function ParticleField({
       uColor1: { value: theme.color1.clone() },
       uHdrIntensity: { value: theme.hdrIntensity },
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [theme],
   );
-
-  // Update theme colors
-  useEffect(() => {
-    uniforms.uColor0.value.copy(theme.color0);
-    uniforms.uColor1.value.copy(theme.color1);
-    uniforms.uHdrIntensity.value = theme.hdrIntensity;
-  }, [theme, uniforms]);
 
   // Animation frame
   useFrame((_, delta) => {
@@ -150,8 +144,6 @@ export function ParticleField({
     const dt = Math.min(delta, 0.1);
 
     uniforms.uTime.value += dt;
-    if (reducedMotion) return;
-
     const targets = shapeTargetsRef.current;
     const shape = currentShapeRef.current;
     const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
@@ -159,9 +151,11 @@ export function ParticleField({
 
     // Rotation matrix for shape targets
     const angles = angleRef.current;
-    angles.x += shape.spinX * dt;
-    angles.y += shape.spinY * dt;
-    angles.z += shape.spinZ * dt;
+    if (!reducedMotion) {
+      angles.x += shape.spinX * dt;
+      angles.y += shape.spinY * dt;
+      angles.z += shape.spinZ * dt;
+    }
 
     const cx = Math.cos(angles.x),
       sx = Math.sin(angles.x);
@@ -182,7 +176,7 @@ export function ParticleField({
 
     const sc = Math.min(viewport.width, viewport.height) * FRACTAL_SCALE * (shape.spread ?? 1);
     const jit = MICRO_JITTER * (shape.jitter ?? 1);
-    const lerpT = 1 - Math.exp(-FRACTAL_LERP_SPEED * (shape.lerpMul ?? 1) * dt);
+    const lerpT = reducedMotion ? 1 : 1 - Math.exp(-FRACTAL_LERP_SPEED * (shape.lerpMul ?? 1) * dt);
     const damp = 0.98 ** (dt * 60);
     const shapeDamp = 0.9 ** (dt * 60);
     const time = uniforms.uTime.value;
@@ -225,19 +219,19 @@ export function ParticleField({
         const rz = m20 * tx + m21 * ty + m22 * tz;
 
         const phase = i * 2.399 + time * 0.8;
-        const jx = Math.sin(phase) * jit * 0.1;
-        const jy = Math.cos(phase * 1.37) * jit * 0.1;
+        const jx = reducedMotion ? 0 : Math.sin(phase) * jit * 0.1;
+        const jy = reducedMotion ? 0 : Math.cos(phase * 1.37) * jit * 0.1;
 
         px += (rx * sc + jx - px) * lerpT;
         py += (ry * sc + jy - py) * lerpT;
-        pz += (Z_MID + rz * sc * 0.3 - pz) * lerpT * 0.3;
+        pz += (Z_MID + rz * sc * 0.3 - pz) * (reducedMotion ? 1 : lerpT * 0.3);
         vx *= shapeDamp;
         vy *= shapeDamp;
         vz *= shapeDamp;
       }
 
       // Cursor gravitational force
-      if (cursorActive) {
+      if (cursorActive && !reducedMotion) {
         const dx = cursorX - px;
         const dy = cursorY - py;
         const distSq = dx * dx + dy * dy;

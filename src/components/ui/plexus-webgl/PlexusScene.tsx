@@ -3,6 +3,7 @@
 import { Canvas, useThree } from '@react-three/fiber';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { getHeroPatternAdapter, type HeroPatternId } from '../hero-pattern-adapters';
 import { ConnectionLines } from './ConnectionLines';
 import { ParticleField } from './ParticleField';
 import { PostProcessing } from './PostProcessing';
@@ -20,9 +21,10 @@ export interface CursorState {
 }
 
 interface PlexusBackgroundProps {
+  pattern?: HeroPatternId;
   className?: string;
   anchorRef?: React.RefObject<HTMLElement | null>;
-  onCodexChange?: (index: number) => void;
+  onEntryChange?: (pattern: HeroPatternId, index: number) => void;
 }
 
 // =============================================================================
@@ -116,38 +118,41 @@ function CursorTracker({ cursorRef }: { cursorRef: React.MutableRefObject<Cursor
 // =============================================================================
 
 function SceneContent({
+  pattern,
   theme,
   positionsBufferRef,
   cursorRef,
   reducedMotion,
   particleCount,
-  onCodexChange,
+  onEntryChange,
 }: {
+  pattern: HeroPatternId;
   theme: ReturnType<typeof usePlexusTheme>;
   positionsBufferRef: React.MutableRefObject<Float32Array | null>;
   cursorRef: React.MutableRefObject<CursorState>;
   reducedMotion: boolean;
   particleCount: number;
-  onCodexChange?: (index: number) => void;
+  onEntryChange?: (pattern: HeroPatternId, index: number) => void;
 }) {
+  const adapter = getHeroPatternAdapter(pattern);
   return (
     <>
       <CursorTracker cursorRef={cursorRef} />
 
       <ParticleField
+        adapter={adapter}
         count={particleCount}
         theme={theme}
         positionsBufferRef={positionsBufferRef}
         cursorRef={cursorRef}
         reducedMotion={reducedMotion}
-        onCodexChange={onCodexChange}
+        onEntryChange={onEntryChange}
       />
-
       <ConnectionLines
         particleCount={particleCount}
+        connectionDistance={adapter.connectionDistance?.(particleCount)}
         positionsBufferRef={positionsBufferRef}
         theme={theme}
-        reducedMotion={reducedMotion}
       />
 
       <PostProcessing theme={theme} />
@@ -160,8 +165,9 @@ function SceneContent({
 // =============================================================================
 
 export function PlexusBackground({
+  pattern = 'codex',
   className = '',
-  onCodexChange,
+  onEntryChange,
   anchorRef,
 }: PlexusBackgroundProps) {
   const [visible, setVisible] = useState(true);
@@ -202,12 +208,13 @@ export function PlexusBackground({
         frameloop={visible ? 'always' : 'never'}
       >
         <SceneContent
+          pattern={pattern}
           theme={theme}
           positionsBufferRef={positionsBufferRef}
           cursorRef={cursorRef}
           reducedMotion={reducedMotion}
           particleCount={particleCount}
-          onCodexChange={onCodexChange}
+          onEntryChange={onEntryChange}
         />
       </Canvas>
     </div>

@@ -367,7 +367,6 @@ function generateGalaxySpiral(n: number): Point3D[] {
 
   const bulgeFrac = 0.15;
   const fieldFrac = 0.2;
-  const armFrac = 1 - bulgeFrac - fieldFrac;
 
   const nBulge = Math.round(n * bulgeFrac);
   const nField = Math.round(n * fieldFrac);
@@ -381,9 +380,14 @@ function generateGalaxySpiral(n: number): Point3D[] {
 
   // Spiral arms
   const totalArms = numMajorArms + numMinorArms;
+  let remainingArms = nArms;
   for (let arm = 0; arm < totalArms; arm++) {
     const isMajor = arm < numMajorArms;
-    const count = isMajor ? nPerMajor : nPerMinor;
+    const count =
+      arm === totalArms - 1
+        ? remainingArms
+        : Math.min(remainingArms, isMajor ? nPerMajor : nPerMinor);
+    remainingArms -= count;
     const baseAngle = isMajor
       ? (arm / numMajorArms) * Math.PI * 2
       : ((arm - numMajorArms) / numMinorArms) * Math.PI * 2 + Math.PI / 4;
@@ -427,6 +431,49 @@ function generateGalaxySpiral(n: number): Point3D[] {
   }
 
   return normalizeGalaxy(pts);
+}
+
+// Three intersecting, tilted orbital rings form a genuinely volumetric silhouette.
+function generateOrbitalRings(n: number): Point3D[] {
+  const pts: Point3D[] = [];
+  const tilt = Math.PI / 3;
+  for (let i = 0; i < n; i++) {
+    const ring = i % 3;
+    const angle = (Math.floor(i / 3) / Math.ceil((n - ring) / 3)) * Math.PI * 2;
+    const radius = ring === 1 ? 0.77 : 1;
+    const x = radius * Math.cos(angle);
+    const y = radius * Math.sin(angle);
+    if (ring === 0) {
+      pts.push({ x, y: y * Math.cos(tilt), z: y * Math.sin(tilt) });
+    } else if (ring === 1) {
+      pts.push({ x: x * Math.cos(tilt), y, z: x * Math.sin(tilt) });
+    } else {
+      pts.push({ x: x * Math.cos(tilt), y: y * Math.cos(tilt), z: (x - y) * Math.sin(tilt) });
+    }
+  }
+  return normalize3D(pts);
+}
+
+// Sample across the surface so the half twist reads as a ribbon, not a wire loop.
+function generateMobiusBand(n: number): Point3D[] {
+  const pts: Point3D[] = [];
+  const strips = n < 400 ? 5 : 11;
+  const radius = 0.8;
+  const halfWidth = 0.38;
+  for (let i = 0; i < n; i++) {
+    const strip = i % strips;
+    const column = Math.floor(i / strips);
+    const columns = Math.ceil((n - strip) / strips);
+    const u = (column / columns) * Math.PI * 2;
+    const v = (strip / (strips - 1) - 0.5) * 2 * halfWidth;
+    const ringRadius = radius + v * Math.cos(u / 2);
+    const x = ringRadius * Math.cos(u);
+    const y = ringRadius * Math.sin(u);
+    const z = v * Math.sin(u / 2);
+    // Present the twist at an angle before the slow ambient rotation begins.
+    pts.push({ x, y: y * 0.87 - z * 0.5, z: y * 0.5 + z * 0.87 });
+  }
+  return normalize3D(pts);
 }
 
 // =============================================================================
@@ -494,6 +541,24 @@ const galaxyShape: ShapeConfig = {
   spread: 1.4,
   jitter: 0.6,
   lerpMul: 0.6,
+};
+
+export const ORBITAL_RINGS: ShapeConfig = {
+  generate: generateOrbitalRings,
+  spinX: 0.08,
+  spinY: 0.12,
+  spinZ: 0.025,
+  spread: 1.15,
+  jitter: 0.35,
+};
+
+export const MOBIUS_BAND: ShapeConfig = {
+  generate: generateMobiusBand,
+  spinX: 0.035,
+  spinY: 0.085,
+  spinZ: 0.02,
+  spread: 1.25,
+  jitter: 0.12,
 };
 
 // =============================================================================

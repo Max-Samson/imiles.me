@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from 'react';
-
+import { HERO_PATTERN_ADAPTERS, type HeroPatternId } from '@/components/ui/hero-pattern-adapters';
 import { PlexusBackground } from '@/components/ui/plexus-background';
 import { CODEX, CODEX_CN } from '@/components/ui/plexus-shapes';
 import { useTextScramble } from '@/hooks/useTextScramble';
@@ -41,6 +41,7 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
   const nameRef = useRef<HTMLHeadingElement>(null);
   const [nameWidth, setNameWidth] = useState<number | undefined>(undefined);
   const [codexIndex, setCodexIndex] = useState(0);
+  const [pattern, setPattern] = useState<HeroPatternId>('codex');
   const isZh = lang === 'zh';
   const [shouldMountDock, setShouldMountDock] = useState(false);
 
@@ -62,8 +63,8 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
     ? 'Miles技术博客，记录前端工程、AI时代感受、全栈实践、项目复盘与长期思考。'
     : 'A tech blog on frontend engineering, AI, full-stack building, project breakdowns, and long-form thinking.';
 
-  const handleCodexChange = useCallback((index: number) => {
-    setCodexIndex(index);
+  const handleEntryChange = useCallback((id: HeroPatternId, index: number) => {
+    if (id === 'codex') setCodexIndex(index);
   }, []);
 
   // Track name element width via ResizeObserver
@@ -81,10 +82,30 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
     <MotionConfig reducedMotion="user">
       <div className="landing-root" ref={heroRef}>
         <PlexusBackground
+          pattern={pattern}
           anchorRef={heroRef}
           className="pointer-events-auto z-0"
-          onCodexChange={handleCodexChange}
+          onEntryChange={handleEntryChange}
         />
+
+        <fieldset className="absolute right-4 top-20 z-20 flex rounded-full border border-border/60 bg-background/75 p-1 text-xs shadow-sm backdrop-blur-md sm:bottom-8 sm:right-8 sm:top-auto">
+          <legend className="sr-only">{isZh ? '首页 3D 图案' : 'Hero 3D pattern'}</legend>
+          {HERO_PATTERN_ADAPTERS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              aria-pressed={pattern === option.id}
+              onClick={() => setPattern(option.id)}
+              className={`rounded-full px-3 py-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground ${
+                pattern === option.id
+                  ? 'bg-foreground text-background'
+                  : 'text-foreground/70 hover:text-foreground'
+              }`}
+            >
+              {option.label[lang]}
+            </button>
+          ))}
+        </fieldset>
 
         <motion.div
           className="final-card-container pointer-events-none z-10"

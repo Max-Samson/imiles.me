@@ -8,24 +8,23 @@ import type { PlexusTheme } from './usePlexusTheme';
 // Connection lines using spatial grid hashing (ported from Canvas 2D)
 // =============================================================================
 
-const CONNECTION_DIST = 3.0;
-const CONNECTION_DIST_SQ = CONNECTION_DIST * CONNECTION_DIST;
+const DEFAULT_CONNECTION_DIST = 3.0;
 const Z_CONNECTION_MAX = 4.0;
 const MAX_CONNECTIONS = 5000;
 const MAX_GRID = 64;
 
 interface ConnectionLinesProps {
   particleCount: number;
+  connectionDistance?: number;
   positionsBufferRef: React.MutableRefObject<Float32Array | null>;
   theme: PlexusTheme;
-  reducedMotion: boolean;
 }
 
 export function ConnectionLines({
   particleCount,
+  connectionDistance = DEFAULT_CONNECTION_DIST,
   positionsBufferRef,
   theme,
-  reducedMotion,
 }: ConnectionLinesProps) {
   const meshRef = useRef<THREE.LineSegments>(null);
 
@@ -46,13 +45,8 @@ export function ConnectionLines({
       uTime: { value: 0 },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [theme],
   );
-
-  // Update theme
-  useMemo(() => {
-    uniforms.uLineColor.value.copy(theme.lineColor);
-  }, [theme, uniforms]);
 
   const gridHead = useRef(new Int32Array(0));
   const gridNext = useRef(new Int16Array(0));
@@ -65,6 +59,7 @@ export function ConnectionLines({
 
     const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
     const alphaAttr = geometry.getAttribute('aAlpha') as THREE.BufferAttribute;
+    const connectionDistanceSq = connectionDistance * connectionDistance;
 
     // Build spatial grid
     let minX = Infinity,
@@ -82,8 +77,8 @@ export function ConnectionLines({
 
     const rangeX = maxX - minX || 1;
     const rangeY = maxY - minY || 1;
-    const gridW = Math.min(MAX_GRID, Math.max(1, Math.ceil(rangeX / CONNECTION_DIST)));
-    const gridH = Math.min(MAX_GRID, Math.max(1, Math.ceil(rangeY / CONNECTION_DIST)));
+    const gridW = Math.min(MAX_GRID, Math.max(1, Math.ceil(rangeX / connectionDistance)));
+    const gridH = Math.min(MAX_GRID, Math.max(1, Math.ceil(rangeY / connectionDistance)));
     const cellW = rangeX / gridW;
     const cellH = rangeY / gridH;
 
@@ -135,8 +130,8 @@ export function ConnectionLines({
                 const ddx = ax - bx;
                 const ddy = ay - by;
                 const dSq = ddx * ddx + ddy * ddy;
-                if (dSq < CONNECTION_DIST_SQ) {
-                  const ratio = 1 - Math.sqrt(dSq) / CONNECTION_DIST;
+                if (dSq < connectionDistanceSq) {
+                  const ratio = 1 - Math.sqrt(dSq) / connectionDistance;
                   const depthFade = 1 - dz / Z_CONNECTION_MAX;
                   const alpha = ratio * depthFade * 0.5;
 
