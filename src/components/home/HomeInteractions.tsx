@@ -85,6 +85,7 @@ export default function HomeInteractions({ lang, items }: { lang: Locale; items:
       { threshold: 0.1 },
     );
 
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
     for (const element of Array.from(
       document.querySelectorAll<HTMLElement>('[data-home-reveal]'),
     )) {
@@ -92,26 +93,44 @@ export default function HomeInteractions({ lang, items }: { lang: Locale; items:
         element.style.opacity = '1';
         element.style.transform = 'none';
       } else {
-        element.style.opacity = '0';
-        element.style.transform = 'translateY(24px)';
-        reveal.observe(element);
+        const top = element.getBoundingClientRect().top;
+        if (top < vh * 0.85) {
+          element.style.opacity = '1';
+          element.style.transform = 'none';
+        } else {
+          element.style.opacity = '0';
+          element.style.transform = 'translateY(24px)';
+          reveal.observe(element);
+        }
       }
     }
 
     if (finePointer.matches && !preference.matches) {
       for (const element of Array.from(document.querySelectorAll<HTMLElement>('[data-magnetic]'))) {
+        let rafId = 0;
+        let cachedRect: DOMRect | null = null;
+        const getRect = () => {
+          if (!cachedRect) cachedRect = element.getBoundingClientRect();
+          return cachedRect;
+        };
         const move = (event: MouseEvent) => {
-          const rect = element.getBoundingClientRect();
-          const x = (event.clientX - (rect.left + rect.width / 2)) * 0.2;
-          const y = (event.clientY - (rect.top + rect.height / 2)) * 0.2;
-          element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+          cancelAnimationFrame(rafId);
+          rafId = requestAnimationFrame(() => {
+            const rect = getRect();
+            const x = (event.clientX - (rect.left + rect.width / 2)) * 0.2;
+            const y = (event.clientY - (rect.top + rect.height / 2)) * 0.2;
+            element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+          });
         };
         const leave = () => {
+          cancelAnimationFrame(rafId);
+          cachedRect = null;
           element.style.transform = 'translate3d(0, 0, 0)';
         };
-        element.addEventListener('mousemove', move);
-        element.addEventListener('mouseleave', leave);
+        element.addEventListener('mousemove', move, { passive: true });
+        element.addEventListener('mouseleave', leave, { passive: true });
         cleanups.push(() => {
+          cancelAnimationFrame(rafId);
           element.removeEventListener('mousemove', move);
           element.removeEventListener('mouseleave', leave);
         });

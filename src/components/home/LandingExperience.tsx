@@ -139,7 +139,7 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
           className="final-card-container pointer-events-none z-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
+          transition={{ duration: 0.3 }}
         >
           <div className="relative flex flex-col items-center">
             <div className="px-4 sm:px-0">
@@ -152,7 +152,7 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
                   style={{ fontFamily: 'Rock Salt, cursive' }}
                 >
                   {NAME_CHARS.map(({ id, char }, index) => {
-                    const baseDelay = 0.6 + index * 0.04;
+                    const baseDelay = index * 0.03;
 
                     return char === ' ' ? (
                       <span key={id} className="w-full" />
@@ -171,9 +171,9 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
                 <motion.div
                   className="landing-hero-sub"
                   style={nameWidth ? { maxWidth: nameWidth } : undefined}
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 1.4 }}
+                  transition={{ duration: 0.4, delay: 0.3 }}
                 >
                   <p className="landing-hero-intro">{intro}</p>
                   <span className="landing-hero-quote" title={currentShapeName}>
@@ -187,7 +187,7 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
               className="pointer-events-auto flex flex-col items-center gap-3 mt-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 1.6 }}
+              transition={{ duration: 0.4, delay: 0.6 }}
             >
               {shouldMountDock && (
                 <Suspense fallback={null}>

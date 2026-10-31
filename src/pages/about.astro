@@ -10,14 +10,28 @@ const { t } = useTranslations(lang);
 const introduction = await getEntry('blog', lang === 'zh' ? 'miles-zh' : 'miles');
 if (!introduction) throw new Error(`Missing About introduction for locale: ${lang}`);
 const { Content } = await render(introduction);
+
+Astro.response.headers.set(
+  'Cache-Control',
+  'public, max-age=60, s-maxage=300, stale-while-revalidate=1800',
+);
 ---
 
 <BaseLayout
   title={t('PageAboutTitle', { site: 'Miles' })}
   description={t('PageAboutDescription')}
 >
+  <Fragment slot="head">
+    <link
+      rel="preload"
+      href="/fonts/google/rock-salt-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  </Fragment>
   <div class="relative min-h-screen isolate overflow-hidden">
-    <ContentFlickeringBackground client:only="react" />
+    <ContentFlickeringBackground client:idle />
 
     <div class="relative z-10">
       <AboutHero client:visible lang={lang}>

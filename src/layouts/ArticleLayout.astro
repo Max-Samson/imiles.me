@@ -47,20 +47,20 @@ const resolvedBackLabel = backLabel ?? 'content/blog';
 ---
 
 <article class="relative isolate mx-auto min-h-screen max-w-3xl px-6 pt-24 pb-16">
-  <ContentLightRaysBackground client:only="react" />
+  <ContentLightRaysBackground client:idle />
 
   <header class="mb-8">
     <BackButton client:load href={resolvedBackHref} label={resolvedBackLabel} />
     <h1 class="text-4xl font-bold">{title}</h1>
     <div class="mt-4 flex items-center gap-2">
       <CopyMarkdownButton
-        client:load
+        client:idle
         postBody={body}
         postFrontmatter={frontmatter}
         slug={slug}
       />
       <ShareButton
-        client:load
+        client:idle
         url={shareUrl}
         title={title}
         description={frontmatter.description}

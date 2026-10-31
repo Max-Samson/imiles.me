@@ -12,8 +12,6 @@ import type { ComponentType } from 'react';
 import { lazy } from 'react';
 import { NativePlainEditor } from '../components/editors/NativePlainEditor';
 
-import mdxPlugin from '@pageel/plugin-mdx';
-
 // @para-doc [#csa-plugin-status-metadata]
 export type PluginStatus = 'stable' | 'beta' | 'experimental' | 'dev';
 
@@ -53,7 +51,7 @@ export const SUPPORTED_PLUGINS: PluginMetadata[] = [
 // Mỗi supported plugin = 1 static import entry.
 // Thêm entry khi CMS bundle hỗ trợ thêm plugin mới.
 const PLUGIN_LOADERS: Record<string, () => Promise<{ default: PageelPlugin }>> = {
-  '@pageel/plugin-mdx': () => Promise.resolve({ default: mdxPlugin }),
+  '@pageel/plugin-mdx': () => import('@pageel/plugin-mdx'),
   '@pageel/plugin-easymde': () => Promise.resolve({
     default: {
       id: '@pageel/plugin-easymde',

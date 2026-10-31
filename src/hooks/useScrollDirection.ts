@@ -35,21 +35,26 @@ export function useScrollDirection() {
       rafId.current = requestAnimationFrame(update);
     };
 
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(rafId.current);
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, [update]);
+
+  useEffect(() => {
+    if (isVisible) return;
+
     const onMouseMove = (e: MouseEvent) => {
       if (e.clientY <= HOVER_ZONE_PX) {
         setIsVisible(true);
       }
     };
 
-    window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('mousemove', onMouseMove, { passive: true });
-
-    return () => {
-      cancelAnimationFrame(rafId.current);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('mousemove', onMouseMove);
-    };
-  }, [update]);
+    return () => window.removeEventListener('mousemove', onMouseMove);
+  }, [isVisible]);
 
   return { isVisible, isAtTop };
 }
