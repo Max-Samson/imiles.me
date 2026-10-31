@@ -7,8 +7,10 @@ import {
   SIGNATURE_MING,
 } from './plexus-shapes';
 
+export type HeroPatternId = 'signature' | 'codex' | 'mobius' | 'orbits';
+
 export interface HeroPatternAdapter {
-  id: string;
+  id: HeroPatternId;
   label: { en: string; zh: string };
   entries: readonly CodexEntry[];
   entriesZh?: readonly CodexEntry[];
@@ -22,7 +24,7 @@ export interface HeroPatternAdapter {
  * 3. 莫比乌斯环（单面无尽拓扑曲面）
  * 4. 多重轨道（三重正交天体引力轨道）
  */
-export const HERO_PATTERN_ADAPTERS = [
+export const HERO_PATTERN_ADAPTERS: readonly HeroPatternAdapter[] = [
   {
     id: 'signature',
     label: { en: 'Signature', zh: '手书' },
@@ -99,9 +101,8 @@ export const HERO_PATTERN_ADAPTERS = [
       },
     ],
   },
-] as const satisfies readonly HeroPatternAdapter[];
-export type HeroPatternId = (typeof HERO_PATTERN_ADAPTERS)[number]['id'];
-export type ParticlePattern = (typeof HERO_PATTERN_ADAPTERS)[number];
+];
+export type ParticlePattern = HeroPatternAdapter;
 
 export function getHeroPatternAdapter(id?: HeroPatternId): ParticlePattern {
   return HERO_PATTERN_ADAPTERS.find((adapter) => adapter.id === id) ?? HERO_PATTERN_ADAPTERS[0];

@@ -10,7 +10,7 @@ import {
   Server,
   Shield,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Button } from '@/registry/shadcn/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/registry/shadcn/card';
 import techIcons from '../../data/tech-icons.json';

@@ -8,13 +8,11 @@ on:
   workflow_dispatch:
   workflow_call:
 
-# CI 不需要生产权限，不执行远程 D1 或 Worker 部署。
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  # 只取消过期验证；生产迁移不能复用这个取消规则。
   cancel-in-progress: true
 
 env:
@@ -22,94 +20,49 @@ env:
   NODE_OPTIONS: --max-old-space-size=4096
 
 jobs:
-  quality:
-    name: Lint 与发布规则测试
+  ci:
+    name: 持续集成流水线
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+
       - uses: pnpm/action-setup@v6
         with:
           version: 11.13.1
+
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      - name: 按锁文件安装依赖，不允许 CI 自动更新版本
+
+      - name: 安装依赖
         run: pnpm install --frozen-lockfile
-      - name: 检查代码与格式
+
+      - name: 代码与格式检查
         run: |
           pnpm lint
           pnpm format:check
-      - name: 检查发布规则（全部使用模拟 runner，不访问生产）
-        run: pnpm test:release
-      - name: 检查构建边界与图标单文件入口
-        run: pnpm test:boundaries
 
-  server:
-    name: 类型与本地服务端回归
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 11.13.1
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      # tsconfig 仅排除复制的第三方静态 vendor，不排除自有源码或整个工作台。
-      - name: Astro 全项目类型检查
-        run: pnpm check
-      - name: 服务端独立类型检查
-        run: pnpm check:server
-      - name: Drizzle 元数据一致性（不等于执行远程迁移）
-        run: pnpm db:check
-      - name: 服务端测试（仅本地临时 D1/KV，限制并发避免仿真器内存争抢）
-        run: pnpm test:server
-
-  build:
-    name: 生产构建与 SSR 边界检查
-    needs: [quality, server]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 11.13.1
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: 构建一次；构建脚本不执行远程数据库操作
-        run: pnpm build
-      - name: 检查 Worker、静态资源排除项与提交摘要
+      - name: 全量类型与元数据检查
         run: |
+          pnpm check
+          pnpm check:server
+          pnpm db:check
+
+      - name: 运行测试套件
+        run: |
+          pnpm test:release
+          pnpm test:boundaries
+          pnpm test:server
+
+      - name: 生产构建与边界校验
+        run: |
+          pnpm build
           test -s dist/_worker.js/index.js
           grep -qx '_worker.js' dist/.assetsignore
           test -s .astro/release-build.json
           test -s .astro/build-server-audit.json
           test -s .astro/build-client-audit.json
-      - name: 保存产物供排查（不上传任何环境或认证文件）
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-${{ github.sha }}
-          path: |
-            dist/
-            .astro/release-build.json
-            .astro/build-server-audit.json
-            .astro/build-client-audit.json
-          # 只打包上述受控目录，保留 .assetsignore 及审计文件。
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 7
