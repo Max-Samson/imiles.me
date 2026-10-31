@@ -18,6 +18,7 @@ interface ConnectionLinesProps {
   connectionDistance?: number;
   positionsBufferRef: React.MutableRefObject<Float32Array | null>;
   theme: PlexusTheme;
+  connectionDistanceRef?: React.MutableRefObject<number>;
 }
 
 export function ConnectionLines({
@@ -25,6 +26,7 @@ export function ConnectionLines({
   connectionDistance = DEFAULT_CONNECTION_DIST,
   positionsBufferRef,
   theme,
+  connectionDistanceRef,
 }: ConnectionLinesProps) {
   const meshRef = useRef<THREE.LineSegments>(null);
 
@@ -55,12 +57,14 @@ export function ConnectionLines({
     const positions = positionsBufferRef.current;
     if (!positions || !meshRef.current) return;
 
+    uniforms.uOpacity.value = 0.3;
+
     uniforms.uTime.value += Math.min(delta, 0.1);
 
     const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
     const alphaAttr = geometry.getAttribute('aAlpha') as THREE.BufferAttribute;
-    const connectionDistanceSq = connectionDistance * connectionDistance;
-
+    const activeDist = connectionDistanceRef?.current ?? connectionDistance;
+    const connectionDistanceSq = activeDist * activeDist;
     // Build spatial grid
     let minX = Infinity,
       maxX = -Infinity;
@@ -77,8 +81,8 @@ export function ConnectionLines({
 
     const rangeX = maxX - minX || 1;
     const rangeY = maxY - minY || 1;
-    const gridW = Math.min(MAX_GRID, Math.max(1, Math.ceil(rangeX / connectionDistance)));
-    const gridH = Math.min(MAX_GRID, Math.max(1, Math.ceil(rangeY / connectionDistance)));
+    const gridW = Math.min(MAX_GRID, Math.max(1, Math.ceil(rangeX / activeDist)));
+    const gridH = Math.min(MAX_GRID, Math.max(1, Math.ceil(rangeY / activeDist)));
     const cellW = rangeX / gridW;
     const cellH = rangeY / gridH;
 
@@ -131,7 +135,7 @@ export function ConnectionLines({
                 const ddy = ay - by;
                 const dSq = ddx * ddx + ddy * ddy;
                 if (dSq < connectionDistanceSq) {
-                  const ratio = 1 - Math.sqrt(dSq) / connectionDistance;
+                  const ratio = 1 - Math.sqrt(dSq) / activeDist;
                   const depthFade = 1 - dz / Z_CONNECTION_MAX;
                   const alpha = ratio * depthFade * 0.5;
 

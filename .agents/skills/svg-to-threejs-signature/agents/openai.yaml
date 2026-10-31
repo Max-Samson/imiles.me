@@ -1,0 +1,3 @@
+interface:
+  display_name: "SVG to 3D Signature Particles"
+  short_description: "Transform hand-drawn SVG signatures into 3D Three.js particle constellation patterns"

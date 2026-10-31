@@ -10,9 +10,12 @@ import {
   useRef,
   useState,
 } from 'react';
-import { HERO_PATTERN_ADAPTERS, type HeroPatternId } from '@/components/ui/hero-pattern-adapters';
+import {
+  getHeroPatternAdapter,
+  HERO_PATTERN_ADAPTERS,
+  type HeroPatternId,
+} from '@/components/ui/hero-pattern-adapters';
 import { PlexusBackground } from '@/components/ui/plexus-background';
-import { CODEX, CODEX_CN } from '@/components/ui/plexus-shapes';
 import { useTextScramble } from '@/hooks/useTextScramble';
 import { type Locale, useTranslations } from '@/lib/i18n';
 
@@ -38,10 +41,12 @@ const SocialDock = lazy(() => import('@/components/layout/SocialDock'));
 export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
   const { t } = useTranslations(lang);
   const heroRef = useRef<HTMLDivElement>(null);
+  const heroCardRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLHeadingElement>(null);
   const [nameWidth, setNameWidth] = useState<number | undefined>(undefined);
-  const [codexIndex, setCodexIndex] = useState(0);
-  const [pattern, setPattern] = useState<HeroPatternId>('codex');
+  const [pattern, setPattern] = useState<HeroPatternId>('signature');
+  const [entryIndex, setEntryIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const isZh = lang === 'zh';
   const [shouldMountDock, setShouldMountDock] = useState(false);
 
@@ -55,17 +60,40 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
     return () => window.clearTimeout(timeoutId);
   }, []);
 
-  const codex = isZh ? CODEX_CN : CODEX;
-  const entry = codex[codexIndex % codex.length];
-  const quoteText = useTextScramble(entry.quote);
-  const authorText = useTextScramble(entry.author ?? '');
+  const adapter = getHeroPatternAdapter(pattern);
+  const activeEntries = isZh && adapter.entriesZh ? adapter.entriesZh : adapter.entries;
+  const activeEntry = activeEntries[entryIndex % activeEntries.length];
+  const quoteText = useTextScramble(activeEntry.quote);
+  const authorText = useTextScramble(activeEntry.author ?? '');
   const intro = isZh
     ? 'Miles技术博客，记录前端工程、AI时代感受、全栈实践、项目复盘与长期思考。'
     : 'A tech blog on frontend engineering, AI, full-stack building, project breakdowns, and long-form thinking.';
 
-  const handleEntryChange = useCallback((id: HeroPatternId, index: number) => {
-    if (id === 'codex') setCodexIndex(index);
-  }, []);
+  const currentShapeName =
+    pattern === 'codex'
+      ? isZh
+        ? `经典 · ${activeEntry.name.zh}`
+        : `Classic · ${activeEntry.name.en}`
+      : isZh
+        ? activeEntry.name.zh
+        : activeEntry.name.en;
+
+  const handleGroupAdvance = useCallback(() => {
+    const ids = HERO_PATTERN_ADAPTERS.map((a) => a.id);
+    const currIdx = ids.indexOf(pattern);
+    const nextPattern = ids[(currIdx + 1) % ids.length];
+    setPattern(nextPattern);
+    setEntryIndex(0);
+  }, [pattern]);
+
+  const handleEntryChange = useCallback(
+    (id: HeroPatternId, index: number) => {
+      if (id === pattern) {
+        setEntryIndex(index);
+      }
+    },
+    [pattern],
+  );
 
   // Track name element width via ResizeObserver
   useEffect(() => {
@@ -78,6 +106,23 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
     return () => ro.disconnect();
   }, []);
 
+  // Pause auto-cycle when hovering over hero card
+  useEffect(() => {
+    const heroCard = heroCardRef.current;
+    if (!heroCard) return;
+
+    const onEnter = () => setIsPaused(true);
+    const onLeave = () => setIsPaused(false);
+
+    heroCard.addEventListener('pointerenter', onEnter);
+    heroCard.addEventListener('pointerleave', onLeave);
+
+    return () => {
+      heroCard.removeEventListener('pointerenter', onEnter);
+      heroCard.removeEventListener('pointerleave', onLeave);
+    };
+  }, []);
+
   return (
     <MotionConfig reducedMotion="user">
       <div className="landing-root" ref={heroRef}>
@@ -86,26 +131,9 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
           anchorRef={heroRef}
           className="pointer-events-auto z-0"
           onEntryChange={handleEntryChange}
+          onGroupAdvance={handleGroupAdvance}
+          isPaused={isPaused}
         />
-
-        <fieldset className="absolute right-4 top-20 z-20 flex rounded-full border border-border/60 bg-background/75 p-1 text-xs shadow-sm backdrop-blur-md sm:bottom-8 sm:right-8 sm:top-auto">
-          <legend className="sr-only">{isZh ? '首页 3D 图案' : 'Hero 3D pattern'}</legend>
-          {HERO_PATTERN_ADAPTERS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              aria-pressed={pattern === option.id}
-              onClick={() => setPattern(option.id)}
-              className={`rounded-full px-3 py-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground ${
-                pattern === option.id
-                  ? 'bg-foreground text-background'
-                  : 'text-foreground/70 hover:text-foreground'
-              }`}
-            >
-              {option.label[lang]}
-            </button>
-          ))}
-        </fieldset>
 
         <motion.div
           className="final-card-container pointer-events-none z-10"
@@ -115,7 +143,7 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
         >
           <div className="relative flex flex-col items-center">
             <div className="px-4 sm:px-0">
-              <div className="landing-hero pointer-events-auto">
+              <div ref={heroCardRef} className="landing-hero pointer-events-auto">
                 <p className="sr-only">{t('PageHomeDescription')}</p>
                 <h1
                   ref={nameRef}
@@ -148,7 +176,9 @@ export default function LandingExperience({ lang = 'en' }: { lang?: Locale }) {
                   transition={{ duration: 0.5, delay: 1.4 }}
                 >
                   <p className="landing-hero-intro">{intro}</p>
-                  <span className="landing-hero-quote">{quoteText}</span>
+                  <span className="landing-hero-quote" title={currentShapeName}>
+                    {quoteText}
+                  </span>
                   {authorText && <span className="landing-hero-author">{authorText}</span>}
                 </motion.div>
               </div>

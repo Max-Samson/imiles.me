@@ -7,7 +7,7 @@ import { getHeroPatternAdapter, type HeroPatternId } from '../hero-pattern-adapt
 import { ConnectionLines } from './ConnectionLines';
 import { ParticleField } from './ParticleField';
 import { PostProcessing } from './PostProcessing';
-import { usePlexusTheme } from './usePlexusTheme';
+import { type PlexusTheme, usePlexusTheme } from './usePlexusTheme';
 
 // =============================================================================
 // Types
@@ -25,6 +25,8 @@ interface PlexusBackgroundProps {
   className?: string;
   anchorRef?: React.RefObject<HTMLElement | null>;
   onEntryChange?: (pattern: HeroPatternId, index: number) => void;
+  onGroupAdvance?: () => void;
+  isPaused?: boolean;
 }
 
 // =============================================================================
@@ -125,16 +127,26 @@ function SceneContent({
   reducedMotion,
   particleCount,
   onEntryChange,
+  isPaused,
+  onGroupAdvance,
 }: {
   pattern: HeroPatternId;
-  theme: ReturnType<typeof usePlexusTheme>;
+  theme: PlexusTheme;
   positionsBufferRef: React.MutableRefObject<Float32Array | null>;
   cursorRef: React.MutableRefObject<CursorState>;
   reducedMotion: boolean;
   particleCount: number;
   onEntryChange?: (pattern: HeroPatternId, index: number) => void;
+  onGroupAdvance?: () => void;
+  isPaused?: boolean;
 }) {
   const adapter = getHeroPatternAdapter(pattern);
+  const initialDist =
+    adapter.entries[0]?.connectionDistance?.(particleCount) ??
+    adapter.connectionDistance?.(particleCount) ??
+    3.0;
+  const connectionDistanceRef = useRef(initialDist);
+
   return (
     <>
       <CursorTracker cursorRef={cursorRef} />
@@ -147,12 +159,15 @@ function SceneContent({
         cursorRef={cursorRef}
         reducedMotion={reducedMotion}
         onEntryChange={onEntryChange}
+        onGroupAdvance={onGroupAdvance}
+        isPaused={isPaused}
+        connectionDistanceRef={connectionDistanceRef}
       />
       <ConnectionLines
         particleCount={particleCount}
-        connectionDistance={adapter.connectionDistance?.(particleCount)}
         positionsBufferRef={positionsBufferRef}
         theme={theme}
+        connectionDistanceRef={connectionDistanceRef}
       />
 
       <PostProcessing theme={theme} />
@@ -168,7 +183,9 @@ export function PlexusBackground({
   pattern = 'codex',
   className = '',
   onEntryChange,
+  onGroupAdvance,
   anchorRef,
+  isPaused = false,
 }: PlexusBackgroundProps) {
   const [visible, setVisible] = useState(true);
   useEffect(() => {
@@ -215,6 +232,8 @@ export function PlexusBackground({
           reducedMotion={reducedMotion}
           particleCount={particleCount}
           onEntryChange={onEntryChange}
+          onGroupAdvance={onGroupAdvance}
+          isPaused={isPaused}
         />
       </Canvas>
     </div>

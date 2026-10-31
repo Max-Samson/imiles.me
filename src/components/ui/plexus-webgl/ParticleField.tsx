@@ -1,5 +1,5 @@
 import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { HeroPatternId, ParticlePattern } from '../hero-pattern-adapters';
 import type { Point3D, ShapeConfig } from '../plexus-shapes';
@@ -30,8 +30,10 @@ interface ParticleFieldProps {
   cursorRef: React.MutableRefObject<CursorState>;
   reducedMotion: boolean;
   onEntryChange?: (pattern: HeroPatternId, index: number) => void;
+  onGroupAdvance?: () => void;
+  isPaused?: boolean;
+  connectionDistanceRef?: React.MutableRefObject<number>;
 }
-
 export function ParticleField({
   adapter,
   count,
@@ -40,6 +42,9 @@ export function ParticleField({
   cursorRef,
   reducedMotion,
   onEntryChange,
+  onGroupAdvance,
+  isPaused = false,
+  connectionDistanceRef,
 }: ParticleFieldProps) {
   const pointsRef = useRef<THREE.Points>(null);
   const { viewport } = useThree();
@@ -62,39 +67,64 @@ export function ParticleField({
 
   // Pattern entry cycling refs
   const entryIndexRef = useRef(0);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const timerRef = useRef<number | undefined>(undefined);
   const onEntryChangeRef = useRef(onEntryChange);
   onEntryChangeRef.current = onEntryChange;
-
-  // Every adapter uses the same transition path; multi-entry adapters may cycle.
-  useEffect(() => {
-    const setEntry = (idx: number) => {
-      const entry = adapter.entries[idx];
+  const onGroupAdvanceRef = useRef(onGroupAdvance);
+  onGroupAdvanceRef.current = onGroupAdvance;
+  const isPausedRef = useRef(isPaused);
+  isPausedRef.current = isPaused;
+  const setEntry = useCallback(
+    (idx: number) => {
+      const normalizedIdx = idx % adapter.entries.length;
+      const entry = adapter.entries[normalizedIdx];
       currentShapeRef.current = entry.shape;
       shapeTargetsRef.current = entry.shape.generate(count);
       angleRef.current = { x: 0, y: 0, z: 0 };
-      onEntryChangeRef.current?.(adapter.id, idx);
-    };
+      onEntryChangeRef.current?.(adapter.id, normalizedIdx);
+      if (connectionDistanceRef) {
+        connectionDistanceRef.current =
+          entry.connectionDistance?.(count) ?? adapter.connectionDistance?.(count) ?? 3.0;
+      }
+    },
+    [adapter, count, connectionDistanceRef],
+  );
 
+  // Cycles through entries inside the adapter (or advances group when complete)
+  useEffect(() => {
     entryIndexRef.current = 0;
     setEntry(0);
 
-    if (reducedMotion || adapter.entries.length < 2) return;
+    if (reducedMotion) return;
 
-    const advance = () => {
-      entryIndexRef.current = (entryIndexRef.current + 1) % adapter.entries.length;
+    const scheduleNext = () => {
       const idx = entryIndexRef.current;
-      setEntry(idx);
-      timerRef.current = setTimeout(advance, adapter.entries[idx].holdMs);
+      const holdTime = adapter.entries[idx]?.holdMs || 30_000;
+      timerRef.current = window.setTimeout(() => {
+        if (!isPausedRef.current && !document.hidden) {
+          if (adapter.entries.length === 1) {
+            onGroupAdvanceRef.current?.();
+          } else {
+            const nextIdx = entryIndexRef.current + 1;
+            if (nextIdx >= adapter.entries.length) {
+              onGroupAdvanceRef.current?.();
+            } else {
+              entryIndexRef.current = nextIdx;
+              setEntry(nextIdx);
+              scheduleNext();
+            }
+          }
+        } else {
+          timerRef.current = window.setTimeout(scheduleNext, 500);
+        }
+      }, holdTime);
     };
 
-    timerRef.current = setTimeout(advance, adapter.entries[0].holdMs);
-
+    scheduleNext();
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current !== undefined) window.clearTimeout(timerRef.current);
     };
-  }, [adapter, count, reducedMotion]);
-
+  }, [adapter, reducedMotion, setEntry]);
   // Build geometry buffers
   const { geometry, positions } = useMemo(() => {
     const geo = new THREE.BufferGeometry();
@@ -149,9 +179,28 @@ export function ParticleField({
     const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
     const posArray = posAttr.array as Float32Array;
 
+    const isStaticShape = shape.spinX === 0 && shape.spinY === 0 && shape.spinZ === 0;
+
+    // Cursor state (hoisted before rotation matrix)
+    const cursor = cursorRef.current;
+    const cursorActive = cursor.active;
+    const cursorX = cursor.x;
+    const cursorY = cursor.y;
+    const cursorMode = cursor.mode;
+
     // Rotation matrix for shape targets
     const angles = angleRef.current;
-    if (!reducedMotion) {
+    if (isStaticShape) {
+      // 静态文字/签名图案：始终保持正向朝向视口，仅在光标激活时带微幅弹性视差，离开后立即自愈复原至 (0, 0, 0)
+      const targetX =
+        cursorActive && !reducedMotion ? Math.max(-0.06, Math.min(0.06, -cursorY * 0.012)) : 0;
+      const targetY =
+        cursorActive && !reducedMotion ? Math.max(-0.06, Math.min(0.06, cursorX * 0.012)) : 0;
+      const returnFactor = 1 - Math.exp(-6.0 * dt);
+      angles.x += (targetX - angles.x) * returnFactor;
+      angles.y += (targetY - angles.y) * returnFactor;
+      angles.z += (0 - angles.z) * returnFactor;
+    } else if (!reducedMotion) {
       angles.x += shape.spinX * dt;
       angles.y += shape.spinY * dt;
       angles.z += shape.spinZ * dt;
@@ -178,15 +227,9 @@ export function ParticleField({
     const jit = MICRO_JITTER * (shape.jitter ?? 1);
     const lerpT = reducedMotion ? 1 : 1 - Math.exp(-FRACTAL_LERP_SPEED * (shape.lerpMul ?? 1) * dt);
     const damp = 0.98 ** (dt * 60);
-    const shapeDamp = 0.9 ** (dt * 60);
+    const shapeDamp = (isStaticShape ? 0.78 : 0.9) ** (dt * 60);
     const time = uniforms.uTime.value;
 
-    // Cursor state (hoisted before loop)
-    const cursor = cursorRef.current;
-    const cursorActive = cursor.active;
-    const cursorX = cursor.x;
-    const cursorY = cursor.y;
-    const cursorMode = cursor.mode;
     const radiusSq = CURSOR_RADIUS * CURSOR_RADIUS;
     const softeningSq = CURSOR_SOFTENING * CURSOR_SOFTENING;
 
@@ -208,7 +251,7 @@ export function ParticleField({
       py += vy;
       pz += vz;
 
-      // Shape formation
+      // Shape formation with natural overlapping morph
       if (targets.length > 0) {
         const tgt = targets[i % targets.length];
         const tx = tgt.x,

@@ -1,3 +1,5 @@
+import { SIGNATURE_MING_PATHS, SIGNATURE_SHENSHUAI_PATHS } from './signature-ming-paths';
+
 // =============================================================================
 // Shape generators for plexus-background
 // Pure functions with no React dependencies.
@@ -24,10 +26,12 @@ export interface ShapeConfig {
 }
 
 export interface CodexEntry {
+  name: { en: string; zh: string };
   shape: ShapeConfig;
   quote: string;
   author?: string;
   holdMs: number;
+  connectionDistance?: (particleCount: number) => number;
 }
 
 // =============================================================================
@@ -173,14 +177,14 @@ function sampleMultiPath3D(paths: Point3D[][], n: number): Point3D[] {
 
 function generateFaravahar(n: number): Point3D[] {
   const paths: Point3D[][] = [];
-  // Central disc
+  // Central disc with subtle spherical convexity
   const disc: Point3D[] = [];
   for (let i = 0; i <= 30; i++) {
     const a = (i / 30) * Math.PI * 2;
-    disc.push({ x: 0.12 * Math.cos(a), y: 0.12 * Math.sin(a), z: 0 });
+    disc.push({ x: 0.12 * Math.cos(a), y: 0.12 * Math.sin(a), z: 0.08 * Math.cos(a * 2) });
   }
   paths.push(disc);
-  // Three layers of wings
+  // Three layers of wings with aerodynamic spatial camber
   for (let layer = 0; layer < 3; layer++) {
     const r = 0.35 + layer * 0.22;
     const sweep = 0.7 + layer * 0.2;
@@ -190,33 +194,34 @@ function generateFaravahar(n: number): Point3D[] {
     for (let i = 0; i <= 25; i++) {
       const t = i / 25;
       const a = Math.PI - sweep + t * sweep;
+      const zWing = -0.2 * Math.sin(t * Math.PI) * (layer + 1) * 0.35;
       left.push({
         x: -0.15 + r * Math.cos(a),
         y: yOff + r * Math.sin(a) * 0.35,
-        z: 0,
+        z: zWing,
       });
       const a2 = sweep - t * sweep;
       right.push({
         x: 0.15 + r * Math.cos(a2),
         y: yOff + r * Math.sin(a2) * 0.35,
-        z: 0,
+        z: zWing,
       });
     }
     paths.push(left, right);
   }
-  // Tail streamers
+  // Tail streamers flowing gently forward
   paths.push(
     [
       { x: 0, y: -0.15, z: 0 },
-      { x: 0, y: -0.6, z: 0 },
+      { x: 0, y: -0.6, z: 0.1 },
     ],
     [
       { x: -0.05, y: -0.15, z: 0 },
-      { x: -0.2, y: -0.55, z: 0 },
+      { x: -0.2, y: -0.55, z: 0.08 },
     ],
     [
       { x: 0.05, y: -0.15, z: 0 },
-      { x: 0.2, y: -0.55, z: 0 },
+      { x: 0.2, y: -0.55, z: 0.08 },
     ],
   );
   return normalize3D(sampleMultiPath3D(paths, n));
@@ -226,29 +231,37 @@ function generateFaravahar(n: number): Point3D[] {
 
 function generateHeptagram(n: number): Point3D[] {
   const paths: Point3D[][] = [];
-  // {7/2} star polygon — connects every 2nd vertex
-  const star: Point3D[] = [];
+  // {7/2} star polygon on front depth plane
+  const starFront: Point3D[] = [];
   for (let i = 0; i <= 7; i++) {
     const vertIdx = (i * 2) % 7;
     const angle = (vertIdx / 7) * Math.PI * 2 - Math.PI / 2;
-    star.push({ x: Math.cos(angle), y: Math.sin(angle), z: 0 });
+    starFront.push({ x: Math.cos(angle), y: Math.sin(angle), z: 0.18 });
   }
-  paths.push(star);
-  // {7/3} inner star polygon for visual density
-  const inner: Point3D[] = [];
+  paths.push(starFront);
+  // {7/3} inner star polygon on rear depth plane
+  const starRear: Point3D[] = [];
   for (let i = 0; i <= 7; i++) {
     const vertIdx = (i * 3) % 7;
     const angle = (vertIdx / 7) * Math.PI * 2 - Math.PI / 2;
-    inner.push({ x: 0.55 * Math.cos(angle), y: 0.55 * Math.sin(angle), z: 0 });
+    starRear.push({ x: 0.58 * Math.cos(angle), y: 0.58 * Math.sin(angle), z: -0.18 });
   }
-  paths.push(inner);
-  // Circumscribing circle
+  paths.push(starRear);
+  // Circumscribing equatorial ring
   const ring: Point3D[] = [];
   for (let i = 0; i <= 70; i++) {
     const a = (i / 70) * Math.PI * 2;
     ring.push({ x: Math.cos(a), y: Math.sin(a), z: 0 });
   }
   paths.push(ring);
+  // Connective struts between front star points and rear
+  for (let i = 0; i < 7; i++) {
+    const angle = (i / 7) * Math.PI * 2 - Math.PI / 2;
+    paths.push([
+      { x: Math.cos(angle), y: Math.sin(angle), z: 0.18 },
+      { x: 0.58 * Math.cos(angle), y: 0.58 * Math.sin(angle), z: -0.18 },
+    ]);
+  }
   return normalize3D(sampleMultiPath3D(paths, n));
 }
 
@@ -263,9 +276,14 @@ function generateGirihDecagon(n: number): Point3D[] {
     decVerts.push({ x: Math.cos(angle), y: Math.sin(angle), z: 0 });
   }
   paths.push([...decVerts, decVerts[0]]);
-  // Internal {10/3} star lines — the classic girih strapwork
+  // Internal {10/3} star lines rising toward vaulted apex
   for (let i = 0; i < 10; i++) {
-    paths.push([decVerts[i], decVerts[(i + 3) % 10]]);
+    const v1 = decVerts[i];
+    const v2 = decVerts[(i + 3) % 10];
+    const midX = (v1.x + v2.x) * 0.5;
+    const midY = (v1.y + v2.y) * 0.5;
+    const archPeak: Point3D = { x: midX, y: midY, z: 0.32 };
+    paths.push([v1, archPeak, v2]);
   }
   return normalize3D(sampleMultiPath3D(paths, n));
 }
@@ -275,20 +293,26 @@ function generateGirihDecagon(n: number): Point3D[] {
 function generateFlowerOfLife(n: number): Point3D[] {
   const paths: Point3D[][] = [];
   const r = 0.35;
-  const makeCircle = (cx: number, cy: number): Point3D[] => {
+  const makeCircle = (cx: number, cy: number, zBase: number): Point3D[] => {
     const c: Point3D[] = [];
     for (let i = 0; i <= 30; i++) {
       const a = (i / 30) * Math.PI * 2;
-      c.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a), z: 0 });
+      const x = cx + r * Math.cos(a);
+      const y = cy + r * Math.sin(a);
+      const dist = Math.sqrt(x * x + y * y);
+      const z = zBase + 0.18 * Math.cos(dist * 2.2);
+      c.push({ x, y, z });
     }
     return c;
   };
-  // Center circle
-  paths.push(makeCircle(0, 0));
-  // First ring of 6
+  // Center circles on front and rear spherical dome
+  paths.push(makeCircle(0, 0, 0.12));
+  paths.push(makeCircle(0, 0, -0.12));
+  // Ring of 6 on front and rear dome
   for (let k = 0; k < 6; k++) {
     const a = (k / 6) * Math.PI * 2;
-    paths.push(makeCircle(r * Math.cos(a), r * Math.sin(a)));
+    paths.push(makeCircle(r * Math.cos(a), r * Math.sin(a), 0.08));
+    paths.push(makeCircle(r * Math.cos(a), r * Math.sin(a), -0.08));
   }
   return normalize3D(sampleMultiPath3D(paths, n));
 }
@@ -296,19 +320,24 @@ function generateFlowerOfLife(n: number): Point3D[] {
 // --- 5. Sierpinski Triangle (fractal) ---
 
 function generateSierpinski(n: number): Point3D[] {
+  // Regular 3D tetrahedron vertices forming a 3D fractal pyramid
   const verts: Point3D[] = [
-    { x: 0, y: -1, z: 0 },
-    { x: -Math.sqrt(3) / 2, y: 0.5, z: 0 },
-    { x: Math.sqrt(3) / 2, y: 0.5, z: 0 },
+    { x: 1, y: 1, z: 1 },
+    { x: 1, y: -1, z: -1 },
+    { x: -1, y: 1, z: -1 },
+    { x: -1, y: -1, z: 1 },
   ];
   const pts: Point3D[] = [];
   let x = 0,
-    y = 0;
-  for (let i = 0; i < n + 20; i++) {
-    const v = verts[Math.floor(Math.random() * 3)];
-    x = (x + v.x) / 2;
-    y = (y + v.y) / 2;
-    if (i >= 20) pts.push({ x, y, z: 0 });
+    y = 0,
+    z = 0;
+  const warmup = 30;
+  for (let i = 0; i < n + warmup; i++) {
+    const v = verts[Math.floor(Math.random() * 4)];
+    x = (x + v.x) * 0.5;
+    y = (y + v.y) * 0.5;
+    z = (z + v.z) * 0.5;
+    if (i >= warmup) pts.push({ x, y, z });
   }
   return normalize3D(pts);
 }
@@ -350,7 +379,10 @@ function generateGoldenSpiral(n: number): Point3D[] {
   for (let i = 0; i < n; i++) {
     const t = (i / n) * maxTheta;
     const r = 0.02 * Math.exp(b * t);
-    pts.push({ x: r * Math.cos(t), y: r * Math.sin(t), z: 0 });
+    const normR = Math.min(1, r / 1.2);
+    // 3D Nautilus shell cone: lifts in Z with radial expansion
+    const z = 0.45 * (1 - normR * 0.75) * Math.cos(t * 0.25) + Math.sin(t) * 0.06;
+    pts.push({ x: r * Math.cos(t), y: r * Math.sin(t), z });
   }
   return normalize3D(pts);
 }
@@ -561,107 +593,169 @@ export const MOBIUS_BAND: ShapeConfig = {
   jitter: 0.12,
 };
 
+/** 英文花体手绘签名「Ming」（当前激活展示） */
+export const SIGNATURE_MING: ShapeConfig = {
+  generate: (n) => normalize3D(sampleMultiPath3D(SIGNATURE_MING_PATHS, n)),
+  spinX: 0,
+  spinY: 0,
+  spinZ: 0,
+  spread: 1.35,
+  jitter: 0,
+  lerpMul: 3.5,
+};
+
+/** 中文行草手绘签名（已完整保留，暂时不展示） */
+export const SIGNATURE_SHENSHUAI_ZH: ShapeConfig = {
+  generate: (n) => normalize3D(sampleMultiPath3D(SIGNATURE_SHENSHUAI_PATHS, n)),
+  spinX: 0,
+  spinY: 0,
+  spinZ: 0,
+  spread: 1.35,
+  jitter: 0,
+  lerpMul: 3.5,
+};
+
 // =============================================================================
-// Codex — the curated narrative sequence
+// Codex — 历史原有经典星图序列（包含 8 组科学哲学图谱连续流动显示）
+// 包含 3c8112b 之前历史首屏就有的经典几何：法拉瓦哈、七角星、十角拼花、生命之花、
+// 谢尔宾斯基、洛伦兹吸引子、黄金螺旋、旋涡星系。在经典组中作为一个整体依序演变展示。
 // =============================================================================
 
-export const CODEX: CodexEntry[] = [
+export interface ClassicVariant extends CodexEntry {}
+
+export const CODEX: readonly CodexEntry[] = [
+  // 01. 法拉瓦哈 (Faravahar)
   {
+    name: { en: 'Faravahar', zh: '法拉瓦哈' },
     shape: faravaharShape,
     quote: '\u201CMAKE IT WORK, MAKE IT RIGHT, MAKE IT FAST.\u201D',
     author: 'KENT BECK',
     holdMs: 10_000,
   },
+  // 02. 七角星 (Heptagram)
   {
+    name: { en: 'Heptagram', zh: '七角星' },
     shape: heptagramShape,
     quote: '\u201CSIMPLICITY IS PREREQUISITE FOR RELIABILITY.\u201D',
     author: 'EDSGER DIJKSTRA',
     holdMs: 10_000,
   },
+  // 03. 十角拼花 (Girih Decagon)
   {
+    name: { en: 'Girih Decagon', zh: '十角拼花' },
     shape: girihDecagonShape,
     quote: '\u201CPREMATURE OPTIMIZATION IS THE ROOT OF ALL EVIL.\u201D',
     author: 'DONALD KNUTH',
     holdMs: 10_000,
   },
+  // 04. 生命之花 (Flower of Life)
   {
+    name: { en: 'Flower of Life', zh: '生命之花' },
     shape: flowerOfLifeShape,
     quote: '\u201CPROGRAMS MUST BE WRITTEN FOR PEOPLE TO READ.\u201D',
     author: 'HAL ABELSON',
     holdMs: 10_000,
   },
+  // 05. 谢尔宾斯基金字塔 (Sierpinski Pyramid)
   {
+    name: { en: 'Sierpinski Pyramid', zh: '谢尔宾斯基' },
     shape: sierpinskiShape,
     quote: '\u201CANY SUFFICIENTLY ADVANCED TECHNOLOGY IS INDISTINGUISHABLE FROM MAGIC.\u201D',
     author: 'ARTHUR C. CLARKE',
     holdMs: 10_000,
   },
+  // 06. 洛伦兹吸引子 (Lorenz Attractor)
   {
+    name: { en: 'Lorenz Attractor', zh: '洛伦兹吸引子' },
     shape: lorenzShape,
     quote: '\u201CTHE BEST WAY TO PREDICT THE FUTURE IS TO INVENT IT.\u201D',
     author: 'ALAN KAY',
     holdMs: 10_000,
   },
+  // 07. 黄金螺旋 (Golden Spiral)
   {
+    name: { en: 'Golden Spiral', zh: '黄金螺旋' },
     shape: goldenSpiralShape,
     quote: '\u201CSTAY HUNGRY, STAY FOOLISH.\u201D',
     author: 'STEWART BRAND',
     holdMs: 10_000,
   },
+  // 08. 旋涡星系 (Spiral Galaxy)
   {
+    name: { en: 'Spiral Galaxy', zh: '旋涡星系' },
     shape: galaxyShape,
     quote: '\u201CWE ARE ALL IN THE GUTTER, BUT SOME OF US ARE LOOKING AT THE STARS.\u201D',
     author: 'OSCAR WILDE',
-    holdMs: 15_000,
+    holdMs: 10_000,
   },
 ];
-export const CODEX_CN: CodexEntry[] = [
+
+export const CODEX_CN: readonly CodexEntry[] = [
+  // 01. 法拉瓦哈 (Faravahar)
   {
+    name: { en: 'Faravahar', zh: '法拉瓦哈' },
     shape: faravaharShape,
     quote: '“先让它跑起来，再让它跑得漂亮。”',
     author: '肯特·贝克',
     holdMs: 10_000,
   },
+  // 02. 七角星 (Heptagram)
   {
+    name: { en: 'Heptagram', zh: '七角星' },
     shape: heptagramShape,
     quote: '“简单是可靠的前提。”',
     author: '迪杰斯特拉',
     holdMs: 10_000,
   },
+  // 03. 十角拼花 (Girih Decagon)
   {
+    name: { en: 'Girih Decagon', zh: '十角拼花' },
     shape: girihDecagonShape,
     quote: '“过早优化，是万恶之源。”',
     author: '高德纳',
     holdMs: 10_000,
   },
+  // 04. 生命之花 (Flower of Life)
   {
+    name: { en: 'Flower of Life', zh: '生命之花' },
     shape: flowerOfLifeShape,
     quote: '“程序是写给人读的，只是顺便能在机器上跑。”',
     author: '阿贝尔森',
     holdMs: 10_000,
   },
+  // 05. 谢尔宾斯基金字塔 (Sierpinski Pyramid)
   {
+    name: { en: 'Sierpinski Pyramid', zh: '谢尔宾斯基' },
     shape: sierpinskiShape,
     quote: '“任何足够先进的技术，都与魔法无异。”',
     author: '克拉克',
     holdMs: 10_000,
   },
+  // 06. 洛伦兹吸引子 (Lorenz Attractor)
   {
+    name: { en: 'Lorenz Attractor', zh: '洛伦兹吸引子' },
     shape: lorenzShape,
     quote: '“预测未来最好的方式，就是把它实现出来。”',
     author: '艾伦·凯',
     holdMs: 10_000,
   },
+  // 07. 黄金螺旋 (Golden Spiral)
   {
+    name: { en: 'Golden Spiral', zh: '黄金螺旋' },
     shape: goldenSpiralShape,
     quote: '“保持饥饿，保持愚蠢。”',
     author: '斯图尔特·布兰德',
     holdMs: 10_000,
   },
+  // 08. 旋涡星系 (Spiral Galaxy)
   {
+    name: { en: 'Spiral Galaxy', zh: '旋涡星系' },
     shape: galaxyShape,
     quote: '“我们都在阴沟里，但仍有人仰望星空。”',
     author: '奥斯卡·王尔德',
-    holdMs: 15_000,
+    holdMs: 10_000,
   },
 ];
+
+export const CLASSIC_VARIANTS = CODEX;
+export const CLASSIC_VARIANTS_CN = CODEX_CN;

@@ -257,6 +257,7 @@ Any contributed images must be compatible with CC BY-NC-ND 4.0 or be original wo
 Skills live in `.agents/skills/<name>/SKILL.md`:
 
 - **use-iconify** (`.agents/skills/use-iconify/SKILL.md`): Complete workflow for adding Iconify (iconify.design) icons anywhere in the project — including the tech-stack icon cloud in `src/components/article/TechSkillsCloud.tsx` (data files, STACK entries, the `ssr` gotcha, brand colors, and verification). Use when the user asks to add/use icons.
+- **svg-to-threejs-signature** (`.agents/skills/svg-to-threejs-signature/SKILL.md`): End-to-end workflow for transforming raw hand-drawn SVG signatures/paths into 3D Three.js particle constellation patterns (stroke extraction, RDP curve simplification, 3D depth camber, spatial hash connection tuning, and Plexus/Hero integration). Use when converting SVG signatures or vector drawings into 3D particle animations.
 
 ## Do not
 
