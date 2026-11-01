@@ -380,6 +380,21 @@
     font-family: var(--font-sans);
   }
 
+  /* 英文站点全局默认应用 Geist Serif 衬线字体 */
+  :lang(en) body,
+  html:not([lang="zh"]) body,
+  :lang(en) :is(input, button, select, textarea):not([style*="font-family"], code, pre, .font-mono),
+  html:not([lang="zh"])
+    :is(input, button, select, textarea):not([style*="font-family"], code, pre, .font-mono) {
+    font-family: var(--font-serif-en);
+  }
+
+  /* 中文站点保持原有中文字体排版堆栈 */
+  :lang(zh) body,
+  html[lang="zh"] body {
+    font-family: var(--font-sans);
+  }
+
   body.mobile-menu-open {
     overflow: hidden;
   }
@@ -455,10 +470,9 @@
     font-family: var(--font-serif-en);
   }
 
-  /* 严格保护正文中的代码、等宽与特定已处理字体不受覆盖 */
-  .prose :is(code, pre, kbd, samp, .font-mono),
-  .story-prose :is(code, pre, kbd, samp, .font-mono) {
-    font-family: var(--font-mono);
+  /* 严格保护正文及各区域中的代码、等宽与特定已处理字体不受覆盖 */
+  :is(code, pre, kbd, samp, .font-mono, .terminal-mock) {
+    font-family: var(--font-mono) !important;
   }
 }
 @keyframes aurora {

@@ -49,7 +49,7 @@ if (
 }
 
 // 若静态存在且与 D1 源码相同（或属于 MDX 构建产物），优先使用完整的 Astro MDX 组件渲染流水线
-if (matchedStatic && (!d1Post || (d1Post.format === 'mdx' && d1Post.contentRaw === (matchedStatic.body ?? '')))) {
+if (matchedStatic && (!d1Post || d1Post.format === 'mdx' || d1Post.contentRaw.trim() === (matchedStatic.body ?? '').trim())) {
   const rendered = await render(matchedStatic);
   ContentComponent = rendered.Content;
   tocHeadings = rendered.headings.filter((h) => h.depth >= 2 && h.depth <= 3);
