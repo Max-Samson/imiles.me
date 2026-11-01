@@ -447,6 +447,19 @@
   html:not([lang="zh"]) .home-essay-title {
     font-family: var(--font-serif-en);
   }
+
+  /* 英文正文页（博客、故事集等）正文叙述内容应用 Geist Serif */
+  :lang(en) .prose:not([data-keep-font]),
+  html:not([lang="zh"]) .prose:not([data-keep-font]),
+  html:not([lang="zh"]) .story-prose:not([data-keep-font]) {
+    font-family: var(--font-serif-en);
+  }
+
+  /* 严格保护正文中的代码、等宽与特定已处理字体不受覆盖 */
+  .prose :is(code, pre, kbd, samp, .font-mono),
+  .story-prose :is(code, pre, kbd, samp, .font-mono) {
+    font-family: var(--font-mono);
+  }
 }
 @keyframes aurora {
   from {
