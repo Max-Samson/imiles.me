@@ -405,10 +405,46 @@
     font-family: var(--font-serif-zh);
   }
 
-  :lang(en) h1:not(.landing-hero-name, [data-keep-font]),
-  :lang(en) .prose h1:not(.landing-hero-name, [data-keep-font]),
-  html:not([lang="zh"]) h1:not(.landing-hero-name, [data-keep-font]),
-  html:not([lang="zh"]) .prose h1:not(.landing-hero-name, [data-keep-font]) {
+  :lang(en)
+    :is(h1, h2, h3, h4):not(
+      .landing-hero-name,
+      [data-keep-font],
+      code,
+      pre,
+      .font-mono,
+      [style*="font-family"]
+    ),
+  :lang(en)
+    .prose
+    :is(h1, h2, h3, h4):not(
+      .landing-hero-name,
+      [data-keep-font],
+      code,
+      pre,
+      .font-mono,
+      [style*="font-family"]
+    ),
+  html:not([lang="zh"])
+    :is(h1, h2, h3, h4):not(
+      .landing-hero-name,
+      [data-keep-font],
+      code,
+      pre,
+      .font-mono,
+      [style*="font-family"]
+    ),
+  html:not([lang="zh"])
+    .prose
+    :is(h1, h2, h3, h4):not(
+      .landing-hero-name,
+      [data-keep-font],
+      code,
+      pre,
+      .font-mono,
+      [style*="font-family"]
+    ),
+  html:not([lang="zh"]) .home-xp-title,
+  html:not([lang="zh"]) .home-essay-title {
     font-family: var(--font-serif-en);
   }
 }
