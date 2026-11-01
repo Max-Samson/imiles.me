@@ -112,6 +112,17 @@ const shouldHideLanguage =
       type="font/woff2"
       crossorigin
     />
+    {
+      lang === 'en' && (
+        <link
+          rel="preload"
+          href="/fonts/geist/GeistSerifVF.woff2"
+          as="font"
+          type="font/woff2"
+          crossorigin
+        />
+      )
+    }
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />

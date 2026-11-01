@@ -70,6 +70,16 @@
   src: url("/fonts/google/rock-salt-latin.woff2") format("woff2");
 }
 
+@font-face {
+  font-family: "Geist Serif";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src:
+    url("/fonts/geist/GeistSerifVF.woff2") format("woff2-variations"),
+    url("/fonts/geist/GeistSerifVF.woff2") format("woff2");
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -160,11 +170,11 @@
   --font-sans:
     "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-serif: "Noto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-serif: "Geist Serif", "Noto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
   --font-serif-zh:
     "Noto Serif TC", "Songti SC", "Songti TC", "Source Han Serif SC", "Source Han Serif TC",
     "SimSun", "STSong", serif;
-  --font-serif-en: "Noto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-serif-en: "Geist Serif", "Noto Serif", Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: "IBM Plex Mono", monospace;
   --font-script: "Great Vibes", cursive;
   --z-index-header: var(--z-header);
